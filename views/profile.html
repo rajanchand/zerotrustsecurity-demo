@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
+        <div class="navbar-info">
+            <span id="userInfo"></span>
+            <span class="role-badge" id="roleBadge"></span>
+            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-layout">
+            <div class="sidebar" id="sidebarNav"></div>
+
+            <div class="main-content">
+                <!-- Profile Details -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h3 style="margin:0;">My Profile</h3>
+                        <span class="role-badge" id="profileRole"></span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="profileUsername" disabled
+                                style="background:#f4f5f7; cursor:not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <input type="text" id="profileDepartment" disabled
+                                style="background:#f4f5f7; cursor:not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="profileName" placeholder="Enter your full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" id="profilePhone" placeholder="Enter phone number">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Email</label>
+                            <input type="email" id="profileEmail" placeholder="Enter email address">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+                        <span id="profileMsg" style="font-size:0.82rem; line-height:30px;"></span>
+                    </div>
+
+                    <div style="font-size:0.75rem; color:#aaa; margin-top:12px;">
+                        Status: <span id="profileStatus"></span> | Member since: <span id="profileCreated"></span>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div class="card">
+                    <h3>Change Password</h3>
+                    <div style="max-width:400px;">
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" id="currentPassword" placeholder="Enter current password">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="newPassword" placeholder="Enter new password (min 6 characters)">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+                            <span id="passwordMsg" style="font-size:0.82rem; line-height:30px;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        function buildSidebar(role) {
+            var nav = '<nav class="sidebar-nav">';
+            nav += '<a href="/dashboard">Dashboard</a>';
+            nav += '<a href="/risk">Risk Score</a>';
+            nav += '<a href="/profile" class="active">Profile</a>';
+            if (role === 'SuperAdmin') {
+                nav += '<div class="menu-group"><div class="menu-label">Mapping</div>';
+                nav += '<a href="/mapping">User Management</a>';
+                nav += '<a href="/register-device">Register Device</a></div>';
+            }
+            nav += '<div class="menu-group"><div class="menu-label">Security</div>';
+            nav += '<a href="/network">Network</a></div>';
+            nav += '</nav>';
+            document.getElementById('sidebarNav').innerHTML = nav;
+        }
+
+        async function init() {
+            var s = await (await fetch('/api/session')).json();
+            if (!s.loggedIn) return location.href = '/login';
+            document.getElementById('userInfo').textContent = s.user.username;
+            document.getElementById('roleBadge').textContent = s.user.role;
+            buildSidebar(s.user.role);
+
+            // load profile
+            var profile = await (await fetch('/api/profile')).json();
+            document.getElementById('profileUsername').value = profile.username || '';
+            document.getElementById('profileDepartment').value = profile.department || '';
+            document.getElementById('profileName').value = profile.name || '';
+            document.getElementById('profilePhone').value = profile.phone || '';
+            document.getElementById('profileEmail').value = profile.email || '';
+            document.getElementById('profileRole').textContent = profile.role;
+            document.getElementById('profileStatus').textContent = profile.status;
+            document.getElementById('profileCreated').textContent = formatDate(profile.created_at);
+        }
+
+        async function saveProfile() {
+            var msg = document.getElementById('profileMsg');
+            msg.textContent = '';
+
+            var result = await postJSON('/api/profile/update', {
+                name: document.getElementById('profileName').value,
+                phone: document.getElementById('profilePhone').value,
+                email: document.getElementById('profileEmail').value
+            });
+
+            msg.textContent = result.message;
+            msg.style.color = result.success ? '#27ae60' : '#e74c3c';
+        }
+
+        async function changePassword() {
+            var msg = document.getElementById('passwordMsg');
+            msg.textContent = '';
+
+            var newPwd = document.getElementById('newPassword').value;
+            var confirmPwd = document.getElementById('confirmPassword').value;
+
+            if (newPwd !== confirmPwd) {
+                msg.textContent = 'Passwords do not match.';
+                msg.style.color = '#e74c3c';
+                return;
+            }
+
+            var result = await postJSON('/api/profile/change-password', {
+                currentPassword: document.getElementById('currentPassword').value,
+                newPassword: newPwd
+            });
+
+            msg.textContent = result.message;
+            msg.style.color = result.success ? '#27ae60' : '#e74c3c';
+
+            if (result.success) {
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

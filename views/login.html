@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - ZTS</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>ZTS</h1>
+      <h2>Zero Trust Security</h2>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <input type="hidden" id="fingerprint" name="fingerprint">
+        <button type="submit" class="btn btn-primary">Sign In</button>
+      </form>
+
+      <p id="errorMsg" class="error-msg" style="display:none;"></p>
+
+      <p style="font-size:0.75rem; color:#aaa; margin-top:20px;">
+        Never Trust, Always Verify | NIST SP 800-207
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.getElementById('fingerprint').value = getFingerprint();
+
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var errorEl = document.getElementById('errorMsg');
+      errorEl.style.display = 'none';
+
+      var data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        fingerprint: document.getElementById('fingerprint').value
+      };
+
+      try {
+        var result = await postJSON('/login', data);
+
+        if (result.success) {
+          // save OTP code for the OTP page to display
+          sessionStorage.setItem('otpCode', result.otpCode);
+          sessionStorage.setItem('riskScore', result.risk.score);
+          sessionStorage.setItem('riskLevel', result.risk.level);
+          window.location.href = result.redirect;
+        } else {
+          errorEl.textContent = result.message;
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Connection error. Please try again.';
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+
+</html>

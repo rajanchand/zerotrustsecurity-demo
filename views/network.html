@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
+        <div class="navbar-info">
+            <span id="userInfo"></span>
+            <span class="role-badge" id="roleBadge"></span>
+            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-layout">
+            <div class="sidebar" id="sidebarNav"></div>
+
+            <div class="main-content">
+                <!-- IP Management -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 style="margin:0;">IP Management</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showAddIP()">Add IP Rule</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Action</th>
+                                    <th>Reason</th>
+                                    <th>Created By</th>
+                                    <th>Date</th>
+                                    <th>Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ipTable">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color:#aaa;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Device Health -->
+                <div class="card">
+                    <h3>Device Health Overview</h3>
+                    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;">
+                        <div style="text-align:center; padding:10px; background:#fafafa; border-radius:6px;">
+                            <div id="dTotal" style="font-size:1.3rem; font-weight:700;">-</div>
+                            <div style="font-size:0.72rem; color:#636e72;">Total</div>
+                        </div>
+                        <div style="text-align:center; padding:10px; background:#fafafa; border-radius:6px;">
+                            <div id="dApproved" class="score-low" style="font-size:1.3rem; font-weight:700;">-</div>
+                            <div style="font-size:0.72rem; color:#636e72;">Approved</div>
+                        </div>
+                        <div style="text-align:center; padding:10px; background:#fafafa; border-radius:6px;">
+                            <div id="dPending" class="score-medium" style="font-size:1.3rem; font-weight:700;">-</div>
+                            <div style="font-size:0.72rem; color:#636e72;">Pending</div>
+                        </div>
+                        <div style="text-align:center; padding:10px; background:#fafafa; border-radius:6px;">
+                            <div id="dHealth" style="font-size:1.3rem; font-weight:700;">-</div>
+                            <div style="font-size:0.72rem; color:#636e72;">Health Score</div>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Device</th>
+                                    <th>IP</th>
+                                    <th>OS</th>
+                                    <th>Status</th>
+                                    <th>Last Seen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deviceTable">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color:#aaa;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add IP Modal -->
+    <div id="addIPModal" class="modal-overlay" style="display:none;">
+        <div class="modal">
+            <h3>Add IP Rule</h3>
+            <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" id="newIP" placeholder="e.g. 192.168.1.100">
+            </div>
+            <div class="form-group">
+                <label>Action</label>
+                <select id="newIPAction">
+                    <option value="block">Block</option>
+                    <option value="allow">Allow</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Reason</label>
+                <input type="text" id="newIPReason" placeholder="Optional reason">
+            </div>
+            <p id="addIPError" class="error-msg" style="display:none;"></p>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button class="btn btn-primary" onclick="addIPRule()">Add Rule</button>
+                <button class="btn btn-outline"
+                    onclick="document.getElementById('addIPModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        function buildSidebar(role) {
+            var nav = '<nav class="sidebar-nav">';
+            nav += '<a href="/dashboard">Dashboard</a>';
+            nav += '<a href="/risk">Risk Score</a>';
+            nav += '<a href="/profile">Profile</a>';
+            if (role === 'SuperAdmin') {
+                nav += '<div class="menu-group"><div class="menu-label">Mapping</div>';
+                nav += '<a href="/mapping">User Management</a>';
+                nav += '<a href="/register-device">Register Device</a></div>';
+            }
+            nav += '<div class="menu-group"><div class="menu-label">Security</div>';
+            nav += '<a href="/network" class="active">Network</a></div>';
+            nav += '</nav>';
+            document.getElementById('sidebarNav').innerHTML = nav;
+        }
+
+        async function init() {
+            var s = await (await fetch('/api/session')).json();
+            if (!s.loggedIn) return location.href = '/login';
+            document.getElementById('userInfo').textContent = s.user.username;
+            document.getElementById('roleBadge').textContent = s.user.role;
+            buildSidebar(s.user.role);
+            loadIPRules();
+            loadDeviceHealth();
+        }
+
+        async function loadIPRules() {
+            var rules = await (await fetch('/api/network/ip-rules')).json();
+            var tb = document.getElementById('ipTable');
+            tb.innerHTML = '';
+
+            if (!rules.length) {
+                tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#aaa;">No IP rules configured</td></tr>';
+                return;
+            }
+
+            rules.forEach(function (r) {
+                var actionClass = r.action === 'block' ? 'status-blocked' : 'status-active';
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td><strong>' + r.ip_address + '</strong></td>' +
+                    '<td><span class="' + actionClass + '">' + r.action.toUpperCase() + '</span></td>' +
+                    '<td>' + (r.reason || '-') + '</td>' +
+                    '<td>' + (r.created_by_name || '-') + '</td>' +
+                    '<td>' + formatDate(r.created_at) + '</td>' +
+                    '<td><button class="btn btn-sm btn-danger" onclick="deleteIPRule(' + r.id + ')">Remove</button></td>';
+                tb.appendChild(tr);
+            });
+        }
+
+        async function loadDeviceHealth() {
+            var data = await (await fetch('/api/network/device-health')).json();
+
+            document.getElementById('dTotal').textContent = data.total;
+            document.getElementById('dApproved').textContent = data.approved;
+            document.getElementById('dPending').textContent = data.pending;
+            document.getElementById('dHealth').textContent = data.healthScore + '%';
+
+            var tb = document.getElementById('deviceTable');
+            tb.innerHTML = '';
+
+            if (!data.devices.length) {
+                tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#aaa;">No devices</td></tr>';
+                return;
+            }
+
+            data.devices.forEach(function (d) {
+                var statusBadge = d.approved
+                    ? '<span class="trust-badge trust-approved">Approved</span>'
+                    : '<span class="trust-badge trust-pending">Pending</span>';
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td><strong>' + (d.username || '-') + '</strong></td>' +
+                    '<td>' + (d.label || '-') + '</td>' +
+                    '<td>' + (d.ip || '-') + '</td>' +
+                    '<td>' + (d.os || '-') + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + formatDate(d.last_seen) + '</td>';
+                tb.appendChild(tr);
+            });
+        }
+
+        function showAddIP() {
+            document.getElementById('addIPModal').style.display = 'flex';
+        }
+
+        async function addIPRule() {
+            var errEl = document.getElementById('addIPError');
+            errEl.style.display = 'none';
+
+            var result = await postJSON('/api/network/ip-rules/add', {
+                ipAddress: document.getElementById('newIP').value,
+                action: document.getElementById('newIPAction').value,
+                reason: document.getElementById('newIPReason').value
+            });
+
+            if (result.success) {
+                document.getElementById('addIPModal').style.display = 'none';
+                document.getElementById('newIP').value = '';
+                document.getElementById('newIPReason').value = '';
+                loadIPRules();
+            } else {
+                errEl.textContent = result.message;
+                errEl.style.display = 'block';
+            }
+        }
+
+        async function deleteIPRule(id) {
+            if (!confirm('Remove this IP rule?')) return;
+            var result = await postJSON('/api/network/ip-rules/delete', { ruleId: id });
+            alert(result.message);
+            loadIPRules();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

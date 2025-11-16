@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Score - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
+        <div class="navbar-info">
+            <span id="userInfo"></span>
+            <span class="role-badge" id="roleBadge"></span>
+            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-layout">
+            <div class="sidebar" id="sidebarNav"></div>
+
+            <div class="main-content">
+                <div class="card" style="text-align:center; padding:30px;">
+                    <div id="riskScore" style="font-size:3rem; font-weight:700; line-height:1;">-</div>
+                    <div style="font-size:0.82rem; color:#636e72;">out of 100</div>
+                    <div id="riskLevel" style="font-size:1rem; font-weight:600; margin-top:6px;"></div>
+                    <div style="margin:16px auto; max-width:350px;">
+                        <div style="background:#eee; border-radius:8px; height:10px; overflow:hidden;">
+                            <div id="riskBar" style="height:100%; border-radius:8px; transition:width 0.8s; width:0%;">
+                            </div>
+                        </div>
+                        <div
+                            style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa; margin-top:3px;">
+                            <span>Low</span><span>Medium</span><span>High</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Risk Factors</h3>
+                    <div id="factorsList">
+                        <p style="text-align:center; color:#aaa;">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Scoring Rules (NIST SP 800-207)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Factor</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>New Device</td>
+                                <td><span class="factor-points">+25</span></td>
+                            </tr>
+                            <tr>
+                                <td>New Country</td>
+                                <td><span class="factor-points">+30</span></td>
+                            </tr>
+                            <tr>
+                                <td>Failed Logins (3+)</td>
+                                <td><span class="factor-points">+20</span></td>
+                            </tr>
+                            <tr>
+                                <td>VPN Detected</td>
+                                <td><span class="factor-points">+15</span></td>
+                            </tr>
+                            <tr>
+                                <td>Admin Unknown IP</td>
+                                <td><span class="factor-points">+35</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>Risk History</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Score</th>
+                                    <th>Level</th>
+                                    <th>Factors</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        function buildSidebar(role) {
+            var nav = '<nav class="sidebar-nav">';
+            nav += '<a href="/dashboard">Dashboard</a>';
+            nav += '<a href="/risk" class="active">Risk Score</a>';
+            nav += '<a href="/profile">Profile</a>';
+            if (role === 'SuperAdmin') {
+                nav += '<div class="menu-group"><div class="menu-label">Mapping</div>';
+                nav += '<a href="/mapping">User Management</a>';
+                nav += '<a href="/register-device">Register Device</a></div>';
+            }
+            nav += '<div class="menu-group"><div class="menu-label">Security</div>';
+            nav += '<a href="/network">Network</a></div>';
+            nav += '</nav>';
+            document.getElementById('sidebarNav').innerHTML = nav;
+        }
+
+        async function init() {
+            var s = await (await fetch('/api/session')).json();
+            if (!s.loggedIn) return location.href = '/login';
+            document.getElementById('userInfo').textContent = s.user.username;
+            document.getElementById('roleBadge').textContent = s.user.role;
+            buildSidebar(s.user.role);
+
+            var d = await (await fetch('/api/risk-data')).json();
+
+            var sc = document.getElementById('riskScore');
+            var lv = document.getElementById('riskLevel');
+            var bar = document.getElementById('riskBar');
+            var cls = d.currentLevel === 'Low' ? 'score-low' : d.currentLevel === 'Medium' ? 'score-medium' : 'score-high';
+            sc.textContent = d.currentScore;
+            sc.className = cls;
+            lv.textContent = d.currentLevel + ' Risk';
+            lv.className = cls;
+
+            var col = d.currentLevel === 'Low' ? '#27ae60' : d.currentLevel === 'Medium' ? '#e67e22' : '#e74c3c';
+            bar.style.width = d.currentScore + '%';
+            bar.style.background = col;
+
+            var fl = document.getElementById('factorsList');
+            if (d.factors && d.factors.length) {
+                fl.innerHTML = '<ul class="factor-list">' + d.factors.map(function (f) {
+                    return '<li class="factor-item"><span>' + f.factor + '</span><span class="factor-points">+' + f.points + '</span></li>';
+                }).join('') + '</ul>';
+            } else {
+                fl.innerHTML = '<p style="text-align:center; color:#aaa;">No risk factors detected.</p>';
+            }
+
+            var tb = document.getElementById('historyTable');
+            if (d.history && d.history.length) {
+                tb.innerHTML = '';
+                d.history.forEach(function (r) {
+                    var f = JSON.parse(r.factors_json || '[]').map(function (x) { return x.factor; }).join(', ') || 'None';
+                    var lc = r.level === 'Low' ? 'risk-low' : r.level === 'Medium' ? 'risk-medium' : 'risk-high';
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td><strong>' + r.score + '</strong></td><td><span class="risk-badge ' + lc + '">' + r.level + '</span></td><td style="font-size:0.8rem;">' + f + '</td><td>' + formatDate(r.created_at) + '</td>';
+                    tb.appendChild(tr);
+                });
+            } else {
+                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#aaa;">No history</td></tr>';
+            }
+        }
+        init();
+    </script>
+</body>
+
+</html>

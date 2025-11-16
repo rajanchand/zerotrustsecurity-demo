@@ -1,0 +1,23 @@
+{
+  "name": "zts-zero-trust-security-demo",
+  "version": "2.0.0",
+  "description": "Zero Trust Security Demo for MSc Dissertation (NIST SP 800-207)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node setup-db.js",
+    "seed": "node seed.js",
+    "dev": "node server.js"
+  },
+  "author": "Rajan",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "ua-parser-js": "^1.0.39",
+    "uuid": "^11.1.0"
+  }
+}
