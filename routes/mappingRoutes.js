@@ -10,6 +10,7 @@ var { logEvent } = require('../services/auditService');
 var { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
 
 var router = express.Router();
+var { logSecurityEvent } = require('../services/monitorService');
 
 // --- pages ---
 
@@ -73,6 +74,13 @@ router.post('/api/mapping/users/create', async function (req, res) {
         }
 
         await logEvent(req.session.userId, 'USER_CREATED', 'Created user: ' + username + ' (' + role + ')', req.ip);
+        await logSecurityEvent({
+            event_type: 'USER_CREATED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { new_user: username, role: role, department: department || 'General' }
+        });
         res.json({ success: true, message: 'User created successfully.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -118,6 +126,13 @@ router.post('/api/mapping/users/delete', async function (req, res) {
         }
 
         await logEvent(req.session.userId, 'USER_DELETED', 'Deleted user: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'USER_DELETED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { deleted_user: user.username, deleted_user_id: userId }
+        });
         res.json({ success: true, message: 'User "' + user.username + '" deleted. Audit records preserved.' });
     } catch (err) {
         console.error('Delete user error:', err);
@@ -136,6 +151,13 @@ router.post('/api/mapping/users/change-role', async function (req, res) {
         await supabase.from('users').update({ role: newRole }).eq('id', userId);
 
         await logEvent(req.session.userId, 'ROLE_CHANGED', user.username + ': ' + user.role + ' -> ' + newRole, req.ip);
+        await logSecurityEvent({
+            event_type: 'ROLE_CHANGED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: user.username, target_user_id: userId, old_role: user.role, new_role: newRole }
+        });
         res.json({ success: true, message: 'Role updated.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -192,6 +214,13 @@ router.post('/api/mapping/users/suspend', async function (req, res) {
         await supabase.from('users').update({ status: 'suspended' }).eq('id', userId);
 
         await logEvent(req.session.userId, 'USER_SUSPENDED', 'Suspended user: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'USER_BLOCKED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: user.username, action: 'suspended' }
+        });
         res.json({ success: true, message: 'User suspended.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -209,6 +238,13 @@ router.post('/api/mapping/users/block', async function (req, res) {
         await supabase.from('users').update({ status: 'blocked' }).eq('id', userId);
 
         await logEvent(req.session.userId, 'USER_BLOCKED', 'Blocked user: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'USER_BLOCKED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: user.username, action: 'blocked' }
+        });
         res.json({ success: true, message: 'User blocked.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -226,6 +262,13 @@ router.post('/api/mapping/users/activate', async function (req, res) {
         await supabase.from('users').update({ status: 'active', failed_attempts: 0 }).eq('id', userId);
 
         await logEvent(req.session.userId, 'USER_ACTIVATED', 'Activated user: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'USER_UNBLOCKED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: user.username }
+        });
         res.json({ success: true, message: 'User activated.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -236,9 +279,36 @@ router.post('/api/mapping/users/activate', async function (req, res) {
 
 router.get('/api/mapping/departments', async function (req, res) {
     try {
-        var { data } = await supabase.from('departments').select('*').order('name');
-        res.json(data || []);
+        var { data: depts } = await supabase.from('departments').select('*').order('name');
+        if (!depts) return res.json([]);
+
+        // fetch all users for lookups
+        var { data: allUsers } = await supabase.from('users').select('id, username, department');
+
+        var userMap = {};
+        var deptUserCounts = {};
+        (allUsers || []).forEach(function (u) {
+            userMap[u.id] = u.username;
+            var dName = (u.department || '').toLowerCase();
+            deptUserCounts[dName] = (deptUserCounts[dName] || 0) + 1;
+        });
+
+        var enriched = depts.map(function (d) {
+            return {
+                id: d.id,
+                name: d.name,
+                created_at: d.created_at,
+                created_by: d.created_by,
+                created_by_name: d.created_by ? (userMap[d.created_by] || 'Unknown') : '-',
+                head_user_id: d.head_user_id,
+                head_name: d.head_user_id ? (userMap[d.head_user_id] || 'Unknown') : '-',
+                total_users: deptUserCounts[d.name.toLowerCase()] || 0
+            };
+        });
+
+        res.json(enriched);
     } catch (err) {
+        console.error('Departments fetch error:', err);
         res.json([]);
     }
 });
@@ -248,7 +318,12 @@ router.post('/api/mapping/departments/create', async function (req, res) {
         var name = (req.body.name || '').trim();
         if (!name) return res.json({ success: false, message: 'Department name is required.' });
 
-        var { error } = await supabase.from('departments').insert({ name: name });
+        var insertData = { name: name, created_by: req.session.userId };
+        if (req.body.head_user_id) {
+            insertData.head_user_id = parseInt(req.body.head_user_id);
+        }
+
+        var { error } = await supabase.from('departments').insert(insertData);
         if (error) return res.json({ success: false, message: 'Department already exists or error: ' + error.message });
 
         await logEvent(req.session.userId, 'DEPT_CREATED', 'Created department: ' + name, req.ip);
@@ -269,6 +344,24 @@ router.post('/api/mapping/departments/delete', async function (req, res) {
 
         await logEvent(req.session.userId, 'DEPT_DELETED', 'Deleted department: ' + dept.name, req.ip);
         res.json({ success: true, message: 'Department deleted.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+});
+
+router.post('/api/mapping/departments/update-head', async function (req, res) {
+    try {
+        var deptId = req.body.departmentId;
+        var headUserId = req.body.head_user_id ? parseInt(req.body.head_user_id) : null;
+
+        var { data: dept } = await supabase.from('departments').select('name').eq('id', deptId).single();
+        if (!dept) return res.json({ success: false, message: 'Department not found.' });
+
+        var { error } = await supabase.from('departments').update({ head_user_id: headUserId }).eq('id', deptId);
+        if (error) return res.json({ success: false, message: 'Update failed: ' + error.message });
+
+        await logEvent(req.session.userId, 'DEPT_HEAD_CHANGED', 'Changed head for ' + dept.name + ' to user ID ' + headUserId, req.ip);
+        res.json({ success: true, message: 'Department head updated.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
     }

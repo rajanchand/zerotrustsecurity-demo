@@ -10,85 +10,62 @@
 
 <body>
     <nav class="navbar">
-        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
-        <div class="navbar-info">
-            <span id="userInfo"></span>
-            <span class="role-badge" id="roleBadge"></span>
-            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
-        </div>
+        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+        <div class="nav-menu" id="mainNav"></div>
+        <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="page-layout">
-            <div class="sidebar">
-                <nav class="sidebar-nav">
-                    <a href="/dashboard">Dashboard</a>
-                    <a href="/risk">Risk Score</a>
-                    <a href="/profile">Profile</a>
-                    <div class="menu-group">
-                        <div class="menu-label">Mapping</div>
-                        <a href="/mapping">User Management</a>
-                        <a href="/register-device" class="active">Register Device</a>
-                    </div>
-                    <div class="menu-group">
-                        <div class="menu-label">Security</div>
-                        <a href="/network">Network</a>
-                    </div>
-                </nav>
+        <!-- Stats -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px;">
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statPending" class="score-medium" style="font-size:1.4rem; font-weight:700;">0</div>
+                <div style="font-size:0.72rem; color:#636e72;">Pending Approval</div>
             </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statApproved" class="score-low" style="font-size:1.4rem; font-weight:700;">0</div>
+                <div style="font-size:0.72rem; color:#636e72;">Approved</div>
+            </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statTotal" style="font-size:1.4rem; font-weight:700;">0</div>
+                <div style="font-size:0.72rem; color:#636e72;">Total Devices</div>
+            </div>
+        </div>
 
-            <div class="main-content">
-                <!-- Stats -->
-                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px;">
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statPending" class="score-medium" style="font-size:1.4rem; font-weight:700;">0</div>
-                        <div style="font-size:0.72rem; color:#636e72;">Pending Approval</div>
-                    </div>
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statApproved" class="score-low" style="font-size:1.4rem; font-weight:700;">0</div>
-                        <div style="font-size:0.72rem; color:#636e72;">Approved</div>
-                    </div>
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statTotal" style="font-size:1.4rem; font-weight:700;">0</div>
-                        <div style="font-size:0.72rem; color:#636e72;">Total Devices</div>
-                    </div>
-                </div>
+        <!-- Pending Devices -->
+        <div class="card">
+            <h3>Pending Approval</h3>
+            <p style="font-size:0.78rem; color:#636e72; margin-bottom:12px;">
+                New devices must be approved before users can login from them.
+            </p>
+            <div id="pendingList">
+                <p style="text-align:center; color:#aaa;">Loading...</p>
+            </div>
+        </div>
 
-                <!-- Pending Devices -->
-                <div class="card">
-                    <h3>Pending Approval</h3>
-                    <p style="font-size:0.78rem; color:#636e72; margin-bottom:12px;">
-                        New devices must be approved before users can login from them.
-                    </p>
-                    <div id="pendingList">
-                        <p style="text-align:center; color:#aaa;">Loading...</p>
-                    </div>
-                </div>
-
-                <!-- All Devices -->
-                <div class="card">
-                    <h3>All Registered Devices</h3>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Device</th>
-                                    <th>IP</th>
-                                    <th>Location</th>
-                                    <th>OS</th>
-                                    <th>Status</th>
-                                    <th>First Seen</th>
-                                </tr>
-                            </thead>
-                            <tbody id="allDevicesTable">
-                                <tr>
-                                    <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- All Devices -->
+        <div class="card">
+            <h3>All Registered Devices</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Device</th>
+                            <th>IP</th>
+                            <th>Location</th>
+                            <th>OS</th>
+                            <th>Status</th>
+                            <th>First Seen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allDevicesTable">
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -98,8 +75,7 @@
         async function init() {
             var s = await (await fetch('/api/session')).json();
             if (!s.loggedIn) return location.href = '/login';
-            document.getElementById('userInfo').textContent = s.user.username;
-            document.getElementById('roleBadge').textContent = s.user.role;
+            buildNavbar(s.user.role, 'register-device', s.user.username);
             loadDevices();
         }
 

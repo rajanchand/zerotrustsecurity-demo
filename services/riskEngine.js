@@ -1,6 +1,7 @@
 // services/riskEngine.js
 
 var { supabase } = require('../db');
+var { logSecurityEvent } = require('./monitorService');
 
 var RISK_WEIGHTS = {
     NEW_DEVICE: 25,
@@ -58,6 +59,18 @@ async function calculateRisk(params) {
         level: level,
         factors_json: JSON.stringify(factors)
     });
+
+    // emit to SIEM monitor
+    if (score > 0) {
+        logSecurityEvent({
+            event_type: 'RISK_SCORE_CHANGED',
+            user_id: params.userId,
+            username: params.username || '',
+            ip: params.ip || '',
+            risk_score: score,
+            details: { level: level, factors: factors, role: params.role }
+        }).catch(function() {});
+    }
 
     return { score: score, level: level, factors: factors };
 }

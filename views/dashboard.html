@@ -10,110 +10,73 @@
 
 <body>
     <nav class="navbar">
-        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
-        <div class="navbar-info">
-            <span id="userInfo"></span>
-            <span class="role-badge" id="roleBadge"></span>
-            <span class="risk-badge" id="riskBadge"></span>
-            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
-        </div>
+        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+        <div class="nav-menu" id="mainNav"></div>
+        <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="page-layout">
-            <div class="sidebar" id="sidebarNav"></div>
+        <div class="card" style="padding:16px 20px;">
+            <h2 id="dashTitle" style="font-size:1rem; margin-bottom:2px;"></h2>
+            <p id="dashDescription" style="font-size:0.82rem; color:#636e72; margin:0;"></p>
+        </div>
 
-            <div class="main-content">
-                <div class="card" style="padding:16px 20px;">
-                    <h2 id="dashTitle" style="font-size:1rem; margin-bottom:2px;"></h2>
-                    <p id="dashDescription" style="font-size:0.82rem; color:#636e72; margin:0;"></p>
-                </div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;">
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statRisk" style="font-size:1.4rem; font-weight:700;"></div>
+                <div style="font-size:0.72rem; color:#636e72;">Risk</div>
+            </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statSessions" style="font-size:1.4rem; font-weight:700;"></div>
+                <div style="font-size:0.72rem; color:#636e72;">Sessions</div>
+            </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statCountry" style="font-size:1.4rem; font-weight:700;"></div>
+                <div style="font-size:0.72rem; color:#636e72;">Country</div>
+            </div>
+            <div class="card" style="text-align:center; padding:14px;">
+                <div id="statDevice" style="font-size:1.4rem; font-weight:700;"></div>
+                <div style="font-size:0.72rem; color:#636e72;">Device</div>
+            </div>
+        </div>
 
-                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;">
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statRisk" style="font-size:1.4rem; font-weight:700;"></div>
-                        <div style="font-size:0.72rem; color:#636e72;">Risk</div>
-                    </div>
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statSessions" style="font-size:1.4rem; font-weight:700;"></div>
-                        <div style="font-size:0.72rem; color:#636e72;">Sessions</div>
-                    </div>
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statCountry" style="font-size:1.4rem; font-weight:700;"></div>
-                        <div style="font-size:0.72rem; color:#636e72;">Country</div>
-                    </div>
-                    <div class="card" style="text-align:center; padding:14px;">
-                        <div id="statDevice" style="font-size:1.4rem; font-weight:700;"></div>
-                        <div style="font-size:0.72rem; color:#636e72;">Device</div>
-                    </div>
-                </div>
+        <div class="card">
+            <h3>Department Tools</h3>
+            <div class="card-grid" id="featureCards"></div>
+        </div>
 
-                <div class="card">
-                    <h3>Department Tools</h3>
-                    <div class="card-grid" id="featureCards"></div>
-                </div>
-
-                <div class="card">
-                    <h3>Recent Activity</h3>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Action</th>
-                                    <th>Detail</th>
-                                    <th>IP</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="activityTable">
-                                <tr>
-                                    <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="card">
+            <h3>Recent Activity</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Detail</th>
+                            <th>IP</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityTable">
+                        <tr>
+                            <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <script src="/js/app.js"></script>
     <script>
-        function buildSidebar(role) {
-            var nav = '<nav class="sidebar-nav">';
-            nav += '<a href="/dashboard" class="active">Dashboard</a>';
-            nav += '<a href="/risk">Risk Score</a>';
-            nav += '<a href="/profile">Profile</a>';
-
-            if (role === 'SuperAdmin') {
-                nav += '<div class="menu-group"><div class="menu-label">Mapping</div>';
-                nav += '<a href="/mapping">User Management</a>';
-                nav += '<a href="/register-device">Register Device</a>';
-                nav += '</div>';
-            }
-
-            nav += '<div class="menu-group"><div class="menu-label">Security</div>';
-            nav += '<a href="/network">Network</a>';
-            nav += '</div>';
-
-            nav += '</nav>';
-            document.getElementById('sidebarNav').innerHTML = nav;
-        }
 
         async function loadDashboard() {
             try {
                 var res = await fetch('/api/dashboard-data');
                 var d = await res.json();
 
-                document.getElementById('userInfo').textContent = d.user.username;
-                document.getElementById('roleBadge').textContent = d.user.role;
-
-                var rb = document.getElementById('riskBadge');
-                var rc = d.security.riskLevel === 'Low' ? 'risk-low' : d.security.riskLevel === 'Medium' ? 'risk-medium' : 'risk-high';
-                rb.textContent = 'Risk: ' + d.security.riskLevel;
-                rb.className = 'risk-badge ' + rc;
-
-                buildSidebar(d.user.role);
+                buildNavbar(d.user.role, 'dashboard', d.user.username);
 
                 document.getElementById('dashTitle').textContent = d.dashboard.title;
                 document.getElementById('dashDescription').textContent = d.dashboard.description;

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Monitoring - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* live monitoring specific styles */
+
+        .live-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .live-header h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #636e72;
+        }
+
+        .live-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* live status indicator */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #edf5ff;
+            color: #0984e3;
+            border: 1px solid #b2d4f5;
+        }
+
+        .live-badge .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: blink 1.2s infinite;
+        }
+
+        .live-badge.offline {
+            background: #fdf3f2;
+            color: #e74c3c;
+            border-color: #f5c0bb;
+        }
+
+        .live-badge.offline .dot {
+            background: #e74c3c;
+            animation: none;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* KPI stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 14px 16px;
+            border-left: 3px solid #0984e3;
+        }
+
+        .stat-card.red   { border-color: #e74c3c; }
+        .stat-card.orange { border-color: #e67e22; }
+        .stat-card.green  { border-color: #27ae60; }
+        .stat-card.purple { border-color: #8e44ad; }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d3436;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: #636e72;
+            margin-top: 2px;
+        }
+
+        /* filter bar */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar label {
+            font-size: 0.8rem;
+            color: #636e72;
+            font-weight: 500;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 6px 10px;
+            border: 1px solid #dfe6e9;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #2d3436;
+            background: #fff;
+        }
+
+        .filter-bar select:focus,
+        .filter-bar input:focus {
+            outline: none;
+            border-color: #0984e3;
+        }
+
+        .evt-count {
+            margin-left: auto;
+            font-size: 0.78rem;
+            color: #636e72;
+        }
+
+        /* event table */
+        .event-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 700px;
+        }
+
+        .event-table thead th {
+            text-align: left;
+            padding: 9px 10px;
+            border-bottom: 2px solid #eee;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #636e72;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            background: #fff;
+        }
+
+        .event-table tbody td {
+            padding: 9px 10px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .event-table tbody tr:hover td {
+            background: #fafafa;
+        }
+
+        /* slide-in animation for new rows */
+        .event-table tbody tr.new {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { background: #edf5ff; }
+            to   { background: transparent; }
+        }
+
+        /* severity chips */
+        .sev {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .sev-CRITICAL { background: #fadbd8; color: #c0392b; }
+        .sev-HIGH     { background: #fdebd0; color: #d35400; }
+        .sev-MEDIUM   { background: #fef9e7; color: #d4a017; }
+        .sev-LOW      { background: #eafaf1; color: #27ae60; }
+        .sev-INFO     { background: #edf5ff; color: #0984e3; }
+
+        /* event type coloring */
+        .evt-type {
+            font-family: monospace;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .evt-LOGIN_SUCCESS,
+        .evt-OTP_SUCCESS,
+        .evt-USER_UNBLOCKED   { color: #27ae60; }
+
+        .evt-LOGIN_FAILED,
+        .evt-OTP_FAILED,
+        .evt-USER_DELETED,
+        .evt-USER_BLOCKED      { color: #e74c3c; }
+
+        .evt-ACCESS_DENIED,
+        .evt-IMPOSSIBLE_TRAVEL { color: #c0392b; font-weight: 700; }
+
+        .evt-OTP_SENT,
+        .evt-DEVICE_NEW,
+        .evt-LOCATION_NEW      { color: #0984e3; }
+
+        .evt-VPN_DETECTED,
+        .evt-FORCE_LOGOUT      { color: #e67e22; }
+
+        .evt-ROLE_CHANGED,
+        .evt-RISK_SCORE_CHANGED,
+        .evt-USER_CREATED       { color: #8e44ad; }
+
+        /* risk number */
+        .risk-num {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .risk-num.low  { background: #eafaf1; color: #27ae60; }
+        .risk-num.med  { background: #fdebd0; color: #e67e22; }
+        .risk-num.high { background: #fadbd8; color: #e74c3c; }
+
+        .ts-cell {
+            color: #636e72;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .ip-cell {
+            font-family: monospace;
+            font-size: 0.78rem;
+            color: #636e72;
+        }
+
+        .details-cell {
+            color: #636e72;
+            font-size: 0.75rem;
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .empty-msg {
+            text-align: center;
+            padding: 40px;
+            color: #b2bec3;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+        <div class="nav-menu" id="mainNav"></div>
+        <div class="user-menu" id="userMenu"></div>
+    </nav>
+
+    <div class="container">
+
+        <!-- Page header -->
+        <div class="live-header">
+            <div>
+                <h2 style="font-size: 1rem; margin-bottom: 2px;">Live Security Monitoring</h2>
+                <p style="font-size: 0.78rem; color: #636e72; margin: 0;">Real-time event stream — NIST SP 800-207</p>
+            </div>
+            <div class="live-controls">
+                <div id="liveBadge" class="live-badge">
+                    <div class="dot"></div>
+                    <span id="liveStatus">Connecting...</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="pauseBtn" onclick="togglePause()">⏸ Pause</button>
+                <button class="btn btn-outline btn-sm" onclick="clearStream()">Clear</button>
+                <a href="/dashboard" class="btn btn-outline btn-sm">← Dashboard</a>
+            </div>
+        </div>
+
+        <!-- KPI stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">—</div>
+                <div class="stat-label">Total Events (24h)</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-value" id="statCritical">—</div>
+                <div class="stat-label">Critical</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-value" id="statHigh">—</div>
+                <div class="stat-label">High Risk</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-value" id="statLoginFailed">—</div>
+                <div class="stat-label">Login Failures</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-value" id="statBlocked">—</div>
+                <div class="stat-label">Blocked Users</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-value" id="statVpn">—</div>
+                <div class="stat-label">VPN Detected</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-value" id="statAccessDenied">—</div>
+                <div class="stat-label">Access Denied</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-value" id="statAvgRisk">—</div>
+                <div class="stat-label">Avg Risk Score</div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+            <label>Filter:</label>
+            <select id="filterType" onchange="applyFilter()">
+                <option value="">All Event Types</option>
+                <option>LOGIN_SUCCESS</option>
+                <option>LOGIN_FAILED</option>
+                <option>OTP_SENT</option>
+                <option>OTP_SUCCESS</option>
+                <option>OTP_FAILED</option>
+                <option>ACCESS_DENIED</option>
+                <option>ROLE_CHANGED</option>
+                <option>USER_CREATED</option>
+                <option>USER_DELETED</option>
+                <option>DEVICE_NEW</option>
+                <option>LOCATION_NEW</option>
+                <option>VPN_DETECTED</option>
+                <option>IMPOSSIBLE_TRAVEL</option>
+                <option>RISK_SCORE_CHANGED</option>
+                <option>USER_BLOCKED</option>
+                <option>USER_UNBLOCKED</option>
+                <option>FORCE_LOGOUT</option>
+            </select>
+            <select id="filterSev" onchange="applyFilter()">
+                <option value="">All Severities</option>
+                <option>CRITICAL</option>
+                <option>HIGH</option>
+                <option>MEDIUM</option>
+                <option>LOW</option>
+                <option>INFO</option>
+            </select>
+            <input type="text" id="filterUser" placeholder="Username..." oninput="applyFilter()" style="width: 130px;">
+            <span class="evt-count" id="evtCount">0 events</span>
+        </div>
+
+        <!-- Event stream table -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="table-wrapper">
+                <table class="event-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Severity</th>
+                            <th>Event Type</th>
+                            <th>User</th>
+                            <th>IP Address</th>
+                            <th>Location</th>
+                            <th>Risk</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventBody">
+                        <tr>
+                            <td colspan="8" class="empty-msg">Connecting to live feed...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        var events = [];
+        var paused = false;
+        var MAX = 300;
+
+        // format timestamp nicely
+        function formatTime(ts) {
+            if (!ts) return '—';
+            var d = new Date(ts);
+            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB');
+        }
+
+        // format details object as a short readable string
+        function formatDetails(d) {
+            if (!d || typeof d !== 'object') return '';
+            return Object.entries(d)
+                .map(function(kv) { return kv[0] + ': ' + JSON.stringify(kv[1]); })
+                .join(' | ');
+        }
+
+        // pick a css class for the risk number
+        function riskClass(score) {
+            if (score >= 60) return 'high';
+            if (score >= 30) return 'med';
+            return 'low';
+        }
+
+        // build a single table row from an event object
+        function buildRow(evt, isNew) {
+            var tr = document.createElement('tr');
+            if (isNew) tr.className = 'new';
+
+            var ts    = formatTime(evt.timestamp);
+            var sev   = evt.severity || 'INFO';
+            var type  = evt.event_type || '—';
+            var user  = evt.username || '—';
+            var ip    = evt.ip || '—';
+            var loc   = evt.location || '—';
+            var risk  = evt.risk_score || 0;
+            var det   = formatDetails(evt.details);
+
+            tr.innerHTML =
+                '<td class="ts-cell">'   + ts   + '</td>' +
+                '<td><span class="sev sev-' + sev + '">' + sev + '</span></td>' +
+                '<td><span class="evt-type evt-' + type + '">' + type + '</span></td>' +
+                '<td><strong>' + user + '</strong></td>' +
+                '<td class="ip-cell">'   + ip   + '</td>' +
+                '<td style="color:#636e72;font-size:0.78rem">' + loc + '</td>' +
+                '<td><span class="risk-num ' + riskClass(risk) + '">' + risk + '</span></td>' +
+                '<td class="details-cell" title="' + det + '">' + det + '</td>';
+
+            return tr;
+        }
+
+        // re-render the whole table based on current filter settings
+        function renderTable() {
+            var typeFilter = document.getElementById('filterType').value;
+            var sevFilter  = document.getElementById('filterSev').value;
+            var userFilter = document.getElementById('filterUser').value.toLowerCase();
+
+            var shown = events.filter(function(e) {
+                if (typeFilter && e.event_type !== typeFilter) return false;
+                if (sevFilter  && e.severity   !== sevFilter)  return false;
+                if (userFilter && (e.username || '').toLowerCase().indexOf(userFilter) === -1) return false;
+                return true;
+            });
+
+            var tbody = document.getElementById('eventBody');
+            tbody.innerHTML = '';
+
+            if (shown.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">No events match this filter.</td></tr>';
+            } else {
+                shown.forEach(function(e) {
+                    tbody.appendChild(buildRow(e, false));
+                });
+            }
+
+            document.getElementById('evtCount').textContent = shown.length + ' / ' + events.length + ' events';
+        }
+
+        // add a new event to the top of the list
+        function addEvent(evt) {
+            events.unshift(evt);
+            if (events.length > MAX) events.pop();
+
+            var typeFilter = document.getElementById('filterType').value;
+            var sevFilter  = document.getElementById('filterSev').value;
+            var userFilter = document.getElementById('filterUser').value.toLowerCase();
+
+            var matches =
+                (!typeFilter || evt.event_type === typeFilter) &&
+                (!sevFilter  || evt.severity   === sevFilter)  &&
+                (!userFilter || (evt.username || '').toLowerCase().indexOf(userFilter) !== -1);
+
+            if (matches) {
+                var tbody = document.getElementById('eventBody');
+                // clear the "no events" placeholder if it's there
+                if (tbody.querySelector('.empty-msg')) tbody.innerHTML = '';
+
+                tbody.insertBefore(buildRow(evt, true), tbody.firstChild);
+
+                // trim DOM rows
+                while (tbody.children.length > MAX) {
+                    tbody.removeChild(tbody.lastChild);
+                }
+            }
+
+            document.getElementById('evtCount').textContent = events.length + ' events';
+        }
+
+        function applyFilter() {
+            renderTable();
+        }
+
+        function togglePause() {
+            paused = !paused;
+            var btn = document.getElementById('pauseBtn');
+            btn.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        }
+
+        function clearStream() {
+            events = [];
+            renderTable();
+        }
+
+        // set the live indicator state
+        function setStatus(state) {
+            var badge = document.getElementById('liveBadge');
+            var text  = document.getElementById('liveStatus');
+            var dot   = badge.querySelector('.dot');
+
+            if (state === 'live') {
+                badge.className = 'live-badge';
+                dot.style.animation = 'blink 1.2s infinite';
+                dot.style.background = '#27ae60';
+                text.textContent = 'LIVE';
+            } else if (state === 'connecting') {
+                badge.className = 'live-badge';
+                dot.style.animation = 'none';
+                dot.style.background = '#e67e22';
+                text.textContent = 'Connecting...';
+            } else {
+                badge.className = 'live-badge offline';
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        // open the live event stream using Server-Sent Events
+        function connect() {
+            setStatus('connecting');
+            var es = new EventSource('/api/monitor/stream');
+
+            es.onopen = function() {
+                setStatus('live');
+            };
+
+            es.onmessage = function(msg) {
+                try {
+                    var data = JSON.parse(msg.data);
+                    // ignore control messages
+                    if (data.type === 'connected' || data.type === 'ping') return;
+                    if (!paused) addEvent(data);
+                } catch(e) {}
+            };
+
+            es.onerror = function() {
+                setStatus('disconnected');
+                // EventSource auto-reconnects — no need to do it manually
+            };
+        }
+
+
+        // load the 24h KPI stats
+        async function loadStats() {
+            try {
+                var res  = await fetch('/api/monitor/stats');
+                var data = await res.json();
+                document.getElementById('statTotal').textContent       = data.total        || 0;
+                document.getElementById('statCritical').textContent    = data.critical      || 0;
+                document.getElementById('statHigh').textContent        = data.high          || 0;
+                document.getElementById('statLoginFailed').textContent = data.login_failed  || 0;
+                document.getElementById('statBlocked').textContent     = data.blocked       || 0;
+                document.getElementById('statVpn').textContent         = data.vpn_detected  || 0;
+                document.getElementById('statAccessDenied').textContent= data.access_denied || 0;
+                document.getElementById('statAvgRisk').textContent     = data.avg_risk      || 0;
+            } catch(e) {}
+        }
+
+        // start everything
+        async function init() {
+            var session = await (await fetch('/api/session')).json();
+            if (!session.loggedIn) return location.href = '/login';
+
+            buildNavbar(session.user.role, 'live-monitoring', session.user.username);
+
+            await loadStats();
+
+            // load recent history first
+            try {
+                var res    = await fetch('/api/monitor/events?limit=200');
+                var recent = await res.json();
+                events = recent;
+                renderTable();
+            } catch(e) {}
+
+            // then open live feed
+            connect();
+
+            // refresh stats every minute
+            setInterval(loadStats, 60000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

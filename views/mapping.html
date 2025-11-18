@@ -10,86 +10,66 @@
 
 <body>
     <nav class="navbar">
-        <div class="navbar-brand"><span>ZTS</span> Zero Trust Security</div>
-        <div class="navbar-info">
-            <span id="userInfo"></span>
-            <span class="role-badge" id="roleBadge"></span>
-            <button class="btn-logout" onclick="location.href='/logout'">Logout</button>
-        </div>
+        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+        <div class="nav-menu" id="mainNav"></div>
+        <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="page-layout">
-            <div class="sidebar">
-                <nav class="sidebar-nav">
-                    <a href="/dashboard">Dashboard</a>
-                    <a href="/risk">Risk Score</a>
-                    <a href="/profile">Profile</a>
-                    <div class="menu-group">
-                        <div class="menu-label">Mapping</div>
-                        <a href="/mapping" class="active">User Management</a>
-                        <a href="/register-device">Register Device</a>
-                    </div>
-                    <div class="menu-group">
-                        <div class="menu-label">Security</div>
-                        <a href="/network">Network</a>
-                    </div>
-                </nav>
+        <!-- User Management -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Users</h3>
+                <button class="btn btn-primary btn-sm" onclick="showCreateUser()">Create User</button>
             </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Failed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <div class="main-content">
-                <!-- User Management -->
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h3 style="margin:0;">Users</h3>
-                        <button class="btn btn-primary btn-sm" onclick="showCreateUser()">Create User</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Username</th>
-                                    <th>Role</th>
-                                    <th>Department</th>
-                                    <th>Status</th>
-                                    <th>Failed</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTable">
-                                <tr>
-                                    <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Department Management -->
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h3 style="margin:0;">Departments</h3>
-                        <button class="btn btn-primary btn-sm" onclick="showCreateDept()">Create Department</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Created</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="deptsTable">
-                                <tr>
-                                    <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- Department Management -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Departments</h3>
+                <button class="btn btn-primary btn-sm" onclick="showCreateDept()">Create Department</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Created By</th>
+                            <th>Department Head</th>
+                            <th>Total Users</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deptsTable">
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -140,10 +120,35 @@
                 <label>Department Name</label>
                 <input type="text" id="newDeptName">
             </div>
+            <div class="form-group">
+                <label>Department Head (optional)</label>
+                <select id="newDeptHead">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
             <p id="createDeptError" class="error-msg" style="display:none;"></p>
             <div style="display:flex; gap:8px; margin-top:16px;">
                 <button class="btn btn-primary" onclick="createDept()">Create</button>
                 <button class="btn btn-outline" onclick="hideModal('createDeptModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Department Head Modal -->
+    <div id="setHeadModal" class="modal-overlay" style="display:none;">
+        <div class="modal">
+            <h3>Set Department Head</h3>
+            <p id="setHeadDeptName" style="margin-bottom:12px;"></p>
+            <input type="hidden" id="setHeadDeptId">
+            <div class="form-group">
+                <label>Select Head</label>
+                <select id="setHeadSelect">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button class="btn btn-primary" onclick="setDeptHead()">Update</button>
+                <button class="btn btn-outline" onclick="hideModal('setHeadModal')">Cancel</button>
             </div>
         </div>
     </div>
@@ -235,8 +240,7 @@
         async function init() {
             var s = await (await fetch('/api/session')).json();
             if (!s.loggedIn) return location.href = '/login';
-            document.getElementById('userInfo').textContent = s.user.username;
-            document.getElementById('roleBadge').textContent = s.user.role;
+            buildNavbar(s.user.role, 'mapping', s.user.username);
             loadUsers();
             loadDepartments();
         }
@@ -289,18 +293,27 @@
                 select.appendChild(opt);
 
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + d.id + '</td><td>' + d.name + '</td><td>' + formatDate(d.created_at) + '</td>' +
-                    '<td><button class="btn btn-sm btn-danger" onclick="deleteDept(' + d.id + ',\'' + d.name + '\')">Delete</button></td>';
+                tr.innerHTML =
+                    '<td>' + d.id + '</td>' +
+                    '<td>' + d.name + '</td>' +
+                    '<td>' + (d.created_by_name || '-') + '</td>' +
+                    '<td>' + (d.head_name || '-') + '</td>' +
+                    '<td><span class="role-badge" style="font-size:0.7rem;">' + (d.total_users || 0) + '</span></td>' +
+                    '<td>' + formatDate(d.created_at) + '</td>' +
+                    '<td>' +
+                        '<button class="btn btn-sm btn-primary" onclick="showSetHead(' + d.id + ',\'' + d.name + '\')" style="margin-right:4px;">Set Head</button>' +
+                        '<button class="btn btn-sm btn-danger" onclick="deleteDept(' + d.id + ',\'' + d.name + '\')">Delete</button>' +
+                    '</td>';
                 tb.appendChild(tr);
             });
 
             if (!allDepartments.length) {
-                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#aaa;">No departments</td></tr>';
+                tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#aaa;">No departments</td></tr>';
             }
         }
 
         function showCreateUser() { document.getElementById('createUserModal').style.display = 'flex'; }
-        function showCreateDept() { document.getElementById('createDeptModal').style.display = 'flex'; }
+        function showCreateDept() { showCreateDeptPopulated(); }
         function hideModal(id) { document.getElementById(id).style.display = 'none'; }
 
         function showChangeRole(userId, username, currentRole) {
@@ -370,9 +383,13 @@
             var errEl = document.getElementById('createDeptError');
             errEl.style.display = 'none';
 
-            var result = await postJSON('/api/mapping/departments/create', {
+            var payload = {
                 name: document.getElementById('newDeptName').value
-            });
+            };
+            var headVal = document.getElementById('newDeptHead').value;
+            if (headVal) payload.head_user_id = parseInt(headVal);
+
+            var result = await postJSON('/api/mapping/departments/create', payload);
 
             if (result.success) {
                 hideModal('createDeptModal');
@@ -388,6 +405,57 @@
             var result = await postJSON('/api/mapping/departments/delete', { departmentId: id });
             alert(result.message);
             loadDepartments();
+        }
+
+        async function showSetHead(deptId, deptName) {
+            document.getElementById('setHeadDeptId').value = deptId;
+            document.getElementById('setHeadDeptName').textContent = 'Department: ' + deptName;
+
+            // populate dropdown with all users
+            var users = await (await fetch('/api/mapping/users')).json();
+            var sel = document.getElementById('setHeadSelect');
+            sel.innerHTML = '<option value="">-- None --</option>';
+            users.forEach(function (u) {
+                var opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.username + ' (' + u.role + ')';
+                sel.appendChild(opt);
+            });
+
+            // pre-select current head if set
+            var dept = allDepartments.find(function (d) { return d.id === deptId; });
+            if (dept && dept.head_user_id) sel.value = dept.head_user_id;
+
+            document.getElementById('setHeadModal').style.display = 'flex';
+        }
+
+        async function setDeptHead() {
+            var deptId = parseInt(document.getElementById('setHeadDeptId').value);
+            var headUserId = document.getElementById('setHeadSelect').value;
+
+            var result = await postJSON('/api/mapping/departments/update-head', {
+                departmentId: deptId,
+                head_user_id: headUserId || null
+            });
+
+            alert(result.message);
+            hideModal('setHeadModal');
+            loadDepartments();
+        }
+
+        function showCreateDeptPopulated() {
+            // populate head dropdown when opening create modal
+            fetch('/api/mapping/users').then(function(r) { return r.json(); }).then(function(users) {
+                var sel = document.getElementById('newDeptHead');
+                sel.innerHTML = '<option value="">-- None --</option>';
+                users.forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.username + ' (' + u.role + ')';
+                    sel.appendChild(opt);
+                });
+            });
+            document.getElementById('createDeptModal').style.display = 'flex';
         }
 
         function showResetPassword(userId, username) {

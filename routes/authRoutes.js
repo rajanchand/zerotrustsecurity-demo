@@ -10,6 +10,7 @@ var { calculateRisk } = require('../services/riskEngine');
 var { registerDevice, findDevice } = require('../services/deviceService');
 var { getCountryFromIP, getGeoFromIP, isVPNConnection } = require('../services/geoService');
 var { logEvent } = require('../services/auditService');
+var { logSecurityEvent } = require('../services/monitorService');
 
 var router = express.Router();
 
@@ -38,6 +39,8 @@ router.post('/login', async function (req, res) {
             .single();
 
         if (!user) {
+            // unknown user — log generic failed attempt
+            logSecurityEvent({ event_type: 'LOGIN_FAILED', username: username, ip: ip || req.ip, details: { reason: 'User not found' } }).catch(function () { });
             return res.json({ success: false, message: 'Invalid username or password.' });
         }
 
@@ -68,6 +71,14 @@ router.post('/login', async function (req, res) {
             }).eq('id', user.id);
 
             await logEvent(user.id, 'LOGIN_FAILED', 'Wrong password (attempt ' + newAttempts + ')', req.ip);
+            await logSecurityEvent({
+                event_type: 'LOGIN_FAILED',
+                user_id: user.id,
+                username: user.username,
+                ip: req.ip,
+                risk_score: newAttempts * 10,
+                details: { reason: 'Wrong password', attempt: newAttempts, role: user.role }
+            });
             return res.json({ success: false, message: 'Invalid username or password.' });
         }
 
@@ -102,6 +113,15 @@ router.post('/login', async function (req, res) {
         if (deviceResult.isNew && needsApproval) {
             // new device for regular user, needs admin approval
             await logEvent(user.id, 'DEVICE_NEW', 'New device registered, pending approval', ip);
+            await logSecurityEvent({
+                event_type: 'DEVICE_NEW',
+                user_id: user.id,
+                username: user.username,
+                ip: ip,
+                location: country,
+                device_id: deviceResult.device ? deviceResult.device.id : null,
+                details: { browser: req.headers['user-agent'], needs_approval: true, role: user.role }
+            });
             return res.json({
                 success: false,
                 message: 'New device detected. Your device must be approved by an administrator before you can login.',
@@ -114,6 +134,15 @@ router.post('/login', async function (req, res) {
             var { approveDevice } = require('../services/deviceService');
             await approveDevice(deviceResult.device.id, user.id);
             await logEvent(user.id, 'DEVICE_AUTO_APPROVED', 'Device auto-approved for ' + user.role, ip);
+            await logSecurityEvent({
+                event_type: 'DEVICE_NEW',
+                user_id: user.id,
+                username: user.username,
+                ip: ip,
+                location: country,
+                device_id: deviceResult.device ? deviceResult.device.id : null,
+                details: { browser: req.headers['user-agent'], auto_approved: true, role: user.role }
+            });
         }
 
         if (!deviceResult.device.approved && needsApproval) {
@@ -135,6 +164,19 @@ router.post('/login', async function (req, res) {
             isAdminUnknownIP: false,
             role: user.role
         });
+
+        // emit VPN detection event
+        if (vpn) {
+            await logSecurityEvent({
+                event_type: 'VPN_DETECTED',
+                user_id: user.id,
+                username: user.username,
+                ip: ip,
+                location: country,
+                risk_score: risk.score,
+                details: { role: user.role, risk_level: risk.level }
+            });
+        }
 
         // reset failed attempts
         await supabase.from('users').update({ failed_attempts: 0 }).eq('id', user.id);
@@ -169,6 +211,15 @@ router.post('/login', async function (req, res) {
         });
 
         await logEvent(user.id, 'LOGIN_PASSWORD_OK', 'Password verified, OTP sent. Risk: ' + risk.level + ' (' + risk.score + ')', ip);
+        await logSecurityEvent({
+            event_type: 'OTP_SENT',
+            user_id: user.id,
+            username: user.username,
+            ip: ip,
+            location: country,
+            risk_score: risk.score,
+            details: { risk_level: risk.level, risk_factors: risk.factors, role: user.role }
+        });
 
         return res.json({
             success: true,
@@ -203,6 +254,14 @@ router.post('/verify-otp', async function (req, res) {
 
         if (!result.valid) {
             await logEvent(userId, 'OTP_FAILED', result.reason, req.ip);
+            await logSecurityEvent({
+                event_type: 'OTP_FAILED',
+                user_id: userId,
+                username: req.session.username || 'unknown',
+                ip: req.ip,
+                risk_score: req.session.riskScore || 0,
+                details: { reason: result.reason }
+            });
             return res.json({ success: false, message: result.reason });
         }
 
@@ -211,6 +270,23 @@ router.post('/verify-otp', async function (req, res) {
         req.session.lastActive = Date.now();
 
         await logEvent(userId, 'LOGIN_SUCCESS', 'Logged in. Risk: ' + req.session.riskLevel + ' (' + req.session.riskScore + ')', req.ip);
+        await logSecurityEvent({
+            event_type: 'LOGIN_SUCCESS',
+            user_id: userId,
+            username: req.session.username || 'unknown',
+            ip: req.session.loginIP || req.ip,
+            location: req.session.loginCountry || '',
+            risk_score: req.session.riskScore || 0,
+            details: { risk_level: req.session.riskLevel, role: req.session.role, department: req.session.department }
+        });
+        await logSecurityEvent({
+            event_type: 'OTP_SUCCESS',
+            user_id: userId,
+            username: req.session.username || 'unknown',
+            ip: req.ip,
+            risk_score: req.session.riskScore || 0,
+            details: { role: req.session.role }
+        });
 
         return res.json({ success: true, redirect: '/dashboard' });
 

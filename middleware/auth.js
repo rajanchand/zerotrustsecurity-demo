@@ -1,6 +1,8 @@
 // middleware/auth.js
 // checks if the user is logged in and session is valid
 
+var { logSecurityEvent } = require('../services/monitorService');
+
 function requireLogin(req, res, next) {
     // allow login and static routes
     if (req.path === '/login' || req.path === '/logout' || req.path.startsWith('/css') || req.path.startsWith('/js')) {
@@ -17,7 +19,16 @@ function requireLogin(req, res, next) {
     var timeout = 15 * 60 * 1000;
 
     if (now - lastActive > timeout) {
+        var uid  = req.session.userId;
+        var uname = req.session.username || 'unknown';
         req.session.destroy(function () {
+            logSecurityEvent({
+                event_type: 'FORCE_LOGOUT',
+                user_id: uid,
+                username: uname,
+                ip: req.ip,
+                details: { reason: 'Session timeout (15 min inactivity)', path: req.path }
+            }).catch(function(){});
             res.redirect('/login?msg=session_expired');
         });
         return;
@@ -35,3 +46,4 @@ function requireLogin(req, res, next) {
 }
 
 module.exports = { requireLogin };
+
