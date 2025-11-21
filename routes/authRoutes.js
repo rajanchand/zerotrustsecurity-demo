@@ -265,7 +265,7 @@ router.post('/verify-otp', async function (req, res) {
             return res.json({ success: false, message: result.reason });
         }
 
-        // OTP verified, fully logged in
+        // OTP verified — mark session as fully authenticated
         req.session.otpVerified = true;
         req.session.lastActive = Date.now();
 
@@ -288,7 +288,12 @@ router.post('/verify-otp', async function (req, res) {
             details: { role: req.session.role }
         });
 
-        return res.json({ success: true, redirect: '/dashboard' });
+        // save session to store BEFORE responding so the cookie is valid
+        // when the browser immediately navigates to /dashboard
+        req.session.save(function (err) {
+            if (err) console.error('Session save error:', err);
+            return res.json({ success: true, redirect: '/dashboard' });
+        });
 
     } catch (err) {
         console.error('OTP error:', err);

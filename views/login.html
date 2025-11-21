@@ -2,65 +2,72 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ZTS</title>
-  <link rel="stylesheet" href="/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
-  <!-- Only show login form, remove navigation/sidebar for clean login page -->
-  <nav class="top-menu-bar">
-    <a href="/dashboard" class="top-menu-link">Dashboard</a>
-    <a href="/mapping" class="top-menu-link">Mapping</a>
-    <a href="/mapping" class="top-menu-link">User Mapping</a>
-    <a href="/user-management" class="top-menu-link">User Management</a>
-    <a href="/register-device" class="top-menu-link">Register Device</a>
-    <div class="dropdown">
-      <button class="top-menu-link dropdown-toggle">Security</button>
-      <div class="dropdown-content">
-        <a href="/network">Network</a>
-      </div>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1>ZTS</h1>
+            <h2>Zero Trust Security</h2>
+
+            <form id="loginForm">
+                <input type="hidden" id="fingerprint" name="fingerprint">
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. user.name " required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+
+            <p id="errorMsg" class="error-msg" style="display:none;"></p>
+        </div>
     </div>
-    <div class="dropdown">
-      <button class="top-menu-link dropdown-toggle">Profile</button>
-      <div class="dropdown-content">
-        <a href="/profile">User Profile</a>
-      </div>
-    </div>
-  </nav>
-  <div class="auth-container">
-  <!-- Only show login form, remove navigation/sidebar for clean login page -->
-    document.getElementById('loginForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      var errorEl = document.getElementById('errorMsg');
-      errorEl.style.display = 'none';
 
-      var data = {
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value,
-        fingerprint: document.getElementById('fingerprint').value
-      };
+    <script src="/js/app.js"></script>
+    <script>
+        // set device fingerprint
+        document.getElementById('fingerprint').value = getFingerprint();
 
-      try {
-        var result = await postJSON('/login', data);
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-        if (result.success) {
-          // save OTP code for the OTP page to display
-          sessionStorage.setItem('otpCode', result.otpCode);
-          sessionStorage.setItem('riskScore', result.risk.score);
-          sessionStorage.setItem('riskLevel', result.risk.level);
-          window.location.href = result.redirect;
-        } else {
-          errorEl.textContent = result.message;
-          errorEl.style.display = 'block';
-        }
-      } catch (err) {
-        errorEl.textContent = 'Connection error. Please try again.';
-        errorEl.style.display = 'block';
-      }
-    });
-  </script>
+            var errorEl = document.getElementById('errorMsg');
+            errorEl.style.display = 'none';
+
+            var data = {
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value,
+                fingerprint: document.getElementById('fingerprint').value
+            };
+
+            try {
+                var result = await postJSON('/login', data);
+
+                if (result.success) {
+                    sessionStorage.setItem('riskScore', result.risk.score);
+                    sessionStorage.setItem('riskLevel', result.risk.level);
+                    window.location.href = result.redirect;
+                } else {
+                    errorEl.textContent = result.message;
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 
 </html>

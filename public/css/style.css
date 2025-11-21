@@ -852,3 +852,158 @@ td .btn {
     letter-spacing: 4px;
   }
 }
+
+/* ======================== */
+/* STATS GRID               */
+/* ======================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 14px !important;
+  margin-bottom: 0 !important;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: #636e72;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ======================== */
+/* PROFILE PAGE             */
+/* ======================== */
+.profile-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.profile-fields-grid .full-width {
+  grid-column: span 2;
+}
+
+/* disabled input look */
+input:disabled {
+  background: #f4f5f7;
+  cursor: not-allowed;
+  color: #636e72;
+}
+
+/* card header row */
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-header-row h3 {
+  margin: 0;
+}
+
+/* form action row */
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* inline status message after save */
+.form-status-msg {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* small meta info at bottom of card */
+.meta-text {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 12px;
+}
+
+/* ======================== */
+/* TOAST NOTIFICATION       */
+/* ======================== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+  max-width: 320px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.toast-success { background: #27ae60; }
+.toast.toast-error   { background: #e74c3c; }
+.toast.toast-info    { background: #0984e3; }
+
+/* ======================== */
+/* RESPONSIVE ADDITIONS     */
+/* ======================== */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .profile-fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-fields-grid .full-width {
+    grid-column: span 1;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .card-header-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+}

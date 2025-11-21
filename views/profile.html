@@ -17,44 +17,43 @@
     </nav>
 
     <div class="container">
-        <!-- Profile Details -->
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h3 style="margin:0;">My Profile</h3>
+            <div class="card-header-row">
+                <h3>My Profile</h3>
                 <span class="role-badge" id="profileRole"></span>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="profile-fields-grid">
                 <div class="form-group">
                     <label>Username</label>
-                    <input type="text" id="profileUsername" disabled style="background:#f4f5f7; cursor:not-allowed;">
+                    <input type="text" id="profileUsername" disabled>
                 </div>
                 <div class="form-group">
                     <label>Department</label>
-                    <input type="text" id="profileDepartment" disabled style="background:#f4f5f7; cursor:not-allowed;">
+                    <input type="text" id="profileDepartment" disabled>
                 </div>
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" id="profileName" placeholder="Enter your full name">
+                    <input type="text" id="profileName" placeholder="Your full name">
                 </div>
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="text" id="profilePhone" placeholder="Enter phone number">
+                    <input type="text" id="profilePhone" placeholder="Your phone number">
                 </div>
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group full-width">
                     <label>Email</label>
-                    <input type="email" id="profileEmail" placeholder="Enter email address">
+                    <input type="email" id="profileEmail" placeholder="Your email address">
                 </div>
             </div>
 
-            <div style="display:flex; gap:8px; margin-top:12px;">
+            <div class="form-actions">
                 <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
-                <span id="profileMsg" style="font-size:0.82rem; line-height:30px;"></span>
+                <span id="profileMsg" class="form-status-msg"></span>
             </div>
 
-            <div style="font-size:0.75rem; color:#aaa; margin-top:12px;">
-                Status: <span id="profileStatus"></span> | Member since: <span id="profileCreated"></span>
-            </div>
+            <p class="meta-text">
+                Status: <span id="profileStatus"></span> &nbsp;|&nbsp; Member since: <span id="profileCreated"></span>
+            </p>
         </div>
 
         <!-- Change Password -->

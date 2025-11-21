@@ -6,6 +6,260 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* SuperAdmin dashboard  */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .kpi-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-left: 4px solid transparent;
+        }
+
+        .kpi-card.blue {
+            border-left-color: #0984e3;
+        }
+
+        .kpi-card.green {
+            border-left-color: #27ae60;
+        }
+
+        .kpi-card.red {
+            border-left-color: #e74c3c;
+        }
+
+        .kpi-card.orange {
+            border-left-color: #e67e22;
+        }
+
+        .kpi-card.purple {
+            border-left-color: #8e44ad;
+        }
+
+        .kpi-card.teal {
+            border-left-color: #16a085;
+        }
+
+        .kpi-icon {
+            font-size: 1.5rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 0.72rem;
+            color: #636e72;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 2px;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #2d3436;
+            line-height: 1;
+        }
+
+        .kpi-sub {
+            font-size: 0.72rem;
+            color: #aaa;
+            margin-top: 2px;
+        }
+
+        /* two-column layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 12px;
+            align-items: start;
+        }
+
+        /* event badge */
+        .event-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.82rem;
+        }
+
+        .event-row:last-child {
+            border-bottom: none;
+        }
+
+        .event-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .event-dot.green {
+            background: #27ae60;
+        }
+
+        .event-dot.red {
+            background: #e74c3c;
+        }
+
+        .event-dot.orange {
+            background: #e67e22;
+        }
+
+        .event-dot.blue {
+            background: #0984e3;
+        }
+
+        .event-dot.grey {
+            background: #b2bec3;
+        }
+
+        .event-action {
+            font-weight: 600;
+            min-width: 140px;
+        }
+
+        .event-detail {
+            color: #636e72;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-time {
+            color: #aaa;
+            font-size: 0.72rem;
+            white-space: nowrap;
+        }
+
+        /* role breakdown */
+        .role-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.83rem;
+        }
+
+        .role-row:last-child {
+            border-bottom: none;
+        }
+
+        .role-bar-wrap {
+            flex: 1;
+            margin: 0 12px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .role-bar {
+            height: 100%;
+            border-radius: 4px;
+            background: #0984e3;
+        }
+
+        .role-count {
+            font-weight: 600;
+            min-width: 20px;
+            text-align: right;
+            color: #2d3436;
+        }
+
+        /* quick actions */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #2d3436;
+            font-size: 0.82rem;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .action-btn:hover {
+            background: #edf5ff;
+            border-color: #0984e3;
+            color: #0984e3;
+        }
+
+        .action-btn .action-icon {
+            font-size: 1rem;
+        }
+
+        /* alert banner */
+        .alert-banner {
+            background: #fff8e7;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.84rem;
+            color: #856404;
+        }
+
+        .alert-banner.hidden {
+            display: none;
+        }
+
+        .alert-banner strong {
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .kpi-value {
+                font-size: 1.3rem;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -17,104 +271,226 @@
     </nav>
 
     <div class="container">
-        <div class="card" style="padding:16px 20px;">
-            <h2 id="dashTitle" style="font-size:1rem; margin-bottom:2px;"></h2>
-            <p id="dashDescription" style="font-size:0.82rem; color:#636e72; margin:0;"></p>
-        </div>
 
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px;">
-            <div class="card" style="text-align:center; padding:14px;">
-                <div id="statRisk" style="font-size:1.4rem; font-weight:700;"></div>
-                <div style="font-size:0.72rem; color:#636e72;">Risk</div>
-            </div>
-            <div class="card" style="text-align:center; padding:14px;">
-                <div id="statSessions" style="font-size:1.4rem; font-weight:700;"></div>
-                <div style="font-size:0.72rem; color:#636e72;">Sessions</div>
-            </div>
-            <div class="card" style="text-align:center; padding:14px;">
-                <div id="statCountry" style="font-size:1.4rem; font-weight:700;"></div>
-                <div style="font-size:0.72rem; color:#636e72;">Country</div>
-            </div>
-            <div class="card" style="text-align:center; padding:14px;">
-                <div id="statDevice" style="font-size:1.4rem; font-weight:700;"></div>
-                <div style="font-size:0.72rem; color:#636e72;">Device</div>
+        <!-- Welcome Banner -->
+        <div class="card" style="padding: 14px 18px; margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h2 id="greetingText" style="font-size:1rem; margin-bottom:2px;"></h2>
+                    <p style="font-size:0.82rem; color:#636e72; margin:0;">
+                        Zero Trust Security · NIST SP 800-207 · <span id="currentTime"></span>
+                    </p>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.75rem; color:#636e72;">Your Risk Score</div>
+                    <div id="myRiskBadge" style="font-size:1.1rem; font-weight:700;"></div>
+                </div>
             </div>
         </div>
 
+        <div id="alertBanner" class="alert-banner hidden">
+            <strong>Attention:</strong> <span id="alertText"></span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid" id="kpiGrid">
+            <!-- filled by JS -->
+        </div>
+
+        <!-- Main Content Grid: Quick Actions + Sidebar -->
+        <div class="dashboard-grid">
+
+            <!-- LEFT: Quick Actions only -->
+            <div>
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <div class="actions-grid">
+                        <a href="/mapping" class="action-btn">User Management</a>
+                        <a href="/admin/live-monitoring" class="action-btn">Live Monitor</a>
+                        <a href="/register-device" class="action-btn">Device Registry</a>
+                        <a href="/network" class="action-btn">IP Rules</a>
+                        <a href="/risk" class="action-btn">Risk Score</a>
+                        <a href="/profile" class="action-btn">My Profile</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Sidebar -->
+            <div>
+                <!-- Role Breakdown -->
+                <div class="card">
+                    <h3>Users by Role</h3>
+                    <div id="roleBreakdown">
+                        <p style="color:#aaa; font-size:0.82rem;">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Session Info -->
+                <div class="card">
+                    <h3>Your Session</h3>
+                    <div id="sessionInfo" style="font-size:0.83rem; line-height:1.9;">
+                        <p style="color:#aaa;">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Section: Recent Events (full width) -->
         <div class="card">
-            <h3>Department Tools</h3>
-            <div class="card-grid" id="featureCards"></div>
-        </div>
-
-        <div class="card">
-            <h3>Recent Activity</h3>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Action</th>
-                            <th>Detail</th>
-                            <th>IP</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activityTable">
-                        <tr>
-                            <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="card-header-row">
+                <h3>Security &mdash; Recent Events</h3>
+                <a href="/admin/live-monitoring" style="font-size:0.78rem; color:#0984e3; text-decoration:none;">View
+                    Live Monitor &rarr;</a>
+            </div>
+            <div id="eventsLog">
+                <p style="color:#aaa; font-size:0.82rem;">Loading...</p>
             </div>
         </div>
-    </div>
+
+    </div><!-- end container -->
 
     <script src="/js/app.js"></script>
     <script>
 
+        // update current time every second
+        function updateClock() {
+            var now = new Date();
+            document.getElementById('currentTime').textContent =
+                now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) +
+                ' · ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // returns a greeting based on time of day
+        function getGreeting() {
+            var h = new Date().getHours();
+            if (h < 12) return 'Good morning';
+            if (h < 17) return 'Good afternoon';
+            return 'Good evening';
+        }
+
+        // get colour for event dot based on action name
+        function eventDotClass(action) {
+            if (!action) return 'grey';
+            action = action.toUpperCase();
+            if (action.includes('FAIL') || action.includes('BLOCK') || action.includes('DENY')) return 'red';
+            if (action.includes('SUCCESS') || action.includes('ACTIVE')) return 'green';
+            if (action.includes('OTP') || action.includes('DEVICE')) return 'orange';
+            return 'blue';
+        }
+
+        // build the KPI cards
+        function buildKPIs(d) {
+            var grid = document.getElementById('kpiGrid');
+            var kpis = [
+                { label: 'Total Users', value: d.users.total, colour: 'blue', sub: d.users.active + ' active' },
+                { label: 'Blocked Users', value: d.users.blocked, colour: 'red', sub: 'requires review' },
+                { label: 'Pending Devices', value: d.devices.pendingApproval, colour: 'orange', sub: 'awaiting approval' },
+                { label: 'Events (24h)', value: d.activity.events24h, colour: 'teal', sub: 'all event types' },
+                { label: 'Login Failures', value: d.activity.loginFails24h, colour: d.activity.loginFails24h > 3 ? 'red' : 'green', sub: 'last 24 hours' },
+                { label: 'Total Sessions', value: d.activity.totalSessions, colour: 'purple', sub: 'all time' }
+            ];
+
+            grid.innerHTML = kpis.map(function (k) {
+                return '<div class="kpi-card ' + k.colour + '">' +
+                    '<div>' +
+                    '<div class="kpi-label">' + k.label + '</div>' +
+                    '<div class="kpi-value">' + k.value + '</div>' +
+                    '<div class="kpi-sub">' + k.sub + '</div>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // build recent event rows
+        function buildEvents(events) {
+            var container = document.getElementById('eventsLog');
+            if (!events || !events.length) {
+                container.innerHTML = '<p style="color:#aaa; font-size:0.82rem;">No recent events.</p>';
+                return;
+            }
+            container.innerHTML = events.map(function (e) {
+                return '<div class="event-row">' +
+                    '<div class="event-dot ' + eventDotClass(e.action) + '"></div>' +
+                    '<div class="event-action">' + (e.action || '-') + '</div>' +
+                    '<div class="event-detail">' + (e.detail || '-') + '</div>' +
+                    '<div class="event-time">' + formatDate(e.created_at) + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // build role breakdown bar chart
+        function buildRoleBreakdown(roleMap, total) {
+            var container = document.getElementById('roleBreakdown');
+            var roles = Object.keys(roleMap);
+            if (!roles.length) {
+                container.innerHTML = '<p style="color:#aaa; font-size:0.82rem;">No data.</p>';
+                return;
+            }
+            container.innerHTML = roles.map(function (role) {
+                var count = roleMap[role];
+                var pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return '<div class="role-row">' +
+                    '<span style="min-width:110px; font-size:0.8rem;">' + role + '</span>' +
+                    '<div class="role-bar-wrap"><div class="role-bar" style="width:' + pct + '%"></div></div>' +
+                    '<span class="role-count">' + count + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // main load function
         async function loadDashboard() {
             try {
+                // load personal session data
                 var res = await fetch('/api/dashboard-data');
                 var d = await res.json();
 
                 buildNavbar(d.user.role, 'dashboard', d.user.username);
 
-                document.getElementById('dashTitle').textContent = d.dashboard.title;
-                document.getElementById('dashDescription').textContent = d.dashboard.description;
+                // greeting
+                document.getElementById('greetingText').textContent =
+                    getGreeting() + ', ' + d.user.username + ' · SuperAdmin';
 
-                var sr = document.getElementById('statRisk');
-                sr.textContent = d.security.riskScore;
-                sr.className = d.security.riskLevel === 'Low' ? 'score-low' : d.security.riskLevel === 'Medium' ? 'score-medium' : 'score-high';
-                document.getElementById('statSessions').textContent = d.security.sessionCount;
-                document.getElementById('statCountry').textContent = (d.security.loginContext && d.security.loginContext.country) || '-';
-                document.getElementById('statDevice').textContent = d.security.loginContext && d.security.loginContext.isNewDevice ? 'New' : 'Known';
+                // personal risk badge
+                var risk = d.security;
+                var riskEl = document.getElementById('myRiskBadge');
+                riskEl.textContent = risk.riskScore + ' / 100 · ' + risk.riskLevel;
+                riskEl.className = risk.riskLevel === 'Low' ? 'score-low' : risk.riskLevel === 'Medium' ? 'score-medium' : 'score-high';
 
-                var fc = document.getElementById('featureCards');
-                fc.innerHTML = '';
-                (d.dashboard.cards || []).forEach(function (c) {
-                    var el = document.createElement('div');
-                    el.className = 'feature-card';
-                    el.onclick = function () { if (c.link && c.link !== '#') location.href = c.link; };
-                    el.innerHTML =
-                        '<div class="card-icon">' + c.icon + '</div>' +
-                        '<strong>' + c.title + '</strong>' +
-                        '<p>' + c.description + '</p>';
-                    fc.appendChild(el);
-                });
+                // session info sidebar
+                document.getElementById('sessionInfo').innerHTML =
+                    '<div><strong>Role:</strong> ' + d.user.role + '</div>' +
+                    '<div><strong>Department:</strong> ' + (d.user.department || '-') + '</div>' +
+                    '<div><strong>Login Country:</strong> ' + (d.security.loginContext.country || '-') + '</div>' +
+                    '<div><strong>Device:</strong> ' + (d.security.loginContext.isNewDevice ? 'New (unrecognised)' : 'Known') + '</div>' +
+                    '<div><strong>Sessions:</strong> ' + d.security.sessionCount + '</div>';
 
-                var ares = await fetch('/api/activity');
-                var logs = await ares.json();
-                var tb = document.getElementById('activityTable');
-                if (!logs.length) {
-                    tb.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#aaa;">No activity</td></tr>';
-                    return;
+                // load admin stats (SuperAdmin only)
+                if (d.user.role === 'SuperAdmin') {
+                    var statsRes = await fetch('/api/admin-stats');
+                    var stats = await statsRes.json();
+
+                    buildKPIs(stats);
+                    buildEvents(stats.recentEvents);
+                    buildRoleBreakdown(stats.roleBreakdown, stats.users.total);
+
+                    // show alert if there are pending devices or many login failures
+                    var alerts = [];
+                    if (stats.devices.pendingApproval > 0) {
+                        alerts.push(stats.devices.pendingApproval + ' device(s) are waiting for approval.');
+                    }
+                    if (stats.activity.loginFails24h > 5) {
+                        alerts.push(stats.activity.loginFails24h + ' login failures in the last 24 hours — possible brute force.');
+                    }
+                    if (alerts.length) {
+                        document.getElementById('alertText').textContent = alerts.join(' ');
+                        document.getElementById('alertBanner').classList.remove('hidden');
+                    }
                 }
-                tb.innerHTML = '';
-                logs.slice(0, 8).forEach(function (l) {
-                    var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>' + l.action + '</td><td>' + (l.detail || '-') + '</td><td>' + (l.ip || '-') + '</td><td>' + formatDate(l.created_at) + '</td>';
-                    tb.appendChild(tr);
-                });
+
             } catch (e) {
+                console.error('Dashboard load error:', e);
                 location.href = '/login';
             }
         }

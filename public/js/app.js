@@ -1,6 +1,30 @@
 // app.js
 // client-side javascript for ZTS
 
+// show a toast notification (success, error, or info)
+// replaces the old browser alert() dialogs
+function showToast(message, type) {
+    type = type || 'info';
+
+    // remove any existing toast
+    var old = document.querySelector('.toast');
+    if (old) old.remove();
+
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // trigger animation
+    setTimeout(function () { toast.classList.add('show'); }, 10);
+
+    // auto-hide after 3.5 seconds
+    setTimeout(function () {
+        toast.classList.remove('show');
+        setTimeout(function () { toast.remove(); }, 300);
+    }, 3500);
+}
+
 // generate a simple device fingerprint
 function getFingerprint() {
     var parts = [];

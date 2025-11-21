@@ -1,24 +1,82 @@
 // seed.js
-// create default users for the ZTS
-// run once: node seed.js
+// Creates realistic demo users for ZTS
+// Run: node seed.js
 
 var bcrypt = require('bcryptjs');
 var { supabase } = require('./db');
 
-var defaultUsers = [
-    { username: 'superadmin', password: 'Super@123', role: 'SuperAdmin', email: 'admin@zts.demo', department: 'General' },
-    { username: 'hruser', password: 'Hr@12345', role: 'HR', email: 'hr@zts.demo', department: 'Human Resources' },
-    { username: 'finuser', password: 'Fin@12345', role: 'Finance', email: 'finance@zts.demo', department: 'Finance' },
-    { username: 'ituser', password: 'It@12345', role: 'IT', email: 'it@zts.demo', department: 'Information Technology' },
-    { username: 'csuser', password: 'Cs@12345', role: 'CustomerSupport', email: 'support@zts.demo', department: 'Customer Support' },
-    { username: 'testuser', password: 'Test@1234', role: 'HR', email: 'test@zts.demo', department: 'Human Resources' }
+// Realistic users with name-based usernames, genuine emails, and proper roles
+var users = [
+    {
+        username: 'rajan.chand',
+        password: 'Rajan@123',
+        role: 'SuperAdmin',
+        email: 'rajanchand48@gmail.com',
+        department: 'General'
+    },
+    {
+        username: 'bhuwan.khanal',
+        password: 'Bhuwan@123',
+        role: 'Admin',
+        email: 'bhuwankhanal1996@gmail.com',
+        department: 'General'
+    },
+    {
+        username: 'replica.rasaili',
+        password: 'replica@123',
+        role: 'HR',
+        email: 'replicarasaili@gmail.com',
+        department: 'Human Resources'
+    },
+    {
+        username: 'amit.thapa',
+        password: 'Amit@123',
+        role: 'HR',
+        email: 'amit.thapa22@gmail.com',
+        department: 'Human Resources'
+    },
+    {
+        username: 'sanjay.gurung',
+        password: 'Sanjay@123',
+        role: 'IT',
+        email: 'sanjay.gurung@techmail.com',
+        department: 'Information Technology'
+    },
+    {
+        username: 'deepa.rai',
+        password: 'Deepa@123',
+        role: 'IT',
+        email: 'deepa.rai09@gmail.com',
+        department: 'Information Technology'
+    },
+    {
+        username: 'nisha.basnet',
+        password: 'Nisha@123',
+        role: 'Finance',
+        email: 'nisha.basnet@yahoo.com',
+        department: 'Finance'
+    },
+    {
+        username: 'rohan.adhikari',
+        password: 'Rohan@123',
+        role: 'Finance',
+        email: 'rohan.adhikari33@gmail.com',
+        department: 'Finance'
+    },
+    {
+        username: 'sunita.limbu',
+        password: 'Sunita@123',
+        role: 'CustomerSupport',
+        email: 'sunita.limbu@support.com',
+        department: 'Customer Support'
+    }
 ];
 
 async function seedUsers() {
+    console.log('\n  ZTS - Seeding users...\n');
     var created = 0;
 
-    for (var user of defaultUsers) {
-        // check if already exists
+    for (var user of users) {
         var { data: existing } = await supabase
             .from('users')
             .select('id')
@@ -26,7 +84,7 @@ async function seedUsers() {
             .single();
 
         if (existing) {
-            console.log('  Skipped (exists): ' + user.username);
+            console.log('  Skipped (already exists): ' + user.username);
             continue;
         }
 
@@ -38,25 +96,25 @@ async function seedUsers() {
             role: user.role,
             email: user.email,
             department: user.department,
-            status: 'active'
+            status: 'active',
+            failed_attempts: 0
         });
 
         if (error) {
-            console.log('  Error creating ' + user.username + ': ' + error.message);
+            console.log('  Error: ' + user.username + ' — ' + error.message);
         } else {
             console.log('  Created: ' + user.username + ' (' + user.role + ')');
             created++;
         }
     }
 
-    console.log('\nDone. ' + created + ' user(s) created.');
-    console.log('\nLogin credentials:');
-    console.log('  superadmin / Super@123  (SuperAdmin)');
-    console.log('  hruser     / Hr@12345   (HR)');
-    console.log('  finuser    / Fin@12345  (Finance)');
-    console.log('  ituser     / It@12345   (IT)');
-    console.log('  csuser     / Cs@12345   (CustomerSupport)');
-    console.log('  testuser   / Test@1234  (HR)');
+    console.log('\n  Done. ' + created + ' user(s) created.\n');
+    console.log('  Login credentials:');
+    console.log('  ─────────────────────────────────────────────');
+    users.forEach(function (u) {
+        console.log('  ' + u.username.padEnd(20) + u.password.padEnd(14) + u.role);
+    });
+    console.log('');
 }
 
 seedUsers();

@@ -347,36 +347,36 @@
         async function deleteUser(id, name) {
             if (!confirm('Delete user "' + name + '"? This cannot be undone.')) return;
             var result = await postJSON('/api/mapping/users/delete', { userId: id });
-            alert(result.message);
-            loadUsers();
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadUsers();
         }
 
         async function suspendUser(id) {
             var result = await postJSON('/api/mapping/users/suspend', { userId: id });
-            alert(result.message);
-            loadUsers();
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadUsers();
         }
 
         async function blockUser(id) {
             if (!confirm('Block this user?')) return;
             var result = await postJSON('/api/mapping/users/block', { userId: id });
-            alert(result.message);
-            loadUsers();
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadUsers();
         }
 
         async function activateUser(id) {
             var result = await postJSON('/api/mapping/users/activate', { userId: id });
-            alert(result.message);
-            loadUsers();
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadUsers();
         }
 
         async function changeRole() {
             var userId = document.getElementById('changeRoleUserId').value;
             var newRole = document.getElementById('changeRoleSelect').value;
             var result = await postJSON('/api/mapping/users/change-role', { userId: parseInt(userId), newRole: newRole });
-            alert(result.message);
+            showToast(result.message, result.success ? 'success' : 'error');
             hideModal('changeRoleModal');
-            loadUsers();
+            if (result.success) loadUsers();
         }
 
         async function createDept() {
@@ -403,8 +403,8 @@
         async function deleteDept(id, name) {
             if (!confirm('Delete department "' + name + '"?')) return;
             var result = await postJSON('/api/mapping/departments/delete', { departmentId: id });
-            alert(result.message);
-            loadDepartments();
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadDepartments();
         }
 
         async function showSetHead(deptId, deptName) {
@@ -438,9 +438,9 @@
                 head_user_id: headUserId || null
             });
 
-            alert(result.message);
+            showToast(result.message, result.success ? 'success' : 'error');
             hideModal('setHeadModal');
-            loadDepartments();
+            if (result.success) loadDepartments();
         }
 
         function showCreateDeptPopulated() {
@@ -485,7 +485,7 @@
 
             if (result.success) {
                 hideModal('resetPasswordModal');
-                alert(result.message);
+                showToast(result.message, 'success');
             } else {
                 errEl.textContent = result.message;
                 errEl.style.display = 'block';
@@ -536,7 +536,7 @@
 
             if (result.success) {
                 hideModal('editUserModal');
-                alert(result.message);
+                showToast(result.message, 'success');
                 loadUsers();
             } else {
                 errEl.textContent = result.message;

@@ -163,4 +163,88 @@ router.get('/api/risk-data', async function (req, res) {
     }
 });
 
+// admin system-wide stats (SuperAdmin only)
+router.get('/api/admin-stats', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+
+    try {
+        // total users
+        var { count: totalUsers } = await supabase
+            .from('users').select('*', { count: 'exact', head: true });
+
+        // active users
+        var { count: activeUsers } = await supabase
+            .from('users').select('*', { count: 'exact', head: true })
+            .eq('status', 'active');
+
+        // blocked users
+        var { count: blockedUsers } = await supabase
+            .from('users').select('*', { count: 'exact', head: true })
+            .eq('status', 'blocked');
+
+        // devices pending approval
+        var { count: pendingDevices } = await supabase
+            .from('devices').select('*', { count: 'exact', head: true })
+            .eq('approved', false);
+
+        // security events in last 24 hours
+        var since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        var { count: events24h } = await supabase
+            .from('audit_log').select('*', { count: 'exact', head: true })
+            .gte('created_at', since24h);
+
+        // login failures in last 24 hours
+        var { count: loginFails } = await supabase
+            .from('audit_log').select('*', { count: 'exact', head: true })
+            .eq('action', 'LOGIN_FAILED')
+            .gte('created_at', since24h);
+
+        // total sessions ever
+        var { count: totalSessions } = await supabase
+            .from('sessions_log').select('*', { count: 'exact', head: true });
+
+        // recent security events (last 10)
+        var { data: recentEvents } = await supabase
+            .from('audit_log')
+            .select('id, user_id, action, detail, ip, created_at')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        // users by role
+        var { data: usersData } = await supabase
+            .from('users')
+            .select('role, status');
+
+        var roleCount = {};
+        (usersData || []).forEach(function (u) {
+            roleCount[u.role] = (roleCount[u.role] || 0) + 1;
+        });
+
+        res.json({
+            users: {
+                total:   totalUsers   || 0,
+                active:  activeUsers  || 0,
+                blocked: blockedUsers || 0
+            },
+            devices: {
+                pendingApproval: pendingDevices || 0
+            },
+            activity: {
+                events24h:    events24h    || 0,
+                loginFails24h: loginFails  || 0,
+                totalSessions: totalSessions || 0
+            },
+            roleBreakdown: roleCount,
+            recentEvents: recentEvents || []
+        });
+
+    } catch (err) {
+        console.error('Admin stats error:', err);
+        res.status(500).json({ error: 'Failed to load stats' });
+    }
+});
+
 module.exports = router;
