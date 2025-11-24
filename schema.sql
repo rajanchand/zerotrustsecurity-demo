@@ -99,3 +99,15 @@ VALUES
     ('Finance'),
     ('Information Technology'),
     ('Customer Support') ON CONFLICT (name) DO NOTHING;
+
+-- Deployments log (tracks every VPS deployment)
+CREATE TABLE IF NOT EXISTS deployments (
+    id          SERIAL PRIMARY KEY,
+    deployed_by TEXT DEFAULT 'root',
+    git_commit  TEXT,
+    git_branch  TEXT DEFAULT 'main',
+    status      TEXT DEFAULT 'success',
+    vps_ip      TEXT,
+    notes       TEXT,
+    deployed_at TIMESTAMPTZ DEFAULT NOW()
+);
