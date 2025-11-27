@@ -25,7 +25,7 @@ function showToast(message, type) {
     }, 3500);
 }
 
-// generate a simple device fingerprint
+// generate a  device fingerprint
 function getFingerprint() {
     var parts = [];
     parts.push(navigator.userAgent);

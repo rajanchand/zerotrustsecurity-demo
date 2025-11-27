@@ -8,7 +8,7 @@ var { supabase } = require('../db');
 var { generateOTP, verifyOTP } = require('../services/otpService');
 var { calculateRisk } = require('../services/riskEngine');
 var { registerDevice, findDevice } = require('../services/deviceService');
-var { getCountryFromIP, getGeoFromIP, isVPNConnection } = require('../services/geoService');
+var { getCountryFromIP, getGeoFromIP, isVPNConnection, checkImpossibleTravel } = require('../services/geoService');
 var { logEvent } = require('../services/auditService');
 var { logSecurityEvent } = require('../services/monitorService');
 
@@ -154,11 +154,56 @@ router.post('/login', async function (req, res) {
             });
         }
 
+        // check for location anomaly
+        var isNewCountry = false;
+        var isImpossibleTravel = false;
+        
+        // get recent successful logins for this user to compare location
+        var { data: recentLogins } = await supabase
+            .from('sessions_log')
+            .select('country, login_at')
+            .eq('user_id', user.id)
+            .order('login_at', { ascending: false })
+            .limit(10);
+            
+        if (recentLogins && recentLogins.length > 0) {
+            // check if the country has ever been seen before
+            isNewCountry = !recentLogins.some(function(log) { return log.country === country; });
+            
+            // check impossible travel against the very last successful login
+            var lastLogin = recentLogins[0];
+            var timeDiffMinutes = (new Date() - new Date(lastLogin.login_at)) / (1000 * 60);
+            isImpossibleTravel = checkImpossibleTravel(country, lastLogin.country, timeDiffMinutes);
+            
+            if (isNewCountry || isImpossibleTravel) {
+                // Suspend the device
+                await supabase.from('devices').update({ approved: false }).eq('id', deviceResult.device.id);
+                
+                var anomalyReason = isImpossibleTravel ? 'Impossible travel detected' : 'Unrecognized login location';
+                
+                await logEvent(user.id, 'LOCATION_ANOMALY', anomalyReason + ' from ' + country, ip);
+                await logSecurityEvent({
+                    event_type: 'LOCATION_ANOMALY',
+                    user_id: user.id,
+                    username: user.username,
+                    ip: ip,
+                    location: country,
+                    risk_score: 100,
+                    details: { reason: anomalyReason, previous_location: lastLogin.country, role: user.role }
+                });
+                
+                return res.json({
+                    success: false,
+                    message: 'Security Alert: Login attempt from an unusual location. This device has been suspended for security reasons. Please contact your administrator.'
+                });
+            }
+        }
+
         // calculate risk score
         var risk = await calculateRisk({
             userId: user.id,
-            isNewDevice: false,
-            isNewCountry: false,
+            isNewDevice: deviceResult.isNew,
+            isNewCountry: isNewCountry,
             failedAttempts: user.failed_attempts || 0,
             isVPN: vpn,
             isAdminUnknownIP: false,
