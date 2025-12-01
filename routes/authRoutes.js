@@ -5,7 +5,8 @@ var express = require('express');
 var bcrypt = require('bcryptjs');
 var UAParser = require('ua-parser-js');
 var { supabase } = require('../db');
-var { generateOTP, verifyOTP } = require('../services/otpService');
+var { generateOTP, verifyOTP, sendLoginAlertEmail } = require('../services/otpService'); // Note: Actually needs to come from emailService
+var { sendLoginAlertEmail } = require('../services/emailService');
 var { calculateRisk } = require('../services/riskEngine');
 var { registerDevice, findDevice } = require('../services/deviceService');
 var { getCountryFromIP, getGeoFromIP, isVPNConnection, checkImpossibleTravel } = require('../services/geoService');
@@ -332,6 +333,13 @@ router.post('/verify-otp', async function (req, res) {
             risk_score: req.session.riskScore || 0,
             details: { role: req.session.role }
         });
+
+        // Send login alert email
+        sendLoginAlertEmail(
+            req.session.username || 'unknown', 
+            req.session.loginIP || req.ip, 
+            req.session.loginCountry || 'Unknown'
+        ).catch(err => console.error('Failed to send alert email', err));
 
         // save session to store BEFORE responding so the cookie is valid
         // when the browser immediately navigates to /dashboard

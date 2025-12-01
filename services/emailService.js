@@ -54,4 +54,46 @@ async function sendOTPEmail(toEmail, username, otpCode) {
     }
 }
 
-module.exports = { sendOTPEmail };
+// send a login alert email to the admin
+async function sendLoginAlertEmail(username, ip, country) {
+    var adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_EMAIL;
+    if (!adminEmail || !process.env.SMTP_PASSWORD) {
+        console.log('  [email] No SMTP config — Login Alert for ' + username);
+        return { sent: false, reason: 'No SMTP credentials configured' };
+    }
+
+    var subject = 'ZTS Security Alert: New Login Detected';
+
+    var html = [
+        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">',
+        '  <h2 style="color:#e17055;margin-bottom:4px;">ZTS Security Alert</h2>',
+        '  <p style="color:#636e72;font-size:13px;margin-top:0;">New User Login Detected</p>',
+        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
+        '  <p style="font-size:15px;">A user has just logged into the system.</p>',
+        '  <ul style="font-size:14px;color:#2d3436;background:#f4f5f7;border-radius:8px;padding:20px;list-style-type:none;">',
+        '    <li style="margin-bottom:8px;"><strong>Username:</strong> ' + username + '</li>',
+        '    <li style="margin-bottom:8px;"><strong>IP Address:</strong> ' + ip + '</li>',
+        '    <li><strong>Location:</strong> ' + country + '</li>',
+        '  </ul>',
+        '  <p style="font-size:13px;color:#636e72;">If this activity is suspicious, please review the session logs in the admin dashboard.</p>',
+        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
+        '  <p style="font-size:11px;color:#b2bec3;">ZTS — Zero Trust Security Demo</p>',
+        '</div>'
+    ].join('\n');
+
+    try {
+        await transporter.sendMail({
+            from: '"ZTS Security Alerts" <' + process.env.SMTP_EMAIL + '>',
+            to: adminEmail,
+            subject: subject,
+            html: html
+        });
+        console.log('  [email] Login alert sent to admin for user ' + username);
+        return { sent: true };
+    } catch (err) {
+        console.error('  [email] Failed to send login alert:', err.message);
+        return { sent: false, reason: err.message };
+    }
+}
+
+module.exports = { sendOTPEmail, sendLoginAlertEmail };
