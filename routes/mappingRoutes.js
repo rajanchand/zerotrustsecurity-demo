@@ -41,6 +41,18 @@ router.get('/api/mapping/users', async function (req, res) {
 // create new user
 router.post('/api/mapping/users/create', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var { username, password, role, email, department } = req.body;
 
         if (!username || !password || !role) {
@@ -90,6 +102,18 @@ router.post('/api/mapping/users/create', async function (req, res) {
 // delete user
 router.post('/api/mapping/users/delete', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var userId = req.body.userId;
 
         // cannot delete yourself
@@ -143,6 +167,18 @@ router.post('/api/mapping/users/delete', async function (req, res) {
 // change user role
 router.post('/api/mapping/users/change-role', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var { userId, newRole } = req.body;
 
         var { data: user } = await supabase.from('users').select('username, role').eq('id', userId).single();
@@ -167,6 +203,18 @@ router.post('/api/mapping/users/change-role', async function (req, res) {
 // edit user details (username, role, email, department)
 router.post('/api/mapping/users/edit', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var { userId, username, role, email, department } = req.body;
 
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
@@ -206,6 +254,18 @@ router.post('/api/mapping/users/edit', async function (req, res) {
 // suspend user
 router.post('/api/mapping/users/suspend', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var userId = req.body.userId;
 
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
@@ -230,6 +290,18 @@ router.post('/api/mapping/users/suspend', async function (req, res) {
 // block user
 router.post('/api/mapping/users/block', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var userId = req.body.userId;
 
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
@@ -254,6 +326,18 @@ router.post('/api/mapping/users/block', async function (req, res) {
 // activate user (unblock / unsuspend)
 router.post('/api/mapping/users/activate', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var userId = req.body.userId;
 
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
@@ -315,6 +399,18 @@ router.get('/api/mapping/departments', async function (req, res) {
 
 router.post('/api/mapping/departments/create', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var name = (req.body.name || '').trim();
         if (!name) return res.json({ success: false, message: 'Department name is required.' });
 
@@ -335,6 +431,18 @@ router.post('/api/mapping/departments/create', async function (req, res) {
 
 router.post('/api/mapping/departments/delete', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var deptId = req.body.departmentId;
 
         var { data: dept } = await supabase.from('departments').select('name').eq('id', deptId).single();
@@ -351,6 +459,18 @@ router.post('/api/mapping/departments/delete', async function (req, res) {
 
 router.post('/api/mapping/departments/update-head', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var deptId = req.body.departmentId;
         var headUserId = req.body.head_user_id ? parseInt(req.body.head_user_id) : null;
 
@@ -389,6 +509,18 @@ router.get('/api/mapping/devices/all', async function (req, res) {
 
 router.post('/api/mapping/devices/approve', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var deviceId = req.body.deviceId;
         await approveDevice(deviceId, req.session.userId);
 
@@ -401,6 +533,18 @@ router.post('/api/mapping/devices/approve', async function (req, res) {
 
 router.post('/api/mapping/devices/reject', async function (req, res) {
     try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
         var deviceId = req.body.deviceId;
         await rejectDevice(deviceId);
 

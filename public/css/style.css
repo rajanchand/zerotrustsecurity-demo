@@ -1,5 +1,4 @@
-/* style.css - ZTS Zero Trust Security */
-
+/* Global Styles */
 * {
   margin: 0;
   padding: 0;
@@ -7,47 +6,45 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f4f5f7;
-  color: #2d3436;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  background: #f8f9fa;
+  color: #333;
   font-size: 14px;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
 }
 
-/* ======================== */
-/* HORIZONTAL NAVBAR        */
-/* ======================== */
+/* Navigation Bar */
 .navbar {
-  background: #fff;
-  border-bottom: 1px solid #dfe6e9;
-  padding: 0 20px;
-  height: 54px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 24px;
+  height: 60px;
   display: flex;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
 .navbar-brand {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #2d3436;
+  color: #1e293b;
   white-space: nowrap;
   margin-right: 32px;
   text-decoration: none;
 }
 
 .navbar-brand span {
-  color: #0984e3;
+  color: #2563eb;
 }
 
-/* main nav menu */
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   list-style: none;
   flex: 1;
 }
@@ -240,27 +237,27 @@ body {
   line-height: 1;
 }
 
-/* ======================== */
-/* LAYOUT                   */
-/* ======================== */
+/* Layout & Cards */
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 24px 16px;
 }
 
-/* cards */
 .card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 14px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .card h3 {
-  font-size: 0.9rem;
-  color: #636e72;
-  margin-bottom: 12px;
+  font-size: 0.95rem;
+  color: #475569;
+  margin-bottom: 16px;
+  font-weight: 600;
 }
 
 .card-grid {
@@ -348,27 +345,31 @@ td .btn {
   margin: 2px;
 }
 
-/* buttons */
+/* Buttons */
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 16px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  min-height: 34px;
+  min-height: 36px;
   touch-action: manipulation;
   white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .btn-primary {
-  background: #0984e3;
-  color: #fff;
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background: #0874c9;
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-danger {
@@ -429,36 +430,38 @@ td .btn {
   background: #f0f0f0;
 }
 
-/* forms */
+/* Forms */
 .form-group {
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.82rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: #2d3436;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #334155;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dfe6e9;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
-  font-size: 0.9rem;
-  min-height: 42px;
+  font-size: 0.95rem;
+  min-height: 44px;
   -webkit-appearance: none;
   appearance: none;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #0984e3;
-  box-shadow: 0 0 0 2px rgba(9, 132, 227, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* status badges */
@@ -574,36 +577,39 @@ td .btn {
   color: #e67e22;
 }
 
-/* login / OTP forms */
+/* Authentication Pages */
 .auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f4f5f7;
+  background: #f8f9fa;
   padding: 16px;
 }
 
 .auth-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 32px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .auth-card h1 {
-  font-size: 1.2rem;
-  margin-bottom: 4px;
-  color: #0984e3;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: #2563eb;
+  font-weight: 700;
 }
 
 .auth-card h2 {
-  font-size: 0.9rem;
-  color: #636e72;
+  font-size: 0.95rem;
+  color: #64748b;
   font-weight: 400;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .auth-card .form-group {
@@ -613,8 +619,9 @@ td .btn {
 .auth-card .btn {
   width: 100%;
   padding: 12px;
-  margin-top: 8px;
-  font-size: 0.9rem;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  border-radius: 8px;
 }
 
 .otp-display {

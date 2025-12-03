@@ -13,22 +13,27 @@ function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
-    // check session timeout (15 minutes of inactivity)
-    var now = Date.now();
-    var lastActive = req.session.lastActive || now;
-    var timeout = 15 * 60 * 1000;
+    // STRICT CONDITIONAL ACCESS: Block high-risk sessions
+    // Don't block them from seeing the security block page or logging out
+    if (req.session.highRisk && req.path !== '/security-block' && req.path !== '/logout') {
+        return res.redirect('/security-block');
+    }
+
+    const now = Date.now();
+    const lastActive = req.session.lastActive || now;
+    const timeout = 15 * 60 * 1000;
 
     if (now - lastActive > timeout) {
-        var uid  = req.session.userId;
-        var uname = req.session.username || 'unknown';
-        req.session.destroy(function () {
+        const uid = req.session.userId;
+        const uname = req.session.username || 'unknown';
+        req.session.destroy(() => {
             logSecurityEvent({
                 event_type: 'FORCE_LOGOUT',
                 user_id: uid,
                 username: uname,
                 ip: req.ip,
                 details: { reason: 'Session timeout (15 min inactivity)', path: req.path }
-            }).catch(function(){});
+            }).catch(() => { });
             res.redirect('/login?msg=session_expired');
         });
         return;

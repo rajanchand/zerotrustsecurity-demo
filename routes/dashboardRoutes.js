@@ -1,17 +1,13 @@
-// routes/dashboardRoutes.js
-// main dashboard and related API endpoints
+const express = require('express');
+const path = require('path');
+const { supabase } = require('../db');
+const { getRiskHistory } = require('../services/riskEngine');
+const { getUserAuditLog } = require('../services/auditService');
+const { getDeviceHealth } = require('../services/deviceService');
 
-var express = require('express');
-var path = require('path');
-var { supabase } = require('../db');
-var { getRiskHistory } = require('../services/riskEngine');
-var { getUserAuditLog } = require('../services/auditService');
-var { getDeviceHealth } = require('../services/deviceService');
+const router = express.Router();
 
-var router = express.Router();
-
-// role specific dashboard content
-var dashboardContent = {
+const dashboardContent = {
     SuperAdmin: {
         title: 'Super Admin Control Centre',
         description: 'Full system access. Manage users, view all logs, monitor the platform.',
@@ -60,30 +56,25 @@ var dashboardContent = {
     }
 };
 
-// serve dashboard page
-router.get('/dashboard', function (req, res) {
+router.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'dashboard.html'));
 });
 
-// dashboard data API
-router.get('/api/dashboard-data', async function (req, res) {
+router.get('/api/dashboard-data', async (req, res) => {
     try {
-        var role = req.session.role;
-        var content = dashboardContent[role] || dashboardContent.HR;
+        const role = req.session.role;
+        const content = dashboardContent[role] || dashboardContent.HR;
 
-        // add security card for all roles
-        var securityCard = { icon: 'S', title: 'My Security', description: 'View your risk score', link: '/risk' };
-        var cards = content.cards.slice();
+        const securityCard = { icon: 'S', title: 'My Security', description: 'View your risk score', link: '/risk' };
+        const cards = content.cards.slice();
         cards.push(securityCard);
 
-        // get session count
-        var { count: sessionCount } = await supabase
+        const { count: sessionCount } = await supabase
             .from('sessions_log')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', req.session.userId);
 
-        // get latest session info
-        var { data: lastSession } = await supabase
+        const { data: lastSession } = await supabase
             .from('sessions_log')
             .select('country, device_fingerprint')
             .eq('user_id', req.session.userId)
@@ -91,10 +82,9 @@ router.get('/api/dashboard-data', async function (req, res) {
             .limit(1)
             .single();
 
-        // check if device is new
-        var isNewDevice = false;
+        let isNewDevice = false;
         if (lastSession) {
-            var { count: deviceCount } = await supabase
+            const { count: deviceCount } = await supabase
                 .from('devices')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', req.session.userId)
@@ -129,28 +119,25 @@ router.get('/api/dashboard-data', async function (req, res) {
     }
 });
 
-// activity log API
-router.get('/api/activity', async function (req, res) {
+router.get('/api/activity', async (req, res) => {
     try {
-        var logs = await getUserAuditLog(req.session.userId, 20);
+        const logs = await getUserAuditLog(req.session.userId, 20);
         res.json(logs);
     } catch (err) {
         res.json([]);
     }
 });
 
-// risk score page
-router.get('/risk', function (req, res) {
+router.get('/risk', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'risk.html'));
 });
 
-// risk data API
-router.get('/api/risk-data', async function (req, res) {
+router.get('/api/risk-data', async (req, res) => {
     try {
-        var history = await getRiskHistory(req.session.userId, 20);
-        var currentScore = req.session.riskScore || 0;
-        var currentLevel = req.session.riskLevel || 'Low';
-        var factors = req.session.riskFactors || [];
+        const history = await getRiskHistory(req.session.userId, 20);
+        const currentScore = req.session.riskScore || 0;
+        const currentLevel = req.session.riskLevel || 'Low';
+        const factors = req.session.riskFactors || [];
 
         res.json({
             currentScore: currentScore,
@@ -163,63 +150,68 @@ router.get('/api/risk-data', async function (req, res) {
     }
 });
 
-// admin system-wide stats (SuperAdmin only)
-router.get('/api/admin-stats', async function (req, res) {
+router.get('/api/admin-stats', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
         return res.status(403).json({ error: 'Access denied' });
     }
 
+    // DEVICE POSTURE ENFORCEMENT
+    // Check if the current device is approved
+    const { data: currentDevice } = await supabase
+        .from('devices')
+        .select('approved')
+        .eq('user_id', req.session.userId)
+        .eq('fingerprint', req.session.deviceFingerprint)
+        .single();
+
+    if (!currentDevice || !currentDevice.approved) {
+        return res.status(403).json({ 
+            error: 'Access denied: Your device is not managed or approved by IT. Admin functions restricted.' 
+        });
+    }
+
     try {
-        // total users
-        var { count: totalUsers } = await supabase
+        const { count: totalUsers } = await supabase
             .from('users').select('*', { count: 'exact', head: true });
 
-        // active users
-        var { count: activeUsers } = await supabase
+        const { count: activeUsers } = await supabase
             .from('users').select('*', { count: 'exact', head: true })
             .eq('status', 'active');
 
-        // blocked users
-        var { count: blockedUsers } = await supabase
+        const { count: blockedUsers } = await supabase
             .from('users').select('*', { count: 'exact', head: true })
             .eq('status', 'blocked');
 
-        // devices pending approval
-        var { count: pendingDevices } = await supabase
+        const { count: pendingDevices } = await supabase
             .from('devices').select('*', { count: 'exact', head: true })
             .eq('approved', false);
 
-        // security events in last 24 hours
-        var since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        var { count: events24h } = await supabase
+        const { count: events24h } = await supabase
             .from('audit_log').select('*', { count: 'exact', head: true })
             .gte('created_at', since24h);
 
-        // login failures in last 24 hours
-        var { count: loginFails } = await supabase
+        const { count: loginFails } = await supabase
             .from('audit_log').select('*', { count: 'exact', head: true })
             .eq('action', 'LOGIN_FAILED')
             .gte('created_at', since24h);
 
-        // total sessions ever
-        var { count: totalSessions } = await supabase
+        const { count: totalSessions } = await supabase
             .from('sessions_log').select('*', { count: 'exact', head: true });
 
-        // recent security events (last 10)
-        var { data: recentEvents } = await supabase
+        const { data: recentEvents } = await supabase
             .from('audit_log')
             .select('id, user_id, action, detail, ip, created_at')
             .order('created_at', { ascending: false })
             .limit(10);
 
-        // users by role
-        var { data: usersData } = await supabase
+        const { data: usersData } = await supabase
             .from('users')
             .select('role, status');
 
-        var roleCount = {};
-        (usersData || []).forEach(function (u) {
+        const roleCount = {};
+        (usersData || []).forEach(u => {
             roleCount[u.role] = (roleCount[u.role] || 0) + 1;
         });
 

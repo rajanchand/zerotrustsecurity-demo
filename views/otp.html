@@ -14,13 +14,13 @@
             <h1>ZTS</h1>
             <h2>Multi-Factor Authentication</h2>
 
-            <p style="font-size:0.85rem; color:#636e72; margin-bottom:16px;">
-                Step 2: Enter the 6-digit code sent to your email
+            <p style="font-size:0.875rem; color:#64748b; margin-bottom:16px;">
+                Enter the 6-digit code sent to your email
             </p>
 
             <div class="otp-display">
-                <p style="font-size:0.8rem; color:#636e72; margin:0 0 4px;">📧 OTP sent to your registered email</p>
-                <p class="note">Check your inbox — the code expires in 5 minutes.</p>
+                <p style="font-size:0.85rem; color:#475569; margin:0 0 4px;">📧 OTP sent to your registered email</p>
+                <p class="note">Check your inbox. Code expires in 5 minutes.</p>
             </div>
 
             <p id="riskInfo" style="font-size:0.82rem; margin-bottom:16px;"></p>
@@ -30,9 +30,9 @@
                     <label for="otpInput">Enter OTP Code</label>
                     <input type="text" id="otpInput" name="code" maxlength="6" required
                         autocomplete="one-time-code"
-                        style="text-align:center; font-size:1.2rem; letter-spacing:4px;">
+                        style="text-align:center; font-size:1.5rem; letter-spacing:8px; font-weight: 600;">
                 </div>
-                <button type="submit" class="btn btn-primary">Verify and Login</button>
+                <button type="submit" class="btn btn-primary">Verify & Sign In</button>
             </form>
 
             <p id="errorMsg" class="error-msg" style="display:none;"></p>
@@ -45,13 +45,11 @@
 
     <script src="/js/app.js"></script>
     <script>
-        // show risk level if available
         var riskScore = sessionStorage.getItem('riskScore') || '0';
         var riskLevel = sessionStorage.getItem('riskLevel') || 'Low';
         var riskColor = riskLevel === 'Low' ? 'score-low' : riskLevel === 'Medium' ? 'score-medium' : 'score-high';
-        document.getElementById('riskInfo').innerHTML = 'Risk: <span class="' + riskColor + '">' + riskLevel + ' (' + riskScore + '/100)</span>';
+        document.getElementById('riskInfo').innerHTML = 'Session Risk: <span class="' + riskColor + '" style="font-weight: 600;">' + riskLevel + ' (' + riskScore + '/100)</span>';
 
-        // handle OTP form submission
         document.getElementById('otpForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 

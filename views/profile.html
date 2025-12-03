@@ -18,12 +18,12 @@
 
     <div class="container">
         <div class="card">
-            <div class="card-header-row">
-                <h3>My Profile</h3>
+            <div class="card-header-row" style="display:flex; justify-content:space-between; margin-bottom: 20px;">
+                <h3 style="margin:0;">My Profile</h3>
                 <span class="role-badge" id="profileRole"></span>
             </div>
 
-            <div class="profile-fields-grid">
+            <div class="profile-fields-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="form-group">
                     <label>Username</label>
                     <input type="text" id="profileUsername" disabled>
@@ -40,8 +40,8 @@
                     <label>Phone Number</label>
                     <input type="text" id="profilePhone" placeholder="Your phone number">
                 </div>
-                <div class="form-group full-width">
-                    <label>Email</label>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Email Address</label>
                     <input type="email" id="profileEmail" placeholder="Your email address">
                 </div>
             </div>
@@ -56,9 +56,8 @@
             </p>
         </div>
 
-        <!-- Change Password -->
         <div class="card">
-            <h3>Change Password</h3>
+            <h3 style="margin-bottom:16px;">Change Password</h3>
             <div style="max-width:400px;">
                 <div class="form-group">
                     <label>Current Password</label>
@@ -87,7 +86,6 @@
             if (!s.loggedIn) return location.href = '/login';
             buildNavbar(s.user.role, 'profile', s.user.username);
 
-            // load profile
             var profile = await (await fetch('/api/profile')).json();
             document.getElementById('profileUsername').value = profile.username || '';
             document.getElementById('profileDepartment').value = profile.department || '';

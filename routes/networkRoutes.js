@@ -16,6 +16,8 @@ router.get('/network', function (req, res) {
 
 // get all IP rules
 router.get('/api/network/ip-rules', async function (req, res) {
+    if (req.session.highRisk) return res.status(403).json({ error: 'Access denied: High Risk Session' });
+
     try {
         var { data } = await supabase
             .from('ip_rules')
@@ -36,6 +38,8 @@ router.get('/api/network/ip-rules', async function (req, res) {
 
 // add IP rule (allow or block)
 router.post('/api/network/ip-rules/add', async function (req, res) {
+    if (req.session.highRisk) return res.status(403).json({ success: false, message: 'Access denied: High Risk Session' });
+
     try {
         var { ipAddress, action, reason } = req.body;
 
@@ -81,6 +85,8 @@ router.post('/api/network/ip-rules/add', async function (req, res) {
 
 // delete IP rule
 router.post('/api/network/ip-rules/delete', async function (req, res) {
+    if (req.session.highRisk) return res.status(403).json({ success: false, message: 'Access denied: High Risk Session' });
+
     try {
         var ruleId = req.body.ruleId;
 
@@ -100,6 +106,8 @@ router.post('/api/network/ip-rules/delete', async function (req, res) {
 
 // device health overview (all devices across all users)
 router.get('/api/network/device-health', async function (req, res) {
+    if (req.session.highRisk) return res.status(403).json({ error: 'Access denied: High Risk Session' });
+
     try {
         var devices = await getAllDevices();
         var total = devices.length;

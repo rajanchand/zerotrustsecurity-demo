@@ -1,12 +1,9 @@
-// server.js
-// ZTS - Zero Trust Security Demo
-
 require('dotenv').config();
-var express = require('express');
-var session = require('express-session');
-var path = require('path');
+const express = require('express');
+const session = require('express-session');
+const path = require('path');
 
-var app = express();
+const app = express();
 
 app.set('trust proxy', true);
 
@@ -26,15 +23,15 @@ app.use(session({
     rolling: true
 }));
 
-var authRoutes       = require('./routes/authRoutes');
-var dashboardRoutes  = require('./routes/dashboardRoutes');
-var profileRoutes    = require('./routes/profileRoutes');
-var mappingRoutes    = require('./routes/mappingRoutes');
-var networkRoutes    = require('./routes/networkRoutes');
-var monitoringRoutes = require('./routes/monitoringRoutes');
-var { requireLogin } = require('./middleware/auth');
-var { requireRole }  = require('./middleware/rbac');
-var { flagHighRisk } = require('./middleware/riskCheck');
+const authRoutes       = require('./routes/authRoutes');
+const dashboardRoutes  = require('./routes/dashboardRoutes');
+const profileRoutes    = require('./routes/profileRoutes');
+const mappingRoutes    = require('./routes/mappingRoutes');
+const networkRoutes    = require('./routes/networkRoutes');
+const monitoringRoutes = require('./routes/monitoringRoutes');
+const { requireLogin } = require('./middleware/auth');
+const { requireRole }  = require('./middleware/rbac');
+const { flagHighRisk } = require('./middleware/riskCheck');
 
 app.use(requireLogin);
 app.use(flagHighRisk);
@@ -46,15 +43,15 @@ app.use('/', requireRole(['SuperAdmin']), mappingRoutes);
 app.use('/', requireRole(['SuperAdmin']), monitoringRoutes);
 app.use('/', networkRoutes);
 
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
     res.redirect('/dashboard');
 });
 
-var PORT = process.env.PORT || 3000;
-app.listen(PORT, function () {
-    console.log('');
-    console.log('  ZTS - Zero Trust Security Demo');
-    console.log('  NIST SP 800-207 Implementation');
-    console.log('  Running on http://localhost:' + PORT);
-    console.log('');
+app.get('/security-block', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'security-block.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`\n  ZTS - Zero Trust Security Demo\n  NIST SP 800-207 Implementation\n  Running on http://localhost:${PORT}\n`);
 });

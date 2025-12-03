@@ -51,6 +51,13 @@ async function registerDevice(userId, info) {
     return { isNew: false, device: existing };
   }
 
+  // check if user has SuperAdmin role to auto-approve
+  let isSuperAdmin = false;
+  try {
+      const { data: user } = await supabase.from('users').select('role').eq('id', userId).single();
+      if (user && user.role === 'SuperAdmin') isSuperAdmin = true;
+  } catch(e) {}
+
   // brand new device
   var label = (info.browser || 'Unknown') + ' on ' + (info.os || 'Unknown');
   var { data: newDevice, error } = await supabase
@@ -62,7 +69,7 @@ async function registerDevice(userId, info) {
       os: info.os,
       ip: info.ip,
       country: info.country,
-      approved: false,
+      approved: isSuperAdmin, // Auto-approve SuperAdmin devices
       label: label
     })
     .select()

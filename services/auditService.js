@@ -1,9 +1,5 @@
-// services/auditService.js
-// logs every important security event
+const { supabase } = require('../db');
 
-var { supabase } = require('../db');
-
-// log a security event
 async function logEvent(userId, action, detail, ip) {
   await supabase.from('audit_log').insert({
     user_id: userId,
@@ -13,10 +9,8 @@ async function logEvent(userId, action, detail, ip) {
   });
 }
 
-// get audit logs for a specific user
-async function getUserAuditLog(userId, limit) {
-  limit = limit || 30;
-  var { data } = await supabase
+async function getUserAuditLog(userId, limit = 30) {
+  const { data } = await supabase
     .from('audit_log')
     .select('*')
     .eq('user_id', userId)
@@ -26,10 +20,8 @@ async function getUserAuditLog(userId, limit) {
   return data || [];
 }
 
-// get all audit logs (admin)
-async function getAllAuditLogs(limit) {
-  limit = limit || 100;
-  var { data: logs } = await supabase
+async function getAllAuditLogs(limit = 100) {
+  const { data: logs } = await supabase
     .from('audit_log')
     .select('*')
     .order('created_at', { ascending: false })
@@ -37,19 +29,19 @@ async function getAllAuditLogs(limit) {
 
   if (!logs || !logs.length) return [];
 
-  var userIds = [];
-  logs.forEach(function (r) {
-    if (r.user_id && userIds.indexOf(r.user_id) === -1) userIds.push(r.user_id);
+  const userIds = [];
+  logs.forEach(r => {
+    if (r.user_id && !userIds.includes(r.user_id)) userIds.push(r.user_id);
   });
 
-  var userMap = {};
+  const userMap = {};
   if (userIds.length > 0) {
-    var { data: users } = await supabase.from('users').select('id, username, role').in('id', userIds);
-    (users || []).forEach(function (u) { userMap[u.id] = u; });
+    const { data: users } = await supabase.from('users').select('id, username, role').in('id', userIds);
+    (users || []).forEach(u => { userMap[u.id] = u; });
   }
 
-  return logs.map(function (row) {
-    var u = userMap[row.user_id] || {};
+  return logs.map(row => {
+    const u = userMap[row.user_id] || {};
     return Object.assign({}, row, {
       username: u.username || 'System',
       role: u.role || ''

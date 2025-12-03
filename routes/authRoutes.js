@@ -177,9 +177,6 @@ router.post('/login', async function (req, res) {
             isImpossibleTravel = checkImpossibleTravel(country, lastLogin.country, timeDiffMinutes);
             
             if (isNewCountry || isImpossibleTravel) {
-                // Suspend the device
-                await supabase.from('devices').update({ approved: false }).eq('id', deviceResult.device.id);
-                
                 var anomalyReason = isImpossibleTravel ? 'Impossible travel detected' : 'Unrecognized login location';
                 
                 await logEvent(user.id, 'LOCATION_ANOMALY', anomalyReason + ' from ' + country, ip);
@@ -193,10 +190,9 @@ router.post('/login', async function (req, res) {
                     details: { reason: anomalyReason, previous_location: lastLogin.country, role: user.role }
                 });
                 
-                return res.json({
-                    success: false,
-                    message: 'Security Alert: Login attempt from an unusual location. This device has been suspended for security reasons. Please contact your administrator.'
-                });
+                // Do not permanently suspend the device or hard-block the login here.
+                // The dynamic Risk Engine will evaluate this anomaly and Conditional Access
+                // will block the session later if the risk score crosses the threshold.
             }
         }
 
