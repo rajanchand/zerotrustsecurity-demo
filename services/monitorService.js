@@ -2,7 +2,7 @@
 
 const { supabase } = require('../db');
 
-// list of active SSE response objects (one per browser tab)
+// list of active SSE response objects 
 let clients = [];
 
 var SEVERITY = {

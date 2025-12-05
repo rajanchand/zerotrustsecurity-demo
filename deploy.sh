@@ -1,6 +1,4 @@
 #!/bin/bash
-# deploy.sh - Deploy ZTS from GitHub to VPS
-# Run this on the VPS: bash /root/deploy.sh
 
 set -e  # Exit immediately if any command fails
 
@@ -18,7 +16,7 @@ echo "  Dir  : $APP_DIR"
 echo "  IP   : $VPS_IP"
 echo ""
 
-# ─── Step 1: Install Node.js 20 (if not installed) ─────────────────────────
+# ─── Step 1: Install Node.js 20  ─────────────────────────
 if ! command -v node &> /dev/null; then
   echo "[1/7] Installing Node.js 20..."
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -27,7 +25,7 @@ else
   echo "[1/7] Node.js already installed: $(node -v)"
 fi
 
-# ─── Step 2: Install PM2 (if not installed) ─────────────────────────────────
+# ─── Step 2: Install PM2  ─────────────────────────────────
 if ! command -v pm2 &> /dev/null; then
   echo "[2/7] Installing PM2..."
   npm install -g pm2

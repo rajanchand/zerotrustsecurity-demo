@@ -1,11 +1,10 @@
 // seed.js
-// Creates realistic demo users for ZTS
 // Run: node seed.js
 
 var bcrypt = require('bcryptjs');
 var { supabase } = require('./db');
 
-// Realistic users with name-based usernames, genuine emails, and proper roles
+//  users with name-based usernames,  emails, with proper roles
 var users = [
     {
         username: 'rajan.chand',

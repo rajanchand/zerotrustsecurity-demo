@@ -4,7 +4,6 @@
 var { supabase } = require('../db');
 
 // check if device already exists for this user
-// tries fingerprint match first, then browser+OS as fallback
 async function findDevice(userId, fingerprint, browser, os) {
   // first try exact fingerprint match
   var { data } = await supabase

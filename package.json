@@ -1,7 +1,7 @@
 {
   "name": "zts-zero-trust-security-demo",
   "version": "2.0.0",
-  "description": "Zero Trust Security Demo for MSc Dissertation (NIST SP 800-207)",
+  "description": "Zero Trust Security Demo for MSc Dissertation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

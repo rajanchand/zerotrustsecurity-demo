@@ -1,5 +1,4 @@
 // setup-db.js
-// Creates all the required tables in Supabase
 // Run once: node setup-db.js
 
 require('dotenv').config();

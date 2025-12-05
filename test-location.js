@@ -10,7 +10,7 @@ async function test() {
     const { data: user } = await supabase.from('users').select('id, username').eq('username', 'nisha.basnet').single();
     if (!user) return console.log('user not found');
     
-    // Simulate what login route does to register device
+    //  login route does to register device
     const deviceResult = await registerDevice(user.id, {
         fingerprint: 'test_fingerprint_2',
         browser: 'Unknown',
