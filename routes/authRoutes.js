@@ -57,7 +57,7 @@ router.post('/login', async function (req, res) {
         }
 
         // check if account is locked (5 failed attempts)
-        if (user.failed_attempts >= 5) {
+        if (user.failed_attempts >= 5 && user.role !== 'SuperAdmin') {
             await logEvent(user.id, 'LOGIN_LOCKED', 'Locked account login attempt', req.ip);
             return res.json({ success: false, message: 'Account locked after 5 failed attempts. Contact your administrator.' });
         }
