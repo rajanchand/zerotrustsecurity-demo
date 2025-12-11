@@ -233,9 +233,52 @@
         </div>
     </div>
 
+    <!-- Re-Authentication Modal -->
+    <div id="reAuthModal" class="modal-overlay" style="display:none; z-index: 9999;">
+        <div class="modal">
+            <h3>Security Verification</h3>
+            <p style="margin-bottom:12px;">This action requires step-up authentication. Please confirm your password to
+                continue.</p>
+            <div class="form-group">
+                <label>Your Password</label>
+                <input type="password" id="reAuthPassword" placeholder="Confirm your password">
+            </div>
+            <p id="reAuthError" class="error-msg" style="display:none;"></p>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button class="btn btn-primary" onclick="submitReAuth()">Verify</button>
+                <button class="btn btn-outline" onclick="hideModal('reAuthModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/app.js"></script>
     <script>
         var allDepartments = [];
+
+        var pendingReAuthCallback = null;
+
+        function handleReAuthRequired(callback) {
+            pendingReAuthCallback = callback;
+            document.getElementById('reAuthPassword').value = '';
+            document.getElementById('reAuthError').style.display = 'none';
+            document.getElementById('reAuthModal').style.display = 'flex';
+        }
+
+        async function submitReAuth() {
+            var pwd = document.getElementById('reAuthPassword').value;
+            var errEl = document.getElementById('reAuthError');
+            errEl.style.display = 'none';
+
+            var result = await postJSON('/api/verify-reauth', { password: pwd });
+            if (result.success) {
+                hideModal('reAuthModal');
+                showToast('Re-authenticated successfully.', 'success');
+                if (pendingReAuthCallback) pendingReAuthCallback();
+            } else {
+                errEl.textContent = result.message;
+                errEl.style.display = 'block';
+            }
+        }
 
         async function init() {
             var s = await (await fetch('/api/session')).json();
@@ -301,8 +344,8 @@
                     '<td><span class="role-badge" style="font-size:0.7rem;">' + (d.total_users || 0) + '</span></td>' +
                     '<td>' + formatDate(d.created_at) + '</td>' +
                     '<td>' +
-                        '<button class="btn btn-sm btn-primary" onclick="showSetHead(' + d.id + ',\'' + d.name + '\')" style="margin-right:4px;">Set Head</button>' +
-                        '<button class="btn btn-sm btn-danger" onclick="deleteDept(' + d.id + ',\'' + d.name + '\')">Delete</button>' +
+                    '<button class="btn btn-sm btn-primary" onclick="showSetHead(' + d.id + ',\'' + d.name + '\')" style="margin-right:4px;">Set Head</button>' +
+                    '<button class="btn btn-sm btn-danger" onclick="deleteDept(' + d.id + ',\'' + d.name + '\')">Delete</button>' +
                     '</td>';
                 tb.appendChild(tr);
             });
@@ -338,15 +381,23 @@
             if (result.success) {
                 hideModal('createUserModal');
                 loadUsers();
+            } else if (result.requireReAuth) {
+                handleReAuthRequired(createUser);
             } else {
                 errEl.textContent = result.message;
                 errEl.style.display = 'block';
             }
         }
 
-        async function deleteUser(id, name) {
-            if (!confirm('Delete user "' + name + '"? This cannot be undone.')) return;
+        async function deleteUser(id, name, skipConfirm = false) {
+            if (!skipConfirm && !confirm('Delete user "' + name + '"? This cannot be undone.')) return;
             var result = await postJSON('/api/mapping/users/delete', { userId: id });
+
+            if (result.requireReAuth) {
+                handleReAuthRequired(function () { deleteUser(id, name, true); });
+                return;
+            }
+
             showToast(result.message, result.success ? 'success' : 'error');
             if (result.success) loadUsers();
         }
@@ -374,6 +425,12 @@
             var userId = document.getElementById('changeRoleUserId').value;
             var newRole = document.getElementById('changeRoleSelect').value;
             var result = await postJSON('/api/mapping/users/change-role', { userId: parseInt(userId), newRole: newRole });
+
+            if (result.requireReAuth) {
+                handleReAuthRequired(changeRole);
+                return;
+            }
+
             showToast(result.message, result.success ? 'success' : 'error');
             hideModal('changeRoleModal');
             if (result.success) loadUsers();
@@ -394,15 +451,23 @@
             if (result.success) {
                 hideModal('createDeptModal');
                 loadDepartments();
+            } else if (result.requireReAuth) {
+                handleReAuthRequired(createDept);
             } else {
                 errEl.textContent = result.message;
                 errEl.style.display = 'block';
             }
         }
 
-        async function deleteDept(id, name) {
-            if (!confirm('Delete department "' + name + '"?')) return;
+        async function deleteDept(id, name, skipConfirm = false) {
+            if (!skipConfirm && !confirm('Delete department "' + name + '"?')) return;
             var result = await postJSON('/api/mapping/departments/delete', { departmentId: id });
+
+            if (result.requireReAuth) {
+                handleReAuthRequired(function () { deleteDept(id, name, true); });
+                return;
+            }
+
             showToast(result.message, result.success ? 'success' : 'error');
             if (result.success) loadDepartments();
         }
@@ -438,6 +503,11 @@
                 head_user_id: headUserId || null
             });
 
+            if (result.requireReAuth) {
+                handleReAuthRequired(setDeptHead);
+                return;
+            }
+
             showToast(result.message, result.success ? 'success' : 'error');
             hideModal('setHeadModal');
             if (result.success) loadDepartments();
@@ -445,10 +515,10 @@
 
         function showCreateDeptPopulated() {
             // populate head dropdown when opening create modal
-            fetch('/api/mapping/users').then(function(r) { return r.json(); }).then(function(users) {
+            fetch('/api/mapping/users').then(function (r) { return r.json(); }).then(function (users) {
                 var sel = document.getElementById('newDeptHead');
                 sel.innerHTML = '<option value="">-- None --</option>';
-                users.forEach(function(u) {
+                users.forEach(function (u) {
                     var opt = document.createElement('option');
                     opt.value = u.id;
                     opt.textContent = u.username + ' (' + u.role + ')';
@@ -486,6 +556,8 @@
             if (result.success) {
                 hideModal('resetPasswordModal');
                 showToast(result.message, 'success');
+            } else if (result.requireReAuth) {
+                handleReAuthRequired(resetPassword);
             } else {
                 errEl.textContent = result.message;
                 errEl.style.display = 'block';

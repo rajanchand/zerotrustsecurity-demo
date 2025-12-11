@@ -15,7 +15,8 @@ const dashboardContent = {
             { icon: 'U', title: 'User Management', description: 'View and manage user accounts', link: '/mapping' },
             { icon: 'R', title: 'System Risk', description: 'Monitor risk scores across users', link: '/risk' },
             { icon: 'A', title: 'Audit Trail', description: 'Complete security event log', link: '/mapping' },
-            { icon: 'D', title: 'Device Registry', description: 'Manage registered devices', link: '/register-device' }
+            { icon: 'D', title: 'Device Registry', description: 'Manage registered devices', link: '/register-device' },
+            { icon: 'P', title: 'Security Posture', description: 'View ZTS security configuration status', link: '#security-posture' }
         ]
     },
     HR: {

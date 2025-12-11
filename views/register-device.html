@@ -56,7 +56,7 @@
                             <th>IP</th>
                             <th>Location</th>
                             <th>OS</th>
-                            <th>Status</th>
+                            <th>Status (Trust Level)</th>
                             <th>First Seen</th>
                         </tr>
                     </thead>
@@ -105,9 +105,13 @@
                         '<p>IP: ' + (d.ip || '-') + ' | Location: ' + (d.country || '-') + ' | OS: ' + (d.os || '-') + '</p>' +
                         '<p style="font-size:0.72rem;">Fingerprint: <code style="background:#f0f0f0; padding:1px 5px; border-radius:3px;">' + d.fingerprint + '</code> | First seen: ' + formatDate(d.first_seen) + '</p>' +
                         '</div>' +
-                        '<div style="display:flex; gap:6px;">' +
-                        '<button class="btn btn-sm btn-success" onclick="approveDevice(' + d.id + ')">Approve</button>' +
-                        '<button class="btn btn-sm btn-danger" onclick="rejectDevice(' + d.id + ')">Reject</button>' +
+                        '<div style="display:flex; gap:6px; align-items:center;">' +
+                        '<select id="trust-' + d.id + '" style="padding: 6px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.8rem;">' +
+                        '  <option value="Managed">Managed (Company)</option>' +
+                        '  <option value="BYOD">BYOD (Personal)</option>' +
+                        '</select>' +
+                        '<button class="btn btn-sm btn-success" onclick="approveDevice(\'' + d.id + '\')">Approve</button>' +
+                        '<button class="btn btn-sm btn-danger" onclick="rejectDevice(\'' + d.id + '\')">Reject</button>' +
                         '</div>';
                     pendingEl.appendChild(div);
                 });
@@ -122,9 +126,11 @@
             }
 
             all.forEach(function (d) {
+                var trustLabel = d.trust_level ? ' <span style="font-size:0.75rem;color:#636e72;">(' + d.trust_level + ')</span>' : '';
                 var statusBadge = d.approved
-                    ? '<span class="trust-badge trust-approved">Approved</span>'
-                    : '<span class="trust-badge trust-pending">Pending</span>';
+                    ? '<span class="trust-badge trust-approved">Approved</span>' + trustLabel
+                    : '<span class="trust-badge trust-pending">Pending</span>' + trustLabel;
+
                 var tr = document.createElement('tr');
                 tr.innerHTML =
                     '<td><strong>' + (d.username || '-') + '</strong></td>' +
@@ -139,15 +145,19 @@
         }
 
         async function approveDevice(id) {
-            var result = await postJSON('/api/mapping/devices/approve', { deviceId: id });
-            alert(result.message);
+            var trustLevel = document.getElementById('trust-' + id).value;
+            var result = await postJSON('/api/mapping/devices/approve', { 
+                deviceId: id,
+                trustLevel: trustLevel 
+            });
+            showToast(result.message || 'Device approved', result.success ? 'success' : 'error');
             loadDevices();
         }
 
         async function rejectDevice(id) {
             if (!confirm('Reject this device?')) return;
             var result = await postJSON('/api/mapping/devices/reject', { deviceId: id });
-            alert(result.message);
+            showToast(result.message || 'Device rejected', result.success ? 'success' : 'error');
             loadDevices();
         }
 

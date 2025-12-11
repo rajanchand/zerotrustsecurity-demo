@@ -17,23 +17,24 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS departments (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW ()
+    description TEXT,
+    allowed_countries TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Devices table
 CREATE TABLE IF NOT EXISTS devices (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users (id),
+    id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     fingerprint TEXT NOT NULL,
     browser TEXT,
     os TEXT,
-    ip TEXT,
+    ip_address TEXT,
     country TEXT,
     approved BOOLEAN DEFAULT FALSE,
-    approved_by INTEGER REFERENCES users (id),
-    first_seen TIMESTAMPTZ DEFAULT NOW (),
-    last_seen TIMESTAMPTZ DEFAULT NOW (),
-    label TEXT DEFAULT 'Unknown Device'
+    trust_level TEXT DEFAULT 'Unknown',
+    last_login TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Sessions log

@@ -58,11 +58,37 @@ function formatDate(dateStr) {
     return day + ' ' + month + ' ' + year + ', ' + hours + ':' + mins;
 }
 
+// store csrf token globally
+var csrfToken = '';
+
+// fetch csrf token on load 
+async function fetchCSRFToken() {
+    try {
+        var res = await fetch('/api/csrf-token');
+        var data = await res.json();
+        if (data.csrfToken) {
+            csrfToken = data.csrfToken;
+        }
+    } catch (e) {
+        console.error('Failed to fetch CSRF token');
+    }
+}
+
+// fetch immediately
+fetchCSRFToken();
+
 // send POST request
 async function postJSON(url, data) {
+    var headers = { 'Content-Type': 'application/json' };
+    
+    // add CSRF token if we have one
+    if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+    }
+    
     var response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify(data)
     });
     return response.json();

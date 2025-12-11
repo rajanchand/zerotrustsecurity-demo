@@ -69,6 +69,7 @@ async function registerDevice(userId, info) {
       ip: info.ip,
       country: info.country,
       approved: isSuperAdmin, // Auto-approve SuperAdmin devices
+      trust_level: isSuperAdmin ? 'Managed' : 'Unknown', // Default trust level
       label: label
     })
     .select()
@@ -159,14 +160,26 @@ async function getPendingDevices() {
   });
 }
 
-// approve a device
-async function approveDevice(deviceId, approvedBy) {
-  var { data, error } = await supabase
-    .from('devices')
-    .update({ approved: true, approved_by: approvedBy })
-    .eq('id', deviceId)
-    .select()
-    .single();
+// Approve a pending device with a specific trust level
+async function approveDevice(deviceId, approvedBy, trustLevel = 'Managed') {
+    const { data: device } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('id', deviceId)
+        .single();
+        
+    if (!device) return { success: false, message: 'Device not found' };
+    
+    const { data, error } = await supabase
+        .from('devices')
+        .update({ 
+            approved: true, 
+            approved_by: approvedBy,
+            trust_level: trustLevel
+        })
+        .eq('id', deviceId)
+        .select()
+        .single();
 
   return data;
 }

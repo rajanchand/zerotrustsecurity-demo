@@ -4,9 +4,10 @@ const { logSecurityEvent } = require('./monitorService');
 const RISK_WEIGHTS = {
     NEW_DEVICE: 25,
     NEW_COUNTRY: 30,
-    FAILED_LOGINS: 20,
-    VPN_DETECTED: 15,
-    ADMIN_UNKNOWN_IP: 35
+    MULTIPLE_FAILURES: 20, // frequent wrong passwords (formerly FAILED_LOGINS)
+    VPN_ANONYMIZER: 30,    // using a VPN/Proxy (formerly VPN_DETECTED)
+    UNUSUAL_HOURS: 15,     // login outside business hours (remote work remote)
+    ADMIN_UNKNOWN_IP: 40   // admin role from non-whitelisted IP (value changed from 35)
 };
 
 function getRiskLevel(score) {
@@ -15,33 +16,46 @@ function getRiskLevel(score) {
     return 'High';
 }
 
+// Calculate dynamically requested risk
+// params: { userId, isNewDevice, isNewCountry, failedAttempts, isVPN, isAdminUnknownIP, role, isUnusualHours }
 async function calculateRisk(params) {
     let score = 0;
     const factors = [];
 
+    // 1. Device Trust
     if (params.isNewDevice) {
         score += RISK_WEIGHTS.NEW_DEVICE;
         factors.push({ factor: 'New Device Detected', points: RISK_WEIGHTS.NEW_DEVICE });
     }
 
+    // 2. Location Anomaly
     if (params.isNewCountry) {
         score += RISK_WEIGHTS.NEW_COUNTRY;
         factors.push({ factor: 'New Country / Location', points: RISK_WEIGHTS.NEW_COUNTRY });
     }
 
+    // 3. Authentication Behavior
     if (params.failedAttempts >= 3) {
-        score += RISK_WEIGHTS.FAILED_LOGINS;
-        factors.push({ factor: `Multiple Failed Logins (${params.failedAttempts})`, points: RISK_WEIGHTS.FAILED_LOGINS });
+        score += RISK_WEIGHTS.MULTIPLE_FAILURES; // Changed from FAILED_LOGINS
+        factors.push({ factor: `Multiple Failed Logins (${params.failedAttempts})`, points: RISK_WEIGHTS.MULTIPLE_FAILURES });
     }
 
+    // 4. Network Context
     if (params.isVPN) {
-        score += RISK_WEIGHTS.VPN_DETECTED;
-        factors.push({ factor: 'VPN Connection Detected', points: RISK_WEIGHTS.VPN_DETECTED });
+        score += RISK_WEIGHTS.VPN_ANONYMIZER; // Changed from VPN_DETECTED
+        factors.push({ factor: 'VPN Connection Detected', points: RISK_WEIGHTS.VPN_ANONYMIZER });
     }
 
+    // 5. Privileged Access
     if (params.isAdminUnknownIP && (params.role === 'SuperAdmin' || params.role === 'IT')) {
         score += RISK_WEIGHTS.ADMIN_UNKNOWN_IP;
         factors.push({ factor: 'Admin Login from Unknown IP', points: RISK_WEIGHTS.ADMIN_UNKNOWN_IP });
+    }
+
+    // 6. Remote Work Context: Working Hours Anomaly
+    if (params.isUnusualHours) {
+        score += RISK_WEIGHTS.UNUSUAL_HOURS;
+        factors.push({ factor: 'Login outside typical business hours', points: RISK_WEIGHTS.UNUSUAL_HOURS });
     }
 
     if (score > 100) score = 100;

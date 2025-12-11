@@ -1,6 +1,10 @@
 // services/geoService.js
 // IP geolocation and VPN detection
-// uses ip-api.com 
+// uses ip-api.com
+
+// determines if IP is proxy/VPN
+const { exec } = require('child_process');
+const http = require('http');
 
 let geoCache = {};
 

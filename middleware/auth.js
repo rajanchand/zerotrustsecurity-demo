@@ -1,11 +1,19 @@
 // middleware/auth.js
-// checks if the user is logged in and session is valid
+// authentication guard with session-device binding, concurrent session control,
+// password expiry check, and continuous risk assessment
 
 var { logSecurityEvent } = require('../services/monitorService');
+var { supabase } = require('../db');
+
+// paths that don't require authentication
+var PUBLIC_PATHS = ['/login', '/logout', '/css', '/js', '/api/csrf-token'];
+
+// how often to re-validate session token against DB (ms)
+var SESSION_CHECK_INTERVAL = 60 * 1000; // every 60 seconds
 
 function requireLogin(req, res, next) {
-    // allow login and static routes
-    if (req.path === '/login' || req.path === '/logout' || req.path.startsWith('/css') || req.path.startsWith('/js')) {
+    // allow login, logout, and static routes
+    if (PUBLIC_PATHS.some(function (p) { return req.path === p || req.path.startsWith(p + '/'); })) {
         return next();
     }
 
@@ -13,27 +21,27 @@ function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
-    // STRICT CONDITIONAL ACCESS: Block high-risk sessions
-    // Don't block them from seeing the security block page or logging out
+    // CONDITIONAL ACCESS: Block high-risk sessions
     if (req.session.highRisk && req.path !== '/security-block' && req.path !== '/logout') {
         return res.redirect('/security-block');
     }
 
-    const now = Date.now();
-    const lastActive = req.session.lastActive || now;
-    const timeout = 15 * 60 * 1000;
+    // SESSION TIMEOUT: 15 minutes inactivity
+    var now = Date.now();
+    var lastActive = req.session.lastActive || now;
+    var timeout = 15 * 60 * 1000;
 
     if (now - lastActive > timeout) {
-        const uid = req.session.userId;
-        const uname = req.session.username || 'unknown';
-        req.session.destroy(() => {
+        var uid = req.session.userId;
+        var uname = req.session.username || 'unknown';
+        req.session.destroy(function () {
             logSecurityEvent({
                 event_type: 'FORCE_LOGOUT',
                 user_id: uid,
                 username: uname,
                 ip: req.ip,
                 details: { reason: 'Session timeout (15 min inactivity)', path: req.path }
-            }).catch(() => { });
+            }).catch(function () { });
             res.redirect('/login?msg=session_expired');
         });
         return;
@@ -42,7 +50,74 @@ function requireLogin(req, res, next) {
     // update last active
     req.session.lastActive = now;
 
-    // check if OTP verified (except on OTP page itself)
+    // SESSION-DEVICE BINDING: detect session hijacking
+    var clientFingerprint = req.headers['x-device-fingerprint'];
+    if (clientFingerprint && req.session.deviceFingerprint && clientFingerprint !== req.session.deviceFingerprint) {
+        var hijackUid = req.session.userId;
+        var hijackUname = req.session.username || 'unknown';
+        logSecurityEvent({
+            event_type: 'SESSION_HIJACK_ATTEMPT',
+            user_id: hijackUid,
+            username: hijackUname,
+            ip: req.ip,
+            details: {
+                reason: 'Device fingerprint mismatch mid-session',
+                expected: req.session.deviceFingerprint,
+                received: clientFingerprint
+            }
+        }).catch(function () { });
+        req.session.destroy(function () {
+            res.redirect('/login?msg=session_invalid');
+        });
+        return;
+    }
+
+    // CONCURRENT SESSION CONTROL: check session token periodically
+    var lastSessionCheck = req.session.lastSessionCheck || 0;
+    if (now - lastSessionCheck > SESSION_CHECK_INTERVAL && req.session.sessionToken) {
+        req.session.lastSessionCheck = now;
+        // async check — don't block the request, but invalidate if needed
+        supabase
+            .from('users')
+            .select('active_session_token, password_changed_at')
+            .eq('id', req.session.userId)
+            .single()
+            .then(function (result) {
+                if (result.data) {
+                    // check if another session has taken over
+                    if (result.data.active_session_token && result.data.active_session_token !== req.session.sessionToken) {
+                        logSecurityEvent({
+                            event_type: 'FORCE_LOGOUT',
+                            user_id: req.session.userId,
+                            username: req.session.username || 'unknown',
+                            ip: req.ip,
+                            details: { reason: 'Concurrent login detected — session invalidated by newer login' }
+                        }).catch(function () { });
+                        req.session.destroy(function () { });
+                    }
+
+                    // PASSWORD EXPIRY: check if password older than 90 days
+                    if (result.data.password_changed_at) {
+                        var changedAt = new Date(result.data.password_changed_at).getTime();
+                        var ninetyDays = 90 * 24 * 60 * 60 * 1000;
+                        if (Date.now() - changedAt > ninetyDays) {
+                            req.session.passwordExpired = true;
+                        }
+                    }
+                }
+            })
+            .catch(function () { });
+    }
+
+    // PASSWORD EXPIRY: redirect to profile if password expired (except profile and API routes)
+    if (req.session.passwordExpired && req.path !== '/profile' && !req.path.startsWith('/api/profile') && req.path !== '/logout') {
+        if (req.path.startsWith('/api/')) {
+            return res.status(403).json({ success: false, passwordExpired: true, message: 'Your password has expired. Please change it in your profile.' });
+        }
+        return res.redirect('/profile?msg=password_expired');
+    }
+
+    // OTP check (except on OTP page itself)
     if (req.path !== '/otp' && req.path !== '/verify-otp' && !req.session.otpVerified) {
         return res.redirect('/otp');
     }
@@ -51,4 +126,3 @@ function requireLogin(req, res, next) {
 }
 
 module.exports = { requireLogin };
-

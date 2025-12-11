@@ -1,5 +1,9 @@
+// services/otpService.js
+// OTP generation, verification, and email delivery
+
 const { supabase } = require('../db');
 const { sendOTPEmail } = require('./emailService');
+const { encrypt, decrypt } = require('./encryptionService');
 
 async function generateOTP(userId) {
     const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -12,9 +16,12 @@ async function generateOTP(userId) {
         .eq('user_id', userId)
         .eq('used', false);
 
+    // encrypt the OTP code before storing
+    const encryptedCode = encrypt(code);
+
     await supabase.from('otp_store').insert({
         user_id: userId,
-        code: code,
+        code: encryptedCode,
         expires_at: expiresAt
     });
 
@@ -34,27 +41,41 @@ async function generateOTP(userId) {
 }
 
 async function verifyOTP(userId, code) {
-    const { data: row } = await supabase
+    // fetch all unused OTPs for this user (check encrypted values)
+    const { data: rows } = await supabase
         .from('otp_store')
         .select('*')
         .eq('user_id', userId)
-        .eq('code', code)
         .eq('used', false)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(5);
 
-    if (!row) {
+    if (!rows || rows.length === 0) {
+        return { valid: false, reason: 'Invalid OTP code.' };
+    }
+
+    // find matching OTP (may be encrypted or plaintext for backwards compat)
+    var matchedRow = null;
+    for (var i = 0; i < rows.length; i++) {
+        var storedCode = rows[i].code;
+        var decryptedCode = decrypt(storedCode);
+        if (decryptedCode === code) {
+            matchedRow = rows[i];
+            break;
+        }
+    }
+
+    if (!matchedRow) {
         return { valid: false, reason: 'Invalid OTP code.' };
     }
 
     const now = new Date();
-    const expiry = new Date(row.expires_at);
+    const expiry = new Date(matchedRow.expires_at);
     if (now > expiry) {
         return { valid: false, reason: 'OTP has expired. Please request a new one.' };
     }
 
-    await supabase.from('otp_store').update({ used: true }).eq('id', row.id);
+    await supabase.from('otp_store').update({ used: true }).eq('id', matchedRow.id);
 
     return { valid: true };
 }

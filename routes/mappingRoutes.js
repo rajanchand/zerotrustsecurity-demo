@@ -1,6 +1,7 @@
 // routes/mappingRoutes.js
 // user management, department management, device registration
 // only accessible by SuperAdmin and Admin roles
+// includes: password policy, step-up re-authentication
 
 var express = require('express');
 var bcrypt = require('bcryptjs');
@@ -8,6 +9,8 @@ var path = require('path');
 var { supabase } = require('../db');
 var { logEvent } = require('../services/auditService');
 var { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
+var { validatePassword } = require('../middleware/passwordPolicy');
+var { requireReAuth } = require('../middleware/stepUpAuth');
 
 var router = express.Router();
 var { logSecurityEvent } = require('../services/monitorService');
@@ -39,7 +42,7 @@ router.get('/api/mapping/users', async function (req, res) {
 });
 
 // create new user
-router.post('/api/mapping/users/create', async function (req, res) {
+router.post('/api/mapping/users/create', requireReAuth, async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -57,6 +60,12 @@ router.post('/api/mapping/users/create', async function (req, res) {
 
         if (!username || !password || !role) {
             return res.json({ success: false, message: 'Username, password, and role are required.' });
+        }
+
+        // PASSWORD POLICY enforcement
+        var policy = validatePassword(password);
+        if (!policy.valid) {
+            return res.json({ success: false, message: policy.errors.join(' ') });
         }
 
         // check if username already exists
@@ -99,8 +108,37 @@ router.post('/api/mapping/users/create', async function (req, res) {
     }
 });
 
+// approve device
+router.post('/api/mapping/devices/approve', requireReAuth, async function (req, res) {
+    try {
+        var { deviceId, trustLevel } = req.body;
+        if (!deviceId) return res.json({ success: false });
+
+        var adminId = req.session.userId;
+        var approvedLevel = trustLevel || 'Managed';
+        await approveDevice(deviceId, adminId, approvedLevel);
+
+        var { data: target } = await supabase.from('devices').select('user_id, fingerprint').eq('id', deviceId).single();
+        var tId = target ? target.user_id : 'unknown';
+
+        await logEvent(adminId, 'DEVICE_APPROVED', 'Approved device ' + deviceId + ' (' + approvedLevel + ') for user ' + tId, req.ip);
+        
+        await logSecurityEvent({
+            event_type: 'DEVICE_APPROVED',
+            user_id: adminId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { action: 'device_approved', target_device: deviceId, target_user: tId, trust_level: approvedLevel }
+        });
+
+        res.json({ success: true, message: 'Device approved as ' + approvedLevel });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+});
+
 // delete user
-router.post('/api/mapping/users/delete', async function (req, res) {
+router.post('/api/mapping/users/delete', requireReAuth, async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -165,7 +203,7 @@ router.post('/api/mapping/users/delete', async function (req, res) {
 });
 
 // change user role
-router.post('/api/mapping/users/change-role', async function (req, res) {
+router.post('/api/mapping/users/change-role', requireReAuth, async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
