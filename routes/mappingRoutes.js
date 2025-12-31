@@ -545,29 +545,7 @@ router.get('/api/mapping/devices/all', async function (req, res) {
     }
 });
 
-router.post('/api/mapping/devices/approve', async function (req, res) {
-    try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
-            .from('devices')
-            .select('approved')
-            .eq('user_id', req.session.userId)
-            .eq('fingerprint', req.session.deviceFingerprint)
-            .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
-        }
-
-        var deviceId = req.body.deviceId;
-        await approveDevice(deviceId, req.session.userId);
-
-        await logEvent(req.session.userId, 'DEVICE_APPROVED', 'Approved device ID: ' + deviceId, req.ip);
-        res.json({ success: true, message: 'Device approved.' });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
-    }
-});
 
 router.post('/api/mapping/devices/reject', async function (req, res) {
     try {

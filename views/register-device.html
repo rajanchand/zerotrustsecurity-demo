@@ -150,6 +150,12 @@
                 deviceId: id,
                 trustLevel: trustLevel 
             });
+            
+            if (result.requireReAuth) {
+                handleReAuthRequired(function() { approveDevice(id); });
+                return;
+            }
+
             showToast(result.message || 'Device approved', result.success ? 'success' : 'error');
             loadDevices();
         }
@@ -161,8 +167,50 @@
             loadDevices();
         }
 
+        var pendingReAuthCallback = null;
+
+        function handleReAuthRequired(callback) {
+            pendingReAuthCallback = callback;
+            document.getElementById('reAuthPassword').value = '';
+            document.getElementById('reAuthError').style.display = 'none';
+            document.getElementById('reAuthModal').style.display = 'flex';
+        }
+
+        async function submitReAuth() {
+            var pwd = document.getElementById('reAuthPassword').value;
+            var errEl = document.getElementById('reAuthError');
+            errEl.style.display = 'none';
+
+            var result = await postJSON('/api/verify-reauth', { password: pwd });
+            if (result.success) {
+                hideModal('reAuthModal');
+                showToast('Re-authenticated successfully.', 'success');
+                if (pendingReAuthCallback) pendingReAuthCallback();
+            } else {
+                errEl.textContent = result.message;
+                errEl.style.display = 'block';
+            }
+        }
+
         init();
     </script>
+
+    <!-- Re-Authentication Modal -->
+    <div id="reAuthModal" class="modal-overlay" style="display:none; z-index: 9999;">
+        <div class="modal">
+            <h3>Security Verification</h3>
+            <p style="margin-bottom:12px;">This action requires an extra security check. Please confirm your password to continue.</p>
+            <div class="form-group">
+                <label>Your Password</label>
+                <input type="password" id="reAuthPassword" placeholder="Confirm your password">
+            </div>
+            <p id="reAuthError" class="error-msg" style="display:none;"></p>
+            <div style="display:flex; gap:8px; margin-top:16px;">
+                <button class="btn btn-primary" onclick="submitReAuth()">Verify</button>
+                <button class="btn btn-outline" onclick="hideModal('reAuthModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
