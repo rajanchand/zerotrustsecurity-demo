@@ -169,6 +169,10 @@
 
         var pendingReAuthCallback = null;
 
+        function hideModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
         function handleReAuthRequired(callback) {
             pendingReAuthCallback = callback;
             document.getElementById('reAuthPassword').value = '';
