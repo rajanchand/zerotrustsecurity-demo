@@ -481,14 +481,22 @@ router.get('/api/session', function (req, res) {
 
 // logout
 router.get('/logout', async function (req, res) {
-    if (req.session.userId) {
+    if (req.session && req.session.userId) {
         // clear active session token on logout
         await supabase.from('users').update({ active_session_token: null }).eq('id', req.session.userId).catch(function () { });
         await logEvent(req.session.userId, 'LOGOUT', 'User logged out', req.ip);
     }
-    req.session.destroy(function () {
+    
+    // Explicitly clear session cookie
+    res.clearCookie('connect.sid');
+
+    if (req.session) {
+        req.session.destroy(function () {
+            res.redirect('/login');
+        });
+    } else {
         res.redirect('/login');
-    });
+    }
 });
 
 module.exports = router;
