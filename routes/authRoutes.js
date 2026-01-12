@@ -481,20 +481,25 @@ router.get('/api/session', function (req, res) {
 
 // logout
 router.get('/logout', async function (req, res) {
-    if (req.session && req.session.userId) {
-        // clear active session token on logout
-        await supabase.from('users').update({ active_session_token: null }).eq('id', req.session.userId).catch(function () { });
-        await logEvent(req.session.userId, 'LOGOUT', 'User logged out', req.ip);
-    }
-    
-    // Explicitly clear session cookie
-    res.clearCookie('connect.sid');
+    try {
+        if (req.session && req.session.userId) {
+            const userId = req.session.userId;
+            // clear active session token on logout
+            await supabase.from('users').update({ active_session_token: null }).eq('id', userId).catch(function () { });
+            await logEvent(userId, 'LOGOUT', 'User logged out', req.ip).catch(function () { });
+        }
+        
+        res.clearCookie('connect.sid');
 
-    if (req.session) {
-        req.session.destroy(function () {
+        if (req.session) {
+            req.session.destroy(function () {
+                res.redirect('/login');
+            });
+        } else {
             res.redirect('/login');
-        });
-    } else {
+        }
+    } catch (err) {
+        console.error('Logout exception:', err);
         res.redirect('/login');
     }
 });
