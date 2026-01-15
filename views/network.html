@@ -76,11 +76,12 @@
                             <th>OS</th>
                             <th>Status</th>
                             <th>Last Seen</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="deviceTable">
                         <tr>
-                            <td colspan="6" style="text-align:center; color:#aaa;">Loading...</td>
+                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -162,7 +163,7 @@
             tb.innerHTML = '';
 
             if (!data.devices.length) {
-                tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#aaa;">No devices</td></tr>';
+                tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#aaa;">No devices</td></tr>';
                 return;
             }
 
@@ -170,6 +171,9 @@
                 var statusBadge = d.approved
                     ? '<span class="trust-badge trust-approved">Approved</span>'
                     : '<span class="trust-badge trust-pending">Pending</span>';
+                
+                var actionBtn = '<button class="btn btn-sm btn-danger" onclick="rejectDevice(\'' + d.id + '\')">Reject</button>';
+
                 var tr = document.createElement('tr');
                 tr.innerHTML =
                     '<td><strong>' + (d.username || '-') + '</strong></td>' +
@@ -177,9 +181,17 @@
                     '<td>' + (d.ip || '-') + '</td>' +
                     '<td>' + (d.os || '-') + '</td>' +
                     '<td>' + statusBadge + '</td>' +
-                    '<td>' + formatDate(d.last_seen) + '</td>';
+                    '<td>' + formatDate(d.last_seen) + '</td>' +
+                    '<td>' + actionBtn + '</td>';
                 tb.appendChild(tr);
             });
+        }
+
+        async function rejectDevice(id) {
+            if (!confirm('Reject / De-authorize this device?')) return;
+            var result = await postJSON('/api/mapping/devices/reject', { deviceId: id });
+            alert(result.message);
+            loadDeviceHealth();
         }
 
         function showAddIP() {
