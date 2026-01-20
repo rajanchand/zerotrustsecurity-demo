@@ -38,6 +38,23 @@
     <script>
         document.getElementById('fingerprint').value = getFingerprint();
 
+        // Handle error messages from URL redirects
+        var urlParams = new URLSearchParams(window.location.search);
+        var msg = urlParams.get('msg');
+        if (msg) {
+            var errorEl = document.getElementById('errorMsg');
+            if (msg === 'off_hours') {
+                errorEl.innerHTML = '<strong>Access Denied:</strong> Remote work access restricted during off-hours (10:00 PM - 6:00 AM).';
+            } else if (msg === 'session_invalid') {
+                errorEl.innerHTML = '<strong>Session Invalidated:</strong> Safety mismatch detected.';
+            } else if (msg === 'session_expired') {
+                errorEl.style.display = 'none'; // handled by standard flow if any
+            } else {
+                errorEl.textContent = msg.replace(/_/g, ' ');
+            }
+            errorEl.style.display = 'block';
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 

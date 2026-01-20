@@ -21,6 +21,22 @@ function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
+    // TIME-BASED CONTINUOUS ACCESS CONTROL (6 AM - 10 PM)
+    var currentHour = new Date().getHours();
+    var ALLOW_START = 6;
+    var ALLOW_END = 22;
+
+    if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
+        if (req.session) {
+            req.session.destroy(function() {
+                res.redirect('/login?msg=off_hours');
+            });
+        } else {
+            res.redirect('/login?msg=off_hours');
+        }
+        return;
+    }
+
     // CONDITIONAL ACCESS: Block high-risk sessions
     if (req.session.highRisk && req.path !== '/security-block' && req.path !== '/logout') {
         return res.redirect('/security-block');

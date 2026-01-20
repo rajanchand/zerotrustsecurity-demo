@@ -42,6 +42,17 @@ router.post('/login', loginLimiter, async function (req, res) {
 
         // IP BLOCKLIST ENFORCEMENT: check ip_rules table
         try {
+            // TIME-BASED ACCESS CONTROL (Allow 6:00 AM - 10:00 PM Server Time)
+            var currentHour = new Date().getHours();
+            var ALLOW_START = 6;
+            var ALLOW_END = 22;
+
+            if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
+                return res.json({ 
+                    success: false, 
+                    message: 'Access denied: Remote work access restricted during off-hours (10:00 PM to 6:00 AM).' 
+                });
+            }
             var { data: ipRule } = await supabase
                 .from('ip_rules')
                 .select('action, reason')
