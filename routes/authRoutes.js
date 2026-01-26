@@ -50,7 +50,7 @@ router.post('/login', loginLimiter, async function (req, res) {
             if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
                 return res.json({ 
                     success: false, 
-                    message: 'Access denied: Remote work access restricted during off-hours (10:00 PM to 11:00 AM).' 
+                    message: 'Access denied: Remote work access restricted during off-hours (12:00 am to 04:00 AM).' 
                 });
             }
             var { data: ipRule } = await supabase
