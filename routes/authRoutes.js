@@ -42,15 +42,17 @@ router.post('/login', loginLimiter, async function (req, res) {
 
         // IP BLOCKLIST ENFORCEMENT: check ip_rules table
         try {
-            // TIME-BASED ACCESS CONTROL (Allow 6:00 AM - 10:00 PM Server Time)
-            var currentHour = new Date().getHours();
-            var ALLOW_START = 6;
-            var ALLOW_END = 22;
+            // TIME-BASED ACCESS CONTROL (Using UTC to avoid VPS timezone issues)
+            var currentHour = new Date().getUTCHours();
+            console.log('\n[DEBUG] Login Attempt - currentHour (UTC):', currentHour);
+            var ALLOW_START = 0;   // 12:00 AM UTC
+            var ALLOW_END = 24;    // Allow all hours (adjust as needed, e.g. 6-22 for 6AM-10PM UTC)
+            console.log('[DEBUG] Allowed (UTC):', ALLOW_START, '-', ALLOW_END);
 
             if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
-                return res.json({ 
-                    success: false, 
-                    message: 'Access denied: Remote work access restricted during off-hours (12:00 am to 04:00 AM).' 
+                return res.json({
+                    success: false,
+                    message: 'Access denied: Remote work access restricted during off-hours.'
                 });
             }
             var { data: ipRule } = await supabase
@@ -389,7 +391,7 @@ router.get('/otp', function (req, res) {
 router.post('/verify-otp', otpLimiter, async function (req, res) {
     try {
         var code = (req.body.code || '').trim();
-        
+
         // Cache session variables upfront to prevent race conditions if session is destroyed asynchronously
         if (!req.session || !req.session.userId) {
             return res.json({ success: false, message: 'Session expired. Please login again.' });
@@ -441,7 +443,7 @@ router.post('/verify-otp', otpLimiter, async function (req, res) {
             risk_score: riskScore,
             details: { risk_level: riskLevel, role: role, department: department }
         });
-        
+
         await logSecurityEvent({
             event_type: 'OTP_SUCCESS',
             user_id: userId,
@@ -499,7 +501,7 @@ router.get('/logout', async function (req, res) {
             await supabase.from('users').update({ active_session_token: null }).eq('id', userId).catch(function () { });
             await logEvent(userId, 'LOGOUT', 'User logged out', req.ip).catch(function () { });
         }
-        
+
         res.clearCookie('connect.sid');
 
         if (req.session) {
