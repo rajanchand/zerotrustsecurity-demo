@@ -21,10 +21,10 @@ function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
-    // TIME-BASED CONTINUOUS ACCESS CONTROL (6 AM - 10 PM)
-    var currentHour = new Date().getHours();
-    var ALLOW_START = 6;
-    var ALLOW_END = 22;
+    // TIME-BASED CONTINUOUS ACCESS CONTROL (Using UTC to avoid VPS timezone issues)
+    var currentHour = new Date().getUTCHours();
+    var ALLOW_START = 0;   // Allow all hours (adjust as needed, e.g. 6-22 for 6AM-10PM UTC)
+    var ALLOW_END = 24;
 
     if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
         if (req.session) {
