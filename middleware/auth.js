@@ -9,9 +9,9 @@ var { supabase } = require('../db');
 var PUBLIC_PATHS = ['/login', '/logout', '/css', '/js', '/api/csrf-token'];
 
 // how often to re-validate session token against DB (ms)
-var SESSION_CHECK_INTERVAL = 60 * 1000; // every 60 seconds
+var SESSION_CHECK_INTERVAL = 10 * 1000; // 10 seconds for real-time revocation kill switch
 
-function requireLogin(req, res, next) {
+async function requireLogin(req, res, next) {
     // allow login, logout, and static routes
     if (PUBLIC_PATHS.some(function (p) { return req.path === p || req.path.startsWith(p + '/'); })) {
         return next();
@@ -88,41 +88,61 @@ function requireLogin(req, res, next) {
         return;
     }
 
-    // CONCURRENT SESSION CONTROL: check session token periodically
+    // CONCURRENT SESSION CONTROL & KILL SWITCH: check token and status periodically
     var lastSessionCheck = req.session.lastSessionCheck || 0;
     if (now - lastSessionCheck > SESSION_CHECK_INTERVAL && req.session.sessionToken) {
         req.session.lastSessionCheck = now;
-        // async check — don't block the request, but invalidate if needed
-        supabase
-            .from('users')
-            .select('active_session_token, password_changed_at')
-            .eq('id', req.session.userId)
-            .single()
-            .then(function (result) {
-                if (result.data) {
-                    // check if another session has taken over
-                    if (result.data.active_session_token && result.data.active_session_token !== req.session.sessionToken) {
-                        logSecurityEvent({
-                            event_type: 'FORCE_LOGOUT',
-                            user_id: req.session.userId,
-                            username: req.session.username || 'unknown',
-                            ip: req.ip,
-                            details: { reason: 'Concurrent login detected — session invalidated by newer login' }
-                        }).catch(function () { });
-                        req.session.destroy(function () { });
-                    }
+        try {
+            // synchronous database check for kill switch
+            var { data: result } = await supabase
+                .from('users')
+                .select('status, active_session_token, password_changed_at')
+                .eq('id', req.session.userId)
+                .single();
 
-                    // PASSWORD EXPIRY: check if password older than 90 days
-                    if (result.data.password_changed_at) {
-                        var changedAt = new Date(result.data.password_changed_at).getTime();
-                        var ninetyDays = 90 * 24 * 60 * 60 * 1000;
-                        if (Date.now() - changedAt > ninetyDays) {
-                            req.session.passwordExpired = true;
-                        }
+            if (result) {
+                // 1. KILL SWITCH: Blocked or Suspended Accounts
+                if (result.status !== 'active') {
+                    await logSecurityEvent({
+                        event_type: 'FORCE_LOGOUT',
+                        user_id: req.session.userId,
+                        username: req.session.username || 'unknown',
+                        ip: req.ip,
+                        details: { reason: 'Kill switch triggered. Account status changed to: ' + result.status }
+                    }).catch(function () { });
+                    
+                    return req.session.destroy(function () {
+                        res.redirect('/login?msg=account_blocked');
+                    });
+                }
+
+                // 2. CONCURRENT LOGIN REVOCATION: Newer login detected elsewhere
+                if (result.active_session_token && result.active_session_token !== req.session.sessionToken) {
+                    await logSecurityEvent({
+                        event_type: 'FORCE_LOGOUT',
+                        user_id: req.session.userId,
+                        username: req.session.username || 'unknown',
+                        ip: req.ip,
+                        details: { reason: 'Concurrent login detected — session invalidated by newer login' }
+                    }).catch(function () { });
+                    
+                    return req.session.destroy(function () {
+                        res.redirect('/login?msg=session_invalid');
+                    });
+                }
+
+                // 3. PASSWORD EXPIRY: check if password older than 90 days
+                if (result.password_changed_at) {
+                    var changedAt = new Date(result.password_changed_at).getTime();
+                    var ninetyDays = 90 * 24 * 60 * 60 * 1000;
+                    if (Date.now() - changedAt > ninetyDays) {
+                        req.session.passwordExpired = true;
                     }
                 }
-            })
-            .catch(function () { });
+            }
+        } catch (err) {
+            // Ignore DB timeouts to avoid locking out verified users if Supabase has a blip
+        }
     }
 
     // PASSWORD EXPIRY: redirect to profile if password expired (except profile and API routes)
