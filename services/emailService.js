@@ -95,5 +95,49 @@ async function sendLoginAlertEmail(username, ip, country) {
         return { sent: false, reason: err.message };
     }
 }
+// send an anomaly alert email specifically for new locations/IPs/devices
+async function sendAnomalyAlertEmail(username, ip, country, anomalyReason) {
+    var adminEmail = 'rajanchand@zero-trust-security.org'; // Hardcoded per requirement
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+        console.log('  [email] No SMTP config — Anomaly Alert for ' + username);
+        return { sent: false, reason: 'No SMTP credentials configured' };
+    }
 
-module.exports = { sendOTPEmail, sendLoginAlertEmail };
+    var subject = '🚨 ZTS Critical Alert: Anomalous Login Detected';
+
+    var html = [
+        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #ff7675;border-radius:8px;">',
+        '  <h2 style="color:#d63031;margin-bottom:4px;">🚨 Critical Security Alert</h2>',
+        '  <p style="color:#636e72;font-size:13px;margin-top:0;">Suspicious Login Activity</p>',
+        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
+        '  <p style="font-size:15px;color:#2d3436;">The Zero Trust Security system has detected an anomalous login attempt.</p>',
+        '  <div style="background:#fff3f3;border-left:4px solid #d63031;padding:12px 16px;margin:20px 0;">',
+        '    <p style="margin:0;font-size:14px;color:#d63031;"><strong>Alert Reason:</strong> ' + anomalyReason + '</p>',
+        '  </div>',
+        '  <ul style="font-size:14px;color:#2d3436;background:#f4f5f7;border-radius:8px;padding:20px;list-style-type:none;margin:0;">',
+        '    <li style="margin-bottom:8px;"><strong>Username:</strong> ' + username + '</li>',
+        '    <li style="margin-bottom:8px;"><strong>IP Address:</strong> ' + ip + '</li>',
+        '    <li><strong>Location:</strong> ' + country + '</li>',
+        '  </ul>',
+        '  <p style="font-size:13px;color:#636e72;margin-top:20px;">Please investigate this activity immediately in the SuperAdmin dashboard.</p>',
+        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
+        '  <p style="font-size:11px;color:#b2bec3;text-align:center;">ZTS — Zero Trust Security Alerts</p>',
+        '</div>'
+    ].join('\n');
+
+    try {
+        await transporter.sendMail({
+            from: '"ZTS Security Alerts" <' + process.env.SMTP_EMAIL + '>',
+            to: adminEmail,
+            subject: subject,
+            html: html
+        });
+        console.log('  [email] Anomaly alert sent to ' + adminEmail + ' for user ' + username);
+        return { sent: true };
+    } catch (err) {
+        console.error('  [email] Failed to send anomaly alert:', err.message);
+        return { sent: false, reason: err.message };
+    }
+}
+
+module.exports = { sendOTPEmail, sendLoginAlertEmail, sendAnomalyAlertEmail };

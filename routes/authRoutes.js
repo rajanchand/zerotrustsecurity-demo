@@ -8,7 +8,7 @@ var crypto = require('crypto');
 var UAParser = require('ua-parser-js');
 var { supabase } = require('../db');
 var { generateOTP, verifyOTP } = require('../services/otpService');
-var { sendLoginAlertEmail } = require('../services/emailService');
+var { sendLoginAlertEmail, sendAnomalyAlertEmail } = require('../services/emailService');
 var { calculateRisk } = require('../services/riskEngine');
 var { registerDevice, findDevice } = require('../services/deviceService');
 var { getCountryFromIP, getGeoFromIP, isVPNConnection, checkImpossibleTravel } = require('../services/geoService');
@@ -159,6 +159,7 @@ router.post('/login', loginLimiter, async function (req, res) {
                 device_id: deviceResult.device ? deviceResult.device.id : null,
                 details: { browser: req.headers['user-agent'], needs_approval: true, role: user.role }
             });
+            sendAnomalyAlertEmail(user.username, ip, country, 'New device detected (needs approval)').catch(function() {});
             return res.json({
                 success: false,
                 message: 'New device detected. Your device must be approved by an administrator before you can login.',
@@ -179,6 +180,7 @@ router.post('/login', loginLimiter, async function (req, res) {
                 device_id: deviceResult.device ? deviceResult.device.id : null,
                 details: { browser: req.headers['user-agent'], auto_approved: true, role: user.role }
             });
+            sendAnomalyAlertEmail(user.username, ip, country, 'New device registered (auto-approved)').catch(function() {});
         }
 
         if (!deviceResult.device.approved && needsApproval) {
@@ -266,6 +268,7 @@ router.post('/login', loginLimiter, async function (req, res) {
                     risk_score: 100,
                     details: { reason: anomalyReason, previous_location: lastLogin.country, role: user.role }
                 });
+                sendAnomalyAlertEmail(user.username, ip, country, anomalyReason).catch(function() {});
             }
         }
 
