@@ -771,8 +771,8 @@ td .btn {
   }
 
   .card-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   /* tables */
@@ -845,7 +845,7 @@ td .btn {
 /* ======================== */
 /* RESPONSIVE - SMALL PHONE */
 /* ======================== */
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .navbar-brand {
     font-size: 0.85rem;
   }
@@ -1005,12 +1005,12 @@ input:disabled {
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .stat-value {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
   }
 }
