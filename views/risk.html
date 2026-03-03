@@ -1,265 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Risk Analytics & Threat Intel - ZTS</title>
+    <title>Risk Score - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border-ui: #e2e8f0;
-            --text-bold: #0f172a;
-            --text-soft: #64748b;
-            --low: #10b981;
-            --medium: #f59e0b;
-            --high: #ef4444;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .page-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+        .page-top h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+        .page-top p { color: #888; font-size: 0.85rem; margin: 4px 0 0; }
 
-        .header-box { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .header-box h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-        .header-box p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
+        .top-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: 16px; margin-bottom: 20px; }
 
-        /* Scoring Master Panel */
-        .risk-master { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; margin-bottom: 32px; }
-        .score-card { background: #fff; padding: 40px; border-radius: 24px; border: 1px solid var(--border-ui); text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        .score-val { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
-        .score-label { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 10px; }
-        
-        .progress-track { background: #f1f5f9; border-radius: 50px; height: 12px; margin: 24px auto; max-width: 300px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 50px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 16px; }
+        .card-head { padding: 14px 18px; border-bottom: 1px solid #eee; font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; }
+        .card-body { padding: 18px; }
 
-        .factor-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .factor-card h3 { margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; color: var(--text-bold); }
-        
+        .score-display { text-align: center; padding: 28px; }
+        .score-number { font-size: 3.5rem; font-weight: 700; }
+        .score-label { font-size: 1rem; font-weight: 600; margin-top: 6px; }
+        .progress-bar { background: #eee; border-radius: 50px; height: 10px; margin: 16px auto; max-width: 250px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 50px; transition: width 0.8s; }
+
         .factor-list { list-style: none; padding: 0; margin: 0; }
-        .factor-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .factor-item { padding: 10px 0; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; font-size: 0.85rem; }
         .factor-item:last-child { border-bottom: none; }
-        .factor-name { font-weight: 600; font-size: 0.95rem; }
-        .factor-pts { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--high); background: #fee2e2; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .factor-pts { font-weight: 700; color: #dc2626; background: #fef2f2; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
 
-        /* Analytic Tables */
-        .analytics-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 32px; }
-        .card-top { padding: 16px 24px; border-bottom: 1px solid var(--border-ui); background: #fff; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-soft); letter-spacing: 0.05em; }
-        
         table { width: 100%; border-collapse: collapse; }
-        th { padding: 12px 24px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 700; border-bottom: 1px solid var(--border-ui); text-align: left; }
-        td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
-        tr:hover td { background: #fbfcfd; }
+        th { padding: 12px 18px; background: #fafafa; color: #888; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        td { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; font-size: 0.82rem; }
 
-        .time-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
-        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-        .b-low { background: #dcfce7; color: #166534; }
-        .b-medium { background: #fef9c3; color: #854d0e; }
-        .b-high { background: #fee2e2; color: #991b1b; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+        .b-low { background: #dcfce7; color: #166534; } .b-medium { background: #fef9c3; color: #854d0e; } .b-high { background: #fee2e2; color: #991b1b; }
+
+        .small-btn { padding: 8px 14px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-ui);">
-        <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="header-box">
+        <div class="page-top">
             <div>
-                <h1>Risk Analytics</h1>
-                <p>NIST SP 800-207 Intelligence-Driven Scoring Engine</p>
+                <h1>Risk Score</h1>
+                <p>Your account security at a glance</p>
             </div>
-            <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Re-scan Profile</button>
+            <button class="small-btn" onclick="loadRisk()">Refresh</button>
         </div>
 
-        <div class="risk-master">
-            <div class="score-card">
-                <div id="sc-val" class="score-val">--</div>
-                <div id="sc-lab" class="score-label">CALCULATING...</div>
-                <div class="progress-track"><div id="sc-fill" class="progress-fill"></div></div>
-                <p style="font-size: 0.85rem; color: var(--text-soft);">Composite Risk Index (CRI) based on behavioral signals, geography, and asset integrity.</p>
+        <div class="top-row">
+            <div class="card">
+                <div class="score-display">
+                    <div id="risk-score-display" class="score-number">--</div>
+                    <div id="risk-score-tier" class="score-label">Loading...</div>
+                    <div class="progress-bar"><div id="risk-score-progress-bar" class="progress-fill"></div></div>
+                    <p style="font-size:0.8rem; color:#aaa;">Based on your recent login activity.</p>
+                </div>
             </div>
-            
-            <div class="factor-card">
-                <h3><i class="fas fa-list-check"></i> Active Risk Drivers</h3>
-                <div id="factorsList">
-                    <p style="text-align: center; color: var(--text-soft); padding: 40px;">Initializing Risk Factor Analysis...</p>
+
+            <div class="card">
+                <div class="card-head">Current Risk Factors</div>
+                <div class="card-body" id="factorsList">
+                    <p style="text-align:center; color:#aaa;">Checking...</p>
                 </div>
             </div>
         </div>
 
-        <div class="analytics-card">
-            <div class="card-top">AI Identity Pulse: 7-Day Risk Velocity Trend</div>
-            <div style="padding: 24px; height: 300px; position:relative;">
+        <div class="card">
+            <div class="card-head">Risk Score (7 Days)</div>
+            <div style="padding:18px; height:250px; position:relative;">
                 <canvas id="riskChart"></canvas>
             </div>
         </div>
 
-        <div class="analytics-card">
-            <div class="card-top">Scoring Heuristics (Policy Engine)</div>
+        <div class="card">
+            <div class="card-head">How Your Score Works</div>
             <table>
-                <thead>
-                    <tr><th>Signal Origin</th><th>Risk Impact</th><th>Threat Classification</th></tr>
-                </thead>
+                <thead><tr><th>Event</th><th>Points</th><th>What It Means</th></tr></thead>
                 <tbody>
-                    <tr><td>Hardware Identity Unverified</td><td><span class="factor-pts">+25</span></td><td>Asset Integrity Anomaly</td></tr>
-                    <tr><td>Geographic Displacement</td><td><span class="factor-pts">+30</span></td><td>Impossible Travel Scenario</td></tr>
-                    <tr><td>Auth Velocity Spike (3+ Fails)</td><td><span class="factor-pts">+20</span></td><td>Brute Force Probability</td></tr>
-                    <tr><td>Virtual Tunnel Detected (VPN)</td><td><span class="factor-pts">+15</span></td><td>Origin Obfuscation</td></tr>
-                    <tr><td>Privileged Access from Remote Node</td><td><span class="factor-pts">+35</span></td><td>Governance Violation</td></tr>
+                    <tr><td>Unknown device</td><td><span class="factor-pts">+25</span></td><td>You used a device that is not registered</td></tr>
+                    <tr><td>Unusual location</td><td><span class="factor-pts">+30</span></td><td>Login from a far-away place in a short time</td></tr>
+                    <tr><td>Failed login attempts</td><td><span class="factor-pts">+20</span></td><td>3 or more wrong password attempts</td></tr>
+                    <tr><td>VPN usage</td><td><span class="factor-pts">+15</span></td><td>Your IP address appears hidden</td></tr>
+                    <tr><td>Off-hours login</td><td><span class="factor-pts">+15</span></td><td>Login outside working hours (before 9am or after 6pm)</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="analytics-card">
-            <div class="card-top">Historical Risk Velocity</div>
+        <div class="card">
+            <div class="card-head">History</div>
             <table>
-                <thead>
-                    <tr><th>CRI Score</th><th>Identity Level</th><th>Source IP</th><th>Location</th><th>Signals Detected</th><th>Timestamp</th></tr>
-                </thead>
-                <tbody id="historyTable">
-                    <tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Fetching Historical Intelligence...</td></tr>
-                </tbody>
+                <thead><tr><th>Score</th><th>Level</th><th>IP</th><th>Location</th><th>Events</th><th>Date</th></tr></thead>
+                <tbody id="historyTable"><tr><td colspan="6" style="text-align:center; padding:32px; color:#aaa;">Loading...</td></tr></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Global Footer -->
-    <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
-    </div>
-
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        async function init() {
-            const s = await (await fetch('/api/session')).json();
-            if (!s.loggedIn) return location.href = '/login';
-            buildNavbar(s.user.role, 'risk', s.user.username);
+        async function loadRisk() {
+            var session = await (await fetch('/api/session')).json();
+            if (!session.loggedIn) return location.href = '/login';
+            buildNavbar(session.user.role, 'risk', session.user.username);
 
-            const d = await (await fetch('/api/risk-data')).json();
+            var data = await (await fetch('/api/risk-data')).json();
+            var score = data.currentScore || 0;
+            var level = data.currentLevel || 'Low';
+            var color = level === 'Low' ? '#16a34a' : level === 'Medium' ? '#d97706' : '#dc2626';
 
-            const val = document.getElementById('sc-val');
-            const lab = document.getElementById('sc-lab');
-            const fill = document.getElementById('sc-fill');
+            document.getElementById('risk-score-display').textContent = score;
+            document.getElementById('risk-score-display').style.color = color;
+            document.getElementById('risk-score-tier').textContent = level.toUpperCase() + ' RISK';
+            document.getElementById('risk-score-tier').style.color = color;
+            document.getElementById('risk-score-progress-bar').style.width = score + '%';
+            document.getElementById('risk-score-progress-bar').style.background = color;
 
-            const score = d.currentScore || 0;
-            const level = d.currentLevel || 'Low';
-            
-            val.textContent = score;
-            lab.textContent = `${level} Risk Index`.toUpperCase();
-            
-            const color = level === 'Low' ? 'var(--low)' : level === 'Medium' ? 'var(--medium)' : 'var(--high)';
-            val.style.color = color;
-            lab.style.color = color;
-            fill.style.width = score + '%';
-            fill.style.background = color;
-
-            // Factors
-            const fl = document.getElementById('factorsList');
-            if (d.factors && d.factors.length) {
-                fl.innerHTML = '<ul class="factor-list">' + d.factors.map(f => `
-                    <li class="factor-item">
-                        <span class="factor-name">${f.factor}</span>
-                        <span class="factor-pts">+${f.points} PTS</span>
-                    </li>
-                `).join('') + '</ul>';
+            var factors = data.factors || [];
+            var factorsArea = document.getElementById('factorsList');
+            if (factors.length > 0) {
+                factorsArea.innerHTML = '<ul class="factor-list">' + factors.map(function(v) {
+                    var name = simplifyFactor(v.factor || v.name || 'Unknown');
+                    var pts = v.points || v.score || v.value || 0;
+                    var prefix = pts >= 0 ? '+' : '';
+                    var cssClass = pts < 0 ? 'factor-pts" style="color:#16a34a; background:#dcfce7;"' : 'factor-pts"';
+                    return '<li class="factor-item"><span>' + name + '</span><span class="' + cssClass + '>' + prefix + pts + ' pts</span></li>';
+                }).join('') + '</ul>';
             } else {
-                fl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-soft); font-weight:600;">Optimal Trust State: No threat signals detected.</div>';
+                factorsArea.innerHTML = '<div style="text-align:center; padding:24px; color:#aaa;">No risk factors on your account.</div>';
             }
 
-            // History
-            const tb = document.getElementById('historyTable');
-            tb.innerHTML = '';
-            if (d.history && d.history.length) {
-                d.history.forEach(r => {
-                    // Handle both old (array) and new (object) formats
-                    let parsed;
-                    try { parsed = JSON.parse(r.factors_json || '[]'); } catch(e) { parsed = []; }
-                    let factors, rip, rcountry;
-                    if (Array.isArray(parsed)) {
-                        factors = parsed;
-                        rip = '';
-                        rcountry = '';
-                    } else {
-                        factors = parsed.factors || [];
-                        rip = parsed.ip || '';
-                        rcountry = parsed.country || '';
-                    }
-                    const signalNames = factors.map(x => x.factor).join(', ') || 'Baseline';
-                    const badgeCls = r.level === 'Low' ? 'b-low' : r.level === 'Medium' ? 'b-medium' : 'b-high';
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${r.score}</strong></td>
-                        <td><span class="badge ${badgeCls}">${r.level}</span></td>
-                        <td class="time-cell">${rip || '—'}</td>
-                        <td>${rcountry || '—'}</td>
-                        <td>${signalNames}</td>
-                        <td class="time-cell">${formatDate(r.created_at)}</td>
-                    `;
-                    tb.appendChild(tr);
+            var history = data.history || [];
+            var tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+            if (history.length > 0) {
+                history.forEach(function(r) {
+                    var evt;
+                    try { evt = JSON.parse(r.factors_json || '{}'); } catch(e) { evt = {}; }
+                    var events = Array.isArray(evt) ? evt : (evt.factors || []);
+                    var ip = Array.isArray(evt) ? '' : (evt.ip || '');
+                    var country = Array.isArray(evt) ? '' : (evt.country || '');
+                    var desc = events.map(function(v) { return simplifyFactor(v.factor || v.name || ''); }).join(', ') || 'None';
+                    var badgeClass = r.level === 'Low' ? 'b-low' : r.level === 'Medium' ? 'b-medium' : 'b-high';
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td><strong>' + r.score + '</strong></td><td><span class="badge ' + badgeClass + '">' + r.level + '</span></td><td style="font-family:monospace; font-size:0.8rem;">' + (ip || '—') + '</td><td>' + (country || '—') + '</td><td>' + desc + '</td><td style="font-size:0.8rem; color:#888;">' + formatDate(r.created_at) + '</td>';
+                    tbody.appendChild(tr);
                 });
-                renderRiskChart(d.history);
+                renderChart(history);
             } else {
-                tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No historical telemetry found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:#aaa;">No history yet.</td></tr>';
             }
         }
-        function renderRiskChart(history) {
-            const ctx = document.getElementById('riskChart').getContext('2d');
-            const data = [...history].reverse(); // Oldest first for chart
-            
-            new Chart(ctx, {
+
+        function renderChart(history) {
+            var data = history.slice().reverse();
+            new Chart(document.getElementById('riskChart').getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: data.map(r => formatDate(r.created_at)),
-                    datasets: [{
-                        label: 'Risk Score Index',
-                        data: data.map(r => r.score),
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#4f46e5'
-                    }]
+                    labels: data.map(function(r) { return formatDate(r.created_at); }),
+                    datasets: [{ label: 'Risk Score', data: data.map(function(r) { return r.score; }),
+                        borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        borderWidth: 2, fill: true, tension: 0.3, pointRadius: 3,
+                        pointBackgroundColor: '#fff', pointBorderColor: '#2563eb' }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        y: { 
-                            beginAtZero: true, 
-                            max: 100,
-                            grid: { color: 'rgba(0,0,0,0.05)' } 
-                        },
-                        x: { 
-                            display: false 
-                        }
-                    }
+                    scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { display: false } }
                 }
             });
         }
 
-        function formatDate(str) {
-            try {
-                const d = new Date(str);
-                return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-            } catch(e) { return str; }
+        // Simplify complex factor names to plain English
+        function simplifyFactor(name) {
+            if (!name) return 'Unknown';
+            var map = {
+                'Late-night login': 'Off-hours login',
+                'Known network': 'Known network',
+                'Unregistered Endpoint Detected': 'Unknown device',
+                'Geolocation Anomaly Detected': 'Unusual location',
+                'VPN Tunnel Detected': 'VPN usage',
+                'Failed Authentication Attempts': 'Failed logins',
+                'Off-Hours Access': 'After-hours login',
+                'New Device Detected': 'New device',
+                'Impossible Travel': 'Unusual location'
+            };
+            return map[name] || name;
         }
 
-        init();
+        loadRisk();
     </script>
 </body>
 </html>

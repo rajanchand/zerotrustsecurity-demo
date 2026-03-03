@@ -1,201 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Factor Authentication - ZTS</title>
+    <title>Verify Code - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text-main: #0f172a;
-            --text-soft: #64748b;
-        }
-
         body { 
             font-family: 'Inter', sans-serif; 
-            background: #f8fafc;
+            background: #f5f5f5;
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 20px;
         }
 
-        .otp-box {
-            background: #fff; width: 100%; max-width: 440px;
-            padding: 48px; border-radius: 28px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
+        .verify-box {
+            background: #fff; width: 100%; max-width: 400px;
+            padding: 40px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
             text-align: center;
         }
 
-        .otp-head { margin-bottom: 32px; }
-        .otp-head i { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
-        .otp-head h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main); }
-        .otp-head p { margin: 8px 0 0; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; }
+        .verify-box h1 { font-size: 1.3rem; font-weight: 700; margin: 0 0 6px; color: #333; }
+        .verify-box .desc { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
 
-        .otp-input-area { margin: 32px 0; }
-        .otp-input-area input { 
-            width: 100%; padding: 18px; border: 2px solid #e2e8f0; border-radius: 12px;
-            font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 800; 
-            text-align: center; letter-spacing: 0.5em; box-sizing: border-box; transition: all 0.2s;
-            color: var(--primary);
+        .code-input { 
+            width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 8px;
+            font-size: 1.6rem; font-weight: 700; text-align: center; 
+            letter-spacing: 0.4em; box-sizing: border-box;
         }
-        .otp-input-area input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.1); }
+        .code-input:focus { outline: none; border-color: #2563eb; }
 
         .verify-btn { 
-            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
-            color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s;
+            width: 100%; padding: 12px; background: #2563eb; border: none; border-radius: 6px;
+            color: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            margin-top: 16px;
         }
-        .verify-btn:active { transform: scale(0.98); }
+        .verify-btn:hover { background: #1d4ed8; }
+        .verify-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .risk-warning { 
-            margin-top: 24px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; 
-            border-radius: 10px; font-size: 0.8rem; color: #92400e; font-weight: 600; 
-            display: none; align-items: center; gap: 8px; text-align: left;
+        .warning-box { 
+            margin-top: 16px; padding: 10px 14px; border-radius: 6px;
+            font-size: 0.8rem; font-weight: 500; text-align: left; display: none;
+        }
+        .warning-yellow { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+        .warning-red { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+
+        #error-msg { 
+            background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c;
+            padding: 10px; border-radius: 6px; font-size: 0.8rem; text-align: center;
+            margin-top: 16px; display: none;
         }
 
-        #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 20px; display: none; }
+        .risk-info {
+            display: none; margin-top: 12px; padding: 12px;
+            background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 8px;
+            text-align: left; font-size: 0.8rem;
+        }
+        .risk-info h4 { font-size: 0.7rem; font-weight: 700; color: #888; text-transform: uppercase; margin: 0 0 8px; }
+
+        .timer { margin-top: 16px; font-size: 0.8rem; color: #888; }
+        .timer strong { color: #333; }
     </style>
 </head>
 <body>
-    <div class="otp-box">
-        <div class="otp-head">
-            <i class="fas fa-shield-check"></i>
-            <h1>Identity Verification</h1>
-            <p>Verification code issued to your registered device.</p>
+    <div class="verify-box">
+        <h1>Enter Verification Code</h1>
+        <p class="desc">We sent a 6-digit code to your registered device.</p>
+
+        <div id="alert-off-hours" class="warning-box warning-yellow">
+            <strong>Off-hours login:</strong> You are signing in outside normal hours. Extra verification is needed.
         </div>
 
-        <div id="offHoursAlert" class="risk-warning">
-            <i class="fas fa-clock"></i>
-            <span>Policy Alert: Identity challenge triggered by Off-Hours access request. Your risk score will be elevated.</span>
+        <div id="alert-vpn" class="warning-box warning-red">
+            <strong>VPN detected:</strong> You seem to be using a VPN or proxy.
         </div>
 
-        <div id="vpnAlert" class="risk-warning" style="display:none; background:#fef2f2; border-color:#fee2e2; color:#991b1b;">
-            <i class="fas fa-shield-alt"></i>
-            <span>VPN Connection Detected: Your connection is routed through a virtual tunnel. This elevates your risk profile.</span>
-        </div>
-
-        <div id="riskContextBox" style="display:none; margin-top:16px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left; font-size:0.8rem;">
-            <div style="font-weight:800; font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.05em; margin-bottom:10px;">
-                <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> Why verification is required
-            </div>
-            <div id="riskFactorsList"></div>
-            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
-                <span>IP: <strong id="ctxIP" style="color:#0f172a;">—</strong></span>
-                <span>Location: <strong id="ctxCountry" style="color:#0f172a;">—</strong></span>
+        <div id="risk-details" class="risk-info">
+            <h4>Why you are seeing this</h4>
+            <div id="risk-factors-list"></div>
+            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #e0e0e0; display:flex; justify-content:space-between; font-size:0.75rem; color:#999;">
+                <span>IP: <strong id="ctx-ip" style="color:#333;">—</strong></span>
+                <span>Location: <strong id="ctx-country" style="color:#333;">—</strong></span>
             </div>
         </div>
 
-        <div id="errorArea"></div>
+        <div id="error-msg"></div>
 
-        <form id="otpForm">
-            <div class="otp-input-area">
-                <input type="text" id="otpCode" placeholder="000000" maxlength="6" required autofocus autocomplete="one-time-code">
+        <form id="verify-form">
+            <div style="margin: 20px 0;">
+                <input type="text" id="token-input" class="code-input" placeholder="000000" maxlength="6" required autofocus autocomplete="one-time-code">
             </div>
-            <button type="submit" class="verify-btn">Verify Identity</button>
+            <button type="submit" class="verify-btn">Verify</button>
         </form>
 
-        <p style="margin-top: 24px; font-size: 0.75rem; color: var(--text-soft);">
-            The code expires in <span id="timer">5:00</span>.
-        </p>
+        <div class="timer">
+            Code expires in: <strong id="timer-display">5:00</strong>
+        </div>
     </div>
 
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        async function checkRisk() {
-            const res = await fetch('/api/session');
-            const s = await res.json();
+        // Load session info and show warnings if needed
+        async function loadSessionInfo() {
+            try {
+                var res = await fetch('/api/session');
+                var session = await res.json();
 
-            // Off-hours warning
-            if (s.offHoursLogin || s.isUnusualHours) {
-                const offAlert = document.getElementById('offHoursAlert');
-                offAlert.style.display = 'flex';
-                offAlert.querySelector('span').innerHTML = `Alert: You are working off-hours from <strong style="color:#b45309">${s.loginCountry || 'Unknown Location'}</strong>. Your risk score is <strong style="color:#b45309">${s.risk ? s.risk.score : 0}</strong> as per the off-hour login penalty.`;
-            }
+                if (session.offHoursLogin || session.isUnusualHours) {
+                    var alert = document.getElementById('alert-off-hours');
+                    alert.style.display = 'block';
+                    alert.innerHTML = '<strong>Off-hours login:</strong> Signing in from ' + (session.loginCountry || 'unknown location') + '. Extra verification needed.';
+                }
 
-            // VPN warning
-            if (s.vpn) {
-                document.getElementById('vpnAlert').style.display = 'flex';
-            }
+                if (session.vpn) {
+                    document.getElementById('alert-vpn').style.display = 'block';
+                }
 
-            // Show IP & Country context
-            if (s.loginIP || s.loginCountry) {
-                document.getElementById('ctxIP').textContent = s.loginIP || '—';
-                document.getElementById('ctxCountry').textContent = s.loginCountry || '—';
-            }
+                if (session.loginIP) document.getElementById('ctx-ip').textContent = session.loginIP;
+                if (session.loginCountry) document.getElementById('ctx-country').textContent = session.loginCountry;
 
-            // Show risk factors
-            const factors = s.risk && s.risk.factors ? s.risk.factors : [];
-            if (factors.length > 0) {
-                const box = document.getElementById('riskContextBox');
-                box.style.display = 'block';
-                const list = document.getElementById('riskFactorsList');
-                list.innerHTML = '';
-                factors.forEach(f => {
-                    const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;';
+                var factors = session.risk && session.risk.factors ? session.risk.factors : [];
+                if (factors.length > 0) {
+                    document.getElementById('risk-details').style.display = 'block';
+                    var list = document.getElementById('risk-factors-list');
+                    list.innerHTML = '';
                     
-                    const label = document.createElement('span');
-                    label.style.cssText = 'font-weight:600; color:#334155;';
-                    label.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:6px; font-size:0.7rem;"></i>';
-                    label.appendChild(document.createTextNode(f.factor));
-                    
-                    const pts = document.createElement('span');
-                    pts.style.cssText = "font-family:'JetBrains Mono',monospace; font-weight:800; color:#ef4444; background:#fee2e2; padding:2px 8px; border-radius:4px; font-size:0.7rem;";
-                    pts.textContent = '+' + f.points + ' PTS';
-                    
-                    row.append(label, pts);
-                    list.appendChild(row);
-                });
+                    factors.forEach(function(f) {
+                        var row = document.createElement('div');
+                        var prefix = f.points >= 0 ? '+' : '';
+                        row.innerHTML = '<span style="color:#555;">' + f.factor + '</span><span style="color:' + (f.points < 0 ? '#16a34a' : '#b91c1c') + '; font-weight:600;">' + prefix + f.points + ' pts</span>';
+                        list.appendChild(row);
+                    });
+                }
+            } catch (err) {
+                // Silently fail
             }
         }
-        checkRisk();
 
-        document.getElementById('otpForm').addEventListener('submit', async function(e) {
+        // Handle code submission
+        async function verifyCode(e) {
             e.preventDefault();
-            const err = document.getElementById('errorArea');
-            err.style.display = 'none';
+            var errorBox = document.getElementById('error-msg');
+            errorBox.style.display = 'none';
 
-            const res = await postJSON('/api/verify-otp', {
-                code: document.getElementById('otpCode').value
-            });
+            try {
+                var result = await postJSON('/api/verify-otp', {
+                    code: document.getElementById('token-input').value
+                });
 
-            if (res.success) {
-                location.href = res.redirect || '/dashboard';
-            } else {
-                err.textContent = res.message;
-                err.style.display = 'block';
-            }
-        });
-
-        let timeLeft = 300;
-        var timerInterval = setInterval(function() {
-            if (timeLeft > 0) {
-                timeLeft--;
-                var m = Math.floor(timeLeft / 60);
-                var sec = timeLeft % 60;
-                document.getElementById('timer').textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
-                if (timeLeft <= 30) {
-                    document.getElementById('timer').style.color = '#ef4444';
-                    document.getElementById('timer').style.fontWeight = '700';
+                if (result.success) {
+                    location.href = result.redirect || '/dashboard';
+                } else {
+                    errorBox.textContent = result.message || 'Wrong code. Please try again.';
+                    errorBox.style.display = 'block';
                 }
-            } else {
-                clearInterval(timerInterval);
-                document.getElementById('timer').textContent = 'EXPIRED';
-                document.getElementById('timer').style.color = '#ef4444';
-                document.querySelector('.verify-btn').disabled = true;
-                document.querySelector('.verify-btn').style.opacity = '0.5';
-                document.querySelector('.verify-btn').style.cursor = 'not-allowed';
-                var err = document.getElementById('errorArea');
-                err.textContent = 'Verification code has expired. Please log in again to receive a new code.';
-                err.style.display = 'block';
+            } catch (err) {
+                errorBox.textContent = 'Server error. Please try again.';
+                errorBox.style.display = 'block';
             }
-        }, 1000);
+        }
+
+        // Countdown timer
+        function startTimer() {
+            var seconds = 300;
+            var display = document.getElementById('timer-display');
+            
+            var interval = setInterval(function() {
+                if (seconds > 0) {
+                    seconds--;
+                    var m = Math.floor(seconds / 60);
+                    var s = seconds % 60;
+                    display.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+                    if (seconds <= 30) display.style.color = '#b91c1c';
+                } else {
+                    clearInterval(interval);
+                    display.textContent = 'EXPIRED';
+                    display.style.color = '#b91c1c';
+                    document.querySelector('.verify-btn').disabled = true;
+                    var errorBox = document.getElementById('error-msg');
+                    errorBox.textContent = 'Code expired. Go back to login and try again.';
+                    errorBox.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        loadSessionInfo();
+        startTimer();
+        document.getElementById('verify-form').addEventListener('submit', verifyCode);
     </script>
 </body>
 </html>

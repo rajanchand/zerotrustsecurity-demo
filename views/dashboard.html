@@ -1,313 +1,493 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive SOC Overview - ZTS</title>
+    <title>Dashboard - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f1f5f9;
-            --card-root: #ffffff;
-            --border-panel: #e2e8f0;
-            --text-strong: #0f172a;
-            --text-soft: #475569;
-            --accent-glow: #3b82f6;
-            --danger-glow: #ef4444;
-            --warning-glow: #f59e0b;
-            --success-glow: #10b981;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-strong);
+            background: #f5f5f5;
+            color: #333;
             margin: 0;
-            padding: 90px 24px 40px;
+            padding: 80px 24px 40px;
         }
 
-        .soc-layout { max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
-        
-        .welcome-panel { 
-            grid-column: span 2; 
-            background: #ffffff;
-            border-radius: 20px; padding: 32px; color: #0f172a;
+        .layout {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        /* Welcome */
+        .welcome {
+            grid-column: span 2;
+            background: #fff;
+            border-radius: 10px;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 16px;
+        }
+        .welcome h1 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+        .welcome p { color: #888; margin: 4px 0 0; font-size: 0.85rem; }
+
+        /* Stats row */
+        .stats-row {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat-box {
+            background: #fff; padding: 16px; border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .stat-box .label { font-size: 0.65rem; font-weight: 600; color: #999; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-box .value { font-size: 1.3rem; font-weight: 700; }
+        .stat-box .sub { font-size: 0.6rem; color: #aaa; margin-top: 2px; }
+
+        /* Cards */
+        .card {
+            background: #fff; border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden; margin-bottom: 16px;
+        }
+        .card-head {
+            padding: 14px 20px; border-bottom: 1px solid #eee;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin-bottom: 24px;
         }
-        .welcome-panel h1 { font-size: 1.75rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-        .welcome-panel p { opacity: 0.7; margin: 4px 0 0; font-size: 0.9rem; }
+        .card-head h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
 
-        .kpi-row { grid-column: span 2; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
-        .kpi-box { 
-            background: var(--card-root); padding: 20px; border-radius: 16px; 
-            border: 1px solid var(--border-panel); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; gap: 4px;
+        /* Quick links */
+        .quick-links {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 10px; padding: 16px;
         }
-        .kpi-box .lab { font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; }
-        .kpi-box .val { font-size: 1.5rem; font-weight: 800; color: var(--text-strong); }
-        .kpi-box .sub { font-size: 0.65rem; color: var(--text-soft); font-weight: 600; }
-
-        /* Dashboard Cards */
-        .dash-card { background: var(--card-root); border-radius: 20px; border: 1px solid var(--border-panel); overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .card-head { padding: 16px 24px; border-bottom: 1px solid var(--border-panel); display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .card-head h3 { margin: 0; font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-strong); }
-
-        /* Quick Tools */
-        .tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 24px; }
-        .tool-link { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 12px; padding: 20px; background: #fafafa; border: 1px solid var(--border-panel); border-radius: 16px;
-            text-decoration: none; color: var(--text-strong); transition: all 0.2s;
+        .quick-link {
+            display: block; padding: 14px; background: #fafafa;
+            border: 1px solid #eee; border-radius: 8px;
+            text-decoration: none; color: #333;
+            text-align: center; font-size: 0.8rem; font-weight: 600;
         }
-        .tool-link i { font-size: 1.25rem; color: var(--primary); }
-        .tool-link span { font-size: 0.8rem; font-weight: 700; }
-        .tool-link:hover { border-color: var(--primary); background: #f5f3ff; color: var(--primary); transform: translateY(-2px); }
+        .quick-link:hover { background: #f0f0f0; border-color: #ccc; }
 
-        /* Event Log */
-        .evt-list { padding: 0; margin: 0; list-style: none; }
-        .evt-item { padding: 14px 24px; border-bottom: 1px solid var(--border-panel); display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
-        .evt-item:last-child { border-bottom: none; }
-        .evt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .evt-info { flex: 1; font-weight: 500; }
-        .evt-time { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+        /* Event list */
+        .event-item {
+            padding: 12px 20px; border-bottom: 1px solid #f5f5f5;
+            display: flex; align-items: center; gap: 12px; font-size: 0.82rem;
+        }
+        .event-item:last-child { border-bottom: none; }
+        .event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .event-text { flex: 1; }
+        .event-time { font-size: 0.7rem; color: #aaa; }
 
-        /* Side Panel */
-        .side-panel { display: flex; flex-direction: column; gap: 24px; }
-        .risk-circle { width: 100px; height: 100px; border-radius: 50%; border: 8px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 20px auto; position: relative; }
-        .risk-circle::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 8px solid transparent; border-top-color: var(--accent-glow); transform: rotate(45deg); }
+        /* Side panel */
+        .side-panel { display: flex; flex-direction: column; gap: 16px; }
 
-        .alert-toast { background: #fff2f2; border-left: 4px solid var(--danger-glow); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; color: #991b1b; border-radius: 4px; display: none; }
+        .risk-display { text-align: center; padding: 20px; }
+        .risk-number { font-size: 2.5rem; font-weight: 700; }
+        .risk-label { font-size: 0.8rem; font-weight: 600; margin-top: 4px; }
 
-        @media (max-width: 1000px) { .soc-layout { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: repeat(3, 1fr); } .welcome-panel { grid-column: span 1; } }
+        /* Alert banner */
+        .alert-banner {
+            background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+            padding: 10px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 500;
+            margin-bottom: 16px; display: none;
+        }
+
+        /* Emergency button */
+        .danger-btn {
+            background: #dc2626; border: none; color: #fff;
+            padding: 8px 16px; border-radius: 6px;
+            font-weight: 600; font-size: 0.75rem; cursor: pointer;
+        }
+        .danger-btn:hover { background: #b91c1c; }
+
+        /* Modal */
+        .modal-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: none; justify-content: center; align-items: center; z-index: 3000;
+        }
+        .modal-content {
+            background: #fff; width: 100%; max-width: 500px;
+            border-radius: 12px; padding: 32px; text-align: center;
+        }
+        .modal-content h2 { margin: 0 0 12px; font-size: 1.2rem; }
+        .modal-content p { color: #666; font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px; }
+
+        .modal-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem; }
+        .modal-table th { padding: 10px 12px; color: #888; border-bottom: 2px solid #eee; font-size: 0.7rem; text-transform: uppercase; }
+        .modal-table td { padding: 10px 12px; border-bottom: 1px solid #f5f5f5; }
+
+        @media (max-width: 1000px) {
+            .layout { grid-template-columns: 1fr; }
+            .welcome, .stats-row { grid-column: span 1; }
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-panel);">
-        <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="soc-layout">
-        <div class="welcome-panel">
+    <div class="layout">
+        <!-- Welcome bar -->
+        <div class="welcome">
             <div>
-                <h1 id="greetTitle">Secure Enclave Initialized</h1>
-                <p id="greetSub">Synchronizing with NIST SP 800-207 Policy Engine...</p>
+                <h1 id="greet-title">Dashboard</h1>
+                <p id="greet-sub">Loading...</p>
             </div>
-            <div style="display:flex; align-items:center; gap:20px;">
-                <button class="btn btn-danger" onclick="showKillModal()" style="background:#dc2626; border:2px solid #ef4444; font-weight:800; font-size:0.75rem; color:#fff; box-shadow: 0 0 15px rgba(220,38,38,0.4);">
-                    <i class="fas fa-bolt"></i> GLASS BREAK
-                </button>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; opacity: 0.6;">Local Time</div>
-                    <div id="clockArea" style="font-size: 1.25rem; font-weight: 700;">--:--:--</div>
+            <div style="display:flex; align-items:center; gap:16px;">
+                <button class="danger-btn" onclick="showLockdownModal()">End All Sessions</button>
+                <div style="text-align:right;">
+                    <div style="font-size:0.65rem; color:#999; text-transform:uppercase;">Time</div>
+                    <div id="clock-area" style="font-size:1.1rem; font-weight:600;">--:--:--</div>
                 </div>
             </div>
         </div>
 
-        <div class="kpi-row" id="kpiArea">
-            <div class="kpi-box"><div class="lab">Identity Pool</div><div class="val" id="k-users">--</div><div class="sub">Total Managed Clients</div></div>
-            <div class="kpi-box"><div class="lab">Hardware Trust</div><div class="val" id="k-dev">--</div><div class="sub">Approved Company Assets</div></div>
-            <div class="kpi-box"><div class="lab">24h Telemetry</div><div class="val" id="k-evt">--</div><div class="sub">Security Events Capture</div></div>
-            <div class="kpi-box"><div class="lab">Quarantined</div><div class="val" id="k-block" style="color:var(--danger-glow)">--</div><div class="sub">Policy Violations</div></div>
-            <!-- Note: k-mfa and k-health are statically presented as placeholders -->
-            <div class="kpi-box"><div class="lab">MFA Rate</div><div class="val" id="k-mfa">99.8%</div><div class="sub">Identity Protection Layer</div></div>
-            <div class="kpi-box"><div class="lab">SOC Pulse</div><div class="val" id="k-health" style="color:var(--success-glow)">Healthy</div><div class="sub">Platform Status</div></div>
+        <!-- Stats -->
+        <div class="stats-row" id="kpi-matrix">
+            <div class="stat-box"><div class="label">Users</div><div class="value" id="stat-total-identities">--</div><div class="sub">Total accounts</div></div>
+            <div class="stat-box"><div class="label">Devices</div><div class="value" id="stat-managed-hardware">--</div><div class="sub">Registered</div></div>
+            <div class="stat-box"><div class="label">Events (24h)</div><div class="value" id="stat-events-24h">--</div><div class="sub">Recent logs</div></div>
+            <div class="stat-box"><div class="label">Blocked</div><div class="value" id="stat-policy-violations" style="color:#dc2626">--</div><div class="sub">Access denied</div></div>
+            <div class="stat-box"><div class="label">MFA Rate</div><div class="value" id="stat-mfa-protection-rate">99.8%</div><div class="sub">Two-factor usage</div></div>
+            <div class="stat-box"><div class="label">Status</div><div class="value" id="stat-platform-health" style="color:#16a34a">OK</div><div class="sub">System health</div></div>
+            <div class="stat-box" style="cursor:pointer;" onclick="showOffHoursModal()"><div class="label" style="color:#dc2626">Off-Hours</div><div class="value" id="stat-off-hours-logins" style="color:#dc2626">--</div><div class="sub">Unusual logins</div></div>
+            <div class="stat-box" style="cursor:pointer;" onclick="showUniqueUsersModal()"><div class="label" style="color:#d97706">Off-Hour Users</div><div class="value" id="stat-unique-off-hours-users" style="color:#d97706">--</div><div class="sub">Unique accounts</div></div>
         </div>
 
+        <!-- Main content -->
         <div class="main-content">
-            <div id="offHoursAlert" class="alert-toast" style="margin-bottom: 24px; background: #fffbeb; border-color: #f59e0b; color: #92400e; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);"></div>
-            <div id="mainAlert" class="alert-toast" style="margin-bottom: 24px;"></div>
+            <div id="offhours-alert" class="alert-banner"></div>
+            <div id="security-alert" class="alert-banner" style="background:#fef2f2; border-color:#fecaca; color:#b91c1c;"></div>
 
-            <div class="dash-card">
-                <div class="card-head">
-                    <h3>Administrative Control Tower</h3>
-                </div>
-                <div class="tool-grid">
-                    <a href="/mapping" class="tool-link"><i class="fas fa-users-cog"></i><span>Identity Hub</span></a>
-                    <a href="/admin/live-monitoring" class="tool-link"><i class="fas fa-satellite-dish"></i><span>Live Monitor</span></a>
-                    <a href="/network" class="tool-link"><i class="fas fa-shield-halved"></i><span>Firewall Policies</span></a>
-                    <a href="/risk" class="tool-link"><i class="fas fa-biohazard"></i><span>Threat Intel</span></a>
-                    <a href="/admin/user-log" class="tool-link"><i class="fas fa-user-secret"></i><span>Audit Trails</span></a>
-                    <a href="/profile" class="tool-link"><i class="fas fa-id-card"></i><span>My Profile</span></a>
+            <div class="card">
+                <div class="card-head"><h3>Quick Links</h3></div>
+                <div class="quick-links">
+                    <a href="/mapping" class="quick-link">Manage Users</a>
+                    <a href="/admin/live-monitoring" class="quick-link">Live Activity</a>
+                    <a href="/network" class="quick-link">Network Rules</a>
+                    <a href="/risk" class="quick-link">Risk Settings</a>
+                    <a href="/admin/user-log" class="quick-link">Activity Logs</a>
+                    <a href="/profile" class="quick-link">My Profile</a>
                 </div>
             </div>
 
-            <div class="dash-card">
+            <div class="card">
                 <div class="card-head">
-                    <h3>Real-Time Security Activity</h3>
-                    <a href="/admin/live-monitoring" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">Open Sentinel <i class="fas fa-external-link-alt"></i></a>
+                    <h3>Recent Activity</h3>
+                    <a href="/admin/live-monitoring" style="font-size:0.75rem; color:#2563eb; text-decoration:none; font-weight:600;">View all</a>
                 </div>
-                <div class="evt-list" id="eventArea">
-                    <div style="padding: 40px; text-align: center; color: var(--text-soft); font-size: 0.9rem;">Polling Security Stream...</div>
+                <div id="event-stream">
+                    <div style="padding:32px; text-align:center; color:#aaa; font-size:0.85rem;">Loading recent events...</div>
                 </div>
             </div>
         </div>
 
+        <!-- Sidebar -->
         <div class="side-panel">
-            <div class="dash-card">
-                <div class="card-head"><h3>Trust Perimeter</h3></div>
-                <div style="padding: 24px; text-align: center;">
-                    <div id="myRiskRing" class="risk-circle">--</div>
-                    <div style="font-size: 0.85rem; font-weight: 700;" id="myRiskLabel">CALCULATING...</div>
-                    <p style="font-size: 0.7rem; color: var(--text-soft); margin-top: 8px;">Your personal Adaptive Risk Score based on Contextual Signals.</p>
+            <div class="card">
+                <div class="card-head"><h3>Your Risk Score</h3></div>
+                <div class="risk-display">
+                    <div id="user-risk-score" class="risk-number">--</div>
+                    <div id="user-risk-level" class="risk-label">Loading...</div>
+                    <p style="font-size:0.7rem; color:#aaa; margin-top:8px;">Based on your current login session.</p>
                 </div>
             </div>
 
-            <div class="dash-card">
-                <div class="card-head"><h3>Active Session Context</h3></div>
-                <div style="padding: 20px" id="sessionData">
-                    <p style="font-size: 0.8rem; color: var(--text-soft);">Attaching Identity Context...</p>
+            <div class="card">
+                <div class="card-head"><h3>Session Info</h3></div>
+                <div id="session-context" style="padding:16px;">
+                    <p style="font-size:0.8rem; color:#aaa;">Loading...</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Off-Hours Modal -->
+    <div id="off-hours-modal" class="modal-bg">
+        <div style="background:#fff; width:100%; max-width:850px; border-radius:12px; padding:28px; max-height:80vh; overflow:auto;">
+            <h3 style="margin-top:0;">Off-Hours Logins</h3>
+            <p style="color:#888; font-size:0.85rem; margin-bottom:16px;">Logins that happened outside normal working hours.</p>
+            <table class="modal-table">
+                <thead><tr><th>User</th><th>Role</th><th>Time</th><th>Status</th><th>Location</th><th>IP</th><th>VPN</th></tr></thead>
+                <tbody id="off-hours-body"></tbody>
+            </table>
+            <div style="margin-top:16px; text-align:right;">
+                <button onclick="document.getElementById('off-hours-modal').style.display='none'" style="padding:8px 20px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer; font-weight:600;">Close</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Emergency Kill Modal -->
-    <div id="killModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); display:none; justify-content:center; align-items:center; z-index:3000;">
-        <div style="background:var(--zts-panel); width:100%; max-width:500px; border-radius:24px; padding:40px; border:2px solid var(--zts-danger); text-align:center;">
-            <div style="width:80px; height:80px; background:rgba(220,38,38,0.1); color:var(--zts-danger); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin:0 auto 24px;">
-                <i class="fas fa-exclamation-triangle"></i>
+    <!-- Unique Users Modal -->
+    <div id="unique-identities-modal" class="modal-bg">
+        <div style="background:#fff; width:100%; max-width:850px; border-radius:12px; padding:28px; max-height:80vh; overflow:auto;">
+            <h3 style="margin-top:0;">Unique Off-Hours Users</h3>
+            <p style="color:#888; font-size:0.85rem; margin-bottom:16px;">Individual users who logged in outside working hours.</p>
+            <table class="modal-table">
+                <thead><tr><th>User</th><th>Role</th><th>Login Time</th><th>Est. Timeout</th><th>Status</th><th>Location</th><th>IP</th><th>VPN</th></tr></thead>
+                <tbody id="unique-identities-body"></tbody>
+            </table>
+            <div style="margin-top:16px; text-align:right;">
+                <button onclick="document.getElementById('unique-identities-modal').style.display='none'" style="padding:8px 20px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer; font-weight:600;">Close</button>
             </div>
-            <h2 style="margin:0 0 16px; font-weight:900;">EMERGENCY LOCKDOWN</h2>
-            <p style="color:var(--zts-text-soft); font-size:0.95rem; line-height:1.6; margin-bottom:32px;">
-                Executing the <strong>Glass Break</strong> protocol will instantly revoke all active session tokens for the entire enterprise (excluding SuperAdmins).<br/><br/>
-                <span style="color:var(--zts-danger); font-weight:700;">This action cannot be undone.</span>
-            </p>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <button class="btn btn-danger" onclick="executeLockdown()" style="width:100%; height:50px; font-weight:800;">CONFIRM INSTANT LOCKDOWN</button>
-                <button class="btn btn-outline" onclick="hideKillModal()" style="width:100%; height:50px;">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Lockdown Modal -->
+    <div id="revocation-modal" class="modal-bg">
+        <div class="modal-content">
+            <div style="font-size:1.2rem; font-weight:700; color:#dc2626; margin-bottom:16px;">WARNING</div>
+            <h2>End All User Sessions?</h2>
+            <p>This will immediately log out every user (except SuperAdmins). They will need to sign in again.<br><br><strong style="color:#dc2626;">This cannot be undone.</strong></p>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="danger-btn" onclick="executeLockdown()" style="width:100%; padding:12px; font-size:0.9rem;">Yes, End All Sessions</button>
+                <button onclick="hideLockdownModal()" style="width:100%; padding:12px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
             </div>
         </div>
     </div>
 
     <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+        <div class="footer-brand">ZTS Admin Portal</div>
     </div>
 
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
+        // Clock
         function updateClock() {
-            const now = new Date();
-            document.getElementById('clockArea').textContent = now.toLocaleTimeString('en-GB');
+            document.getElementById('clock-area').textContent = new Date().toLocaleTimeString('en-GB');
         }
         setInterval(updateClock, 1000);
         updateClock();
 
+        // Load dashboard data
         async function loadDashboard() {
             try {
-                const res = await fetch('/api/dashboard-data');
-                const d = await res.json();
-                if (!d.user) return location.href = '/login';
-
-                buildNavbar(d.user.role, 'dashboard', d.user.username);
-                document.getElementById('greetTitle').textContent = `Welcome back, ${d.user.username}`;
-                document.getElementById('greetSub').textContent = `Governance Role: ${d.user.role} | Org Unit: ${d.user.department || 'Enterprise General'}`;
-
-                // Risk Score
-                const r = d.security || { riskScore: 0, riskLevel: 'Low' };
-                const ring = document.getElementById('myRiskRing');
-                ring.textContent = r.riskScore;
-                document.getElementById('myRiskLabel').textContent = `${r.riskLevel} Risk`.toUpperCase();
+                var res = await fetch('/api/dashboard-data');
+                var data = await res.json();
                 
-                const rColor = r.riskScore >= 60 ? 'var(--danger-glow)' : r.riskScore >= 30 ? 'var(--warning-glow)' : 'var(--success-glow)';
-                ring.style.color = rColor;
-                ring.style.borderColor = '#f1f5f9';
-
-                // Session Data
-                const ctx = r.loginContext || {};
-                document.getElementById('sessionData').innerHTML = `
-                    <div style="margin-bottom:12px;">
-                        <div style="font-size:0.65rem; color:var(--text-soft); text-transform:uppercase;">Source Identity</div>
-                        <div style="font-size:0.85rem; font-weight:700;">${ctx.ip || 'Unknown Cluster'}</div>
-                        <div style="font-size:0.75rem; color:var(--text-soft);">${ctx.country || 'Global Origin'}</div>
-                    </div>
-                    <div>
-                        <div style="font-size:0.65rem; color:var(--text-soft); text-transform:uppercase;">Asset Status</div>
-                        <div style="font-size:0.85rem; font-weight:700;">${ctx.isNewDevice ? 'Unknown hardware detected' : 'Registered Managed Asset'}</div>
-                    </div>
-                `;
-
-                if (d.security && d.security.isUnusualHours) {
-                    const offAlert = document.getElementById('offHoursAlert');
-                    offAlert.style.display = 'block';
-                    offAlert.innerHTML = `<i class="fas fa-clock" style="margin-right:6px;"></i> <strong>Off-Hours Access Alert:</strong> You are currently working from <span style="text-decoration:underline;">${ctx.country || 'Unknown Location'}</span>. Your adaptive risk score has been adjusted to <strong style="font-size:1.1em;">${d.security.riskScore}</strong>.`;
+                if (!data.user) return location.href = '/login';
+                
+                await loadAnalyticsData();
+                showUserInfo(data.user);
+                showRiskScore(data.security || { riskScore: 0, riskLevel: 'Low' });
+                
+                if (data.user.role === 'SuperAdmin') {
+                    await loadAdminStats();
                 }
+            } catch (err) {
+                console.error('Dashboard failed:', err);
+            }
+        }
 
-                if (d.user.role === 'SuperAdmin') {
-                    const statsRes = await fetch('/api/admin-stats');
-                    const stats = await statsRes.json();
-                    
-                    document.getElementById('k-users').textContent = stats.users.total;
-                    document.getElementById('k-evt').textContent = stats.activity.events24h;
-                    document.getElementById('k-block').textContent = stats.users.blocked;
-
-                    // Fetch actual device count from fleet inventory
-                    try {
-                        var devList = await fetch('/api/mapping/devices/all').then(function(r){return r.json();});
-                        document.getElementById('k-dev').textContent = Array.isArray(devList) ? devList.length : 0;
-                    } catch(e) { document.getElementById('k-dev').textContent = stats.devices.pendingApproval || 0; }
-
-                    // Events
-                    const area = document.getElementById('eventArea');
-                    if (!stats.recentEvents || stats.recentEvents.length === 0) {
-                        area.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fas fa-history"></i><p>No recent activity logs.</p></div>';
-                        return;
-                    }
-                    area.innerHTML = '';
-                    (stats.recentEvents || []).slice(0, 10).forEach(e => {
-                        const div = document.createElement('div');
-                        div.className = 'evt-item';
-                        const dotCls = e.action.includes('FAIL') || e.action.includes('BLOCK') ? 'var(--danger-glow)' : e.action.includes('SUCCESS') ? 'var(--success-glow)' : 'var(--accent-glow)';
-                        div.innerHTML = `
-                            <div class="evt-dot" style="background:${dotCls}"></div>
-                            <div class="evt-info">${e.action.replace(/_/g, ' ')} : <span style="font-weight:400; opacity:0.7;">${e.detail || '--'}</span></div>
-                            <div class="evt-time">${formatDate(e.created_at)}</div>
-                        `;
-                        area.appendChild(div);
-                    });
-
-                    // Alerts
-                    if (stats.devices.pendingApproval > 0 || stats.activity.loginFails24h > 5) {
-                        const alert = document.getElementById('mainAlert');
-                        alert.style.display = 'block';
-                        alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Sentinel Alert: ${stats.devices.pendingApproval} devices pending approval and unusual login activity detected.`;
-                    }
+        async function loadAnalyticsData() {
+            try {
+                var res = await fetch('/api/admin/remote-analytics');
+                if (res.ok) {
+                    var data = await res.json();
+                    window.offHoursEvents = data.offHoursEvents || [];
+                    window.uniqueOffHoursUsers = data.uniqueOffHoursUsers || [];
+                    document.getElementById('stat-off-hours-logins').textContent = data.offHoursCount || 0;
+                    document.getElementById('stat-unique-off-hours-users').textContent = data.uniqueOffHoursCount || 0;
                 }
+            } catch (err) { }
+        }
 
-            } catch (err) { console.error(err); }
+        function showUserInfo(user) {
+            buildNavbar(user.role, 'dashboard', user.username);
+            document.getElementById('greet-title').textContent = 'Welcome, ' + user.username;
+            document.getElementById('greet-sub').textContent = user.role + ' — ' + (user.department || 'General');
+        }
+
+        function showRiskScore(security) {
+            var score = security.riskScore || 0;
+            var level = security.riskLevel || 'Low';
+            var ctx = security.loginContext || {};
+
+            document.getElementById('user-risk-score').textContent = score;
+            document.getElementById('user-risk-level').textContent = level.toUpperCase() + ' RISK';
+
+            var color = score >= 60 ? '#dc2626' : score >= 30 ? '#d97706' : '#16a34a';
+            document.getElementById('user-risk-score').style.color = color;
+
+            showSessionInfo(ctx);
+
+            if (security.isUnusualHours) {
+                var alert = document.getElementById('offhours-alert');
+                alert.style.display = 'block';
+                alert.textContent = 'You are logged in outside normal hours from ' + simplifyNetwork(ctx.country || 'unknown location') + '. Your risk score is ' + score + '.';
+            }
+        }
+
+        function showSessionInfo(ctx) {
+            document.getElementById('session-context').innerHTML =
+                '<div style="margin-bottom:10px;">' +
+                    '<div style="font-size:0.65rem; color:#999; text-transform:uppercase;">IP Address</div>' +
+                    '<div style="font-size:0.85rem; font-weight:600;">' + (ctx.ip || 'Unknown') + '</div>' +
+                    '<div style="font-size:0.75rem; color:#888;">' + simplifyNetwork(ctx.country || 'Unknown') + '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<div style="font-size:0.65rem; color:#999; text-transform:uppercase;">Device</div>' +
+                    '<div style="font-size:0.85rem; font-weight:600;">' + (ctx.isNewDevice ? 'New device' : 'Known device') + '</div>' +
+                '</div>';
+        }
+
+        async function loadAdminStats() {
+            try {
+                var res = await fetch('/api/admin-stats');
+                var stats = await res.json();
+
+                document.getElementById('stat-total-identities').textContent = stats.users.total;
+                document.getElementById('stat-events-24h').textContent = stats.activity.events24h;
+                document.getElementById('stat-policy-violations').textContent = stats.users.blocked;
+                document.getElementById('stat-mfa-protection-rate').textContent = (stats.activity.mfaRate || 99.8) + '%';
+                document.getElementById('stat-platform-health').textContent = simplifyHealth(stats.activity.health || 'OK');
+
+                await loadDeviceCount(stats.devices.pendingApproval);
+                showRecentEvents(stats.recentEvents);
+
+                if (stats.devices.pendingApproval > 0 || stats.activity.loginFails24h > 5) {
+                    var el = document.getElementById('security-alert');
+                    el.style.display = 'block';
+                    el.textContent = stats.devices.pendingApproval + ' devices need approval. Multiple failed login attempts detected.';
+                }
+            } catch (err) { }
+        }
+
+        async function loadDeviceCount(fallback) {
+            try {
+                var res = await fetch('/api/mapping/devices/all');
+                var devices = await res.json();
+                document.getElementById('stat-managed-hardware').textContent = Array.isArray(devices) ? devices.length : 0;
+            } catch (err) {
+                document.getElementById('stat-managed-hardware').textContent = fallback || 0;
+            }
+        }
+
+        function showRecentEvents(events) {
+            var container = document.getElementById('event-stream');
+            if (!events || events.length === 0) {
+                container.innerHTML = '<div style="padding:24px; text-align:center; color:#aaa;">No recent events.</div>';
+                return;
+            }
+            container.innerHTML = '';
+            events.slice(0, 10).forEach(function(evt) {
+                var div = document.createElement('div');
+                div.className = 'event-item';
+                var color = (evt.action.includes('FAIL') || evt.action.includes('BLOCK')) ? '#dc2626' : evt.action.includes('SUCCESS') ? '#16a34a' : '#2563eb';
+                div.innerHTML = '<div class="event-dot" style="background:' + color + '"></div>' +
+                    '<div class="event-text">' + evt.action.replace(/_/g, ' ') + (evt.detail ? ': ' + evt.detail : '') + '</div>' +
+                    '<div class="event-time">' + formatDate(evt.created_at) + '</div>';
+                container.appendChild(div);
+            });
+        }
+
+        // Off-hours modal
+        function showOffHoursModal() {
+            var tbody = document.getElementById('off-hours-body');
+            tbody.innerHTML = '';
+            var events = window.offHoursEvents || [];
+            
+            if (events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#aaa;">No off-hours logins found.</td></tr>';
+            } else {
+                events.forEach(function(evt) {
+                    var time = new Date(evt.created_at).toLocaleString('en-GB');
+                    var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td style="font-weight:600;">' + (evt.username || 'Unknown') + '</td>' +
+                        '<td>' + (evt.details && evt.details.role ? evt.details.role : 'User') + '</td>' +
+                        '<td>' + time + '</td>' +
+                        '<td>' + (active ? '<span style="color:#16a34a; font-weight:600;">Active</span>' : 'Ended') + '</td>' +
+                        '<td>' + (evt.country || evt.location || 'Unknown') + '</td>' +
+                        '<td style="font-family:monospace; font-size:0.8rem;">' + (evt.ip || '-') + '</td>' +
+                        '<td>' + (evt.vpn ? 'Yes' : 'No') + '</td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('off-hours-modal').style.display = 'flex';
+        }
+
+        // Unique users modal
+        function showUniqueUsersModal() {
+            var tbody = document.getElementById('unique-identities-body');
+            tbody.innerHTML = '';
+            var users = window.uniqueOffHoursUsers || [];
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:#aaa;">No off-hours users found.</td></tr>';
+            } else {
+                users.forEach(function(user) {
+                    var timeObj = new Date(user.created_at);
+                    var time = timeObj.toLocaleString('en-GB');
+                    var active = (Date.now() - timeObj.getTime() < 15 * 60 * 1000);
+                    var timeout = active ? 'Still active' : new Date(timeObj.getTime() + 15 * 60 * 1000).toLocaleTimeString('en-GB');
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td style="font-weight:600;">' + (user.username || 'Unknown') + '</td>' +
+                        '<td>' + (user.details && user.details.role ? user.details.role : 'User') + '</td>' +
+                        '<td>' + time + '</td>' +
+                        '<td>' + timeout + '</td>' +
+                        '<td>' + (active ? '<span style="color:#16a34a; font-weight:600;">Active</span>' : 'Ended') + '</td>' +
+                        '<td>' + (user.country || user.location || 'Unknown') + '</td>' +
+                        '<td style="font-family:monospace; font-size:0.8rem;">' + (user.ip || '-') + '</td>' +
+                        '<td>' + (user.vpn ? 'Yes' : 'No') + '</td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            document.getElementById('unique-identities-modal').style.display = 'flex';
+        }
+
+        // Lockdown modal
+        function showLockdownModal() { document.getElementById('revocation-modal').style.display = 'flex'; }
+        function hideLockdownModal() { document.getElementById('revocation-modal').style.display = 'none'; }
+        
+        async function executeLockdown() {
+            try {
+                var res = await fetch('/api/system/emergency-lockdown', { method: 'POST' });
+                var data = await res.json();
+                if (data.success) {
+                    alert('All sessions have been ended. Users will need to sign in again.');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Could not complete this action.');
+                }
+            } catch (err) { 
+                alert('Server error. Try again.'); 
+            }
+            hideLockdownModal();
+        }
+
+        // Simplify complex health status text
+        function simplifyHealth(text) {
+            if (!text) return 'OK';
+            var t = text.toLowerCase();
+            if (t.indexOf('stable') >= 0 || t.indexOf('operational') >= 0 || t.indexOf('integrity') >= 0) return 'OK';
+            if (t.indexOf('degrade') >= 0 || t.indexOf('partial') >= 0) return 'Slow';
+            if (t.indexOf('down') >= 0 || t.indexOf('fail') >= 0) return 'Down';
+            return text;
+        }
+
+        // Simplify network/location labels
+        function simplifyNetwork(text) {
+            if (!text) return 'Unknown';
+            return text.replace('Infrastructure Internal', 'Local Network').replace('Infrastructure External', 'External Network');
         }
 
         loadDashboard();
-
-        function showKillModal() { document.getElementById('killModal').style.display = 'flex'; }
-        function hideKillModal() { document.getElementById('killModal').style.display = 'none'; }
-        async function executeLockdown() {
-            const btn = document.querySelector('#killModal .btn-danger');
-            btn.textContent = 'EXECUTING PROTOCOL...';
-            btn.disabled = true;
-            try {
-                const res = await fetch('/api/system/emergency-lockdown', { method: 'POST' });
-                const d = await res.json();
-                if (d.success) {
-                    alert('Protocol Executed: All user sessions have been terminated.');
-                    location.reload();
-                } else {
-                    alert(d.message || 'Protocol Failure.');
-                }
-            } catch(e) { alert('Network Error during lockdown.'); }
-            hideKillModal();
-        }
     </script>
 </body>
 </html>

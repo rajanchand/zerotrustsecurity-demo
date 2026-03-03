@@ -1,380 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Overview - ZTS</title>
+    <title>Roles - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .portal-hero {
-            background: #ffffff;
-            color: #0f172a;
-            padding: 32px 0 28px;
-            margin-bottom: 24px;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        .portal-hero h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
+        .page-title { margin-bottom: 24px; }
+        .page-title h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+        .page-title p { color: #888; font-size: 0.85rem; margin: 4px 0 0; }
 
-        .portal-hero p {
-            font-size: 0.88rem;
-            opacity: 0.75;
-            margin: 0;
-        }
+        .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: #888; margin-bottom: 16px; padding: 10px 14px; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-full { background: #16a34a; } .dot-read { background: #2563eb; } .dot-own { background: #d97706; } .dot-none { background: #ddd; }
 
-        .role-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
+        .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .role-card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .role-card.yours { border: 2px solid #2563eb; }
+        .role-header { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .role-header h3 { font-size: 0.95rem; font-weight: 700; margin: 0; }
+        .role-header p { font-size: 0.75rem; color: #888; margin: 2px 0 0; }
+        .role-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #f0f0f0; color: #555; }
+        .yours-tag { font-size: 0.65rem; background: #2563eb; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
 
-        .role-card {
-            background: #fff;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-            transition: box-shadow 0.2s, transform 0.2s;
-        }
-
-        .role-card:hover {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.09);
-            transform: translateY(-2px);
-        }
-
-        .role-card-header {
-            padding: 18px 20px 14px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border-bottom: 1px solid #f0f4f8;
-        }
-
-        .role-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            flex-shrink: 0;
-        }
-
-        .role-card-header h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 2px;
-        }
-
-        .role-card-header p {
-            font-size: 0.78rem;
-            color: #64748b;
-            margin: 0;
-        }
-
-        .role-badge-inline {
-            margin-left: auto;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .access-list {
-            padding: 14px 20px 18px;
-        }
-
-        .access-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
-            font-size: 0.84rem;
-            color: #334155;
-            border-bottom: 1px solid #f8fafc;
-        }
-
-        .access-item:last-child {
-            border-bottom: none;
-        }
-
-        .access-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .access-dot.full   { background: #22c55e; }
-        .access-dot.read   { background: #3b82f6; }
-        .access-dot.own    { background: #f59e0b; }
-        .access-dot.none   { background: #e2e8f0; }
-
-        .access-label {
-            flex: 1;
-        }
-
-        .access-badge {
-            font-size: 0.7rem;
-            padding: 2px 7px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-
-        .badge-full    { background: #dcfce7; color: #16a34a; }
-        .badge-read    { background: #dbeafe; color: #1d4ed8; }
-        .badge-own     { background: #fef3c7; color: #d97706; }
-        .badge-denied  { background: #f1f5f9; color: #94a3b8; }
-
-        /* colour themes per role */
-        .theme-superadmin .role-icon { background: #1e293b; color: #fff; }
-        .theme-superadmin .role-badge-inline { background: #1e293b; color: #fff; }
-
-        .theme-hr .role-icon { background: #ede9fe; color: #7c3aed; }
-        .theme-hr .role-badge-inline { background: #ede9fe; color: #7c3aed; }
-
-        .theme-it .role-icon { background: #dbeafe; color: #1d4ed8; }
-        .theme-it .role-badge-inline { background: #dbeafe; color: #1d4ed8; }
-
-        .theme-finance .role-icon { background: #dcfce7; color: #15803d; }
-        .theme-finance .role-badge-inline { background: #dcfce7; color: #15803d; }
-
-        .theme-cs .role-icon { background: #fef3c7; color: #b45309; }
-        .theme-cs .role-badge-inline { background: #fef3c7; color: #b45309; }
-
-        .legend {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
-            align-items: center;
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            background: #fff;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* current user highlight */
-        .role-card.yours {
-            border: 2px solid #1a73e8;
-        }
-
-        .yours-tag {
-            font-size: 0.68rem;
-            background: #1a73e8;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 8px;
-            margin-left: 6px;
-        }
-
-        @media (max-width: 768px) {
-            .role-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .perm-list { padding: 10px 16px; }
+        .perm-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.8rem; color: #555; border-bottom: 1px solid #fafafa; }
+        .perm-item:last-child { border-bottom: none; }
+        .perm-label { flex: 1; }
+        .perm-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .badge-full { background: #dcfce7; color: #166534; } .badge-read { background: #dbeafe; color: #1d4ed8; }
+        .badge-own { background: #fef3c7; color: #92400e; } .badge-denied { background: #f5f5f5; color: #999; }
     </style>
 </head>
-
 <body>
-    <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="portal-hero">
-        <div class="container" style="padding-top:0;padding-bottom:0;">
-            <h1>Portal Access Overview</h1>
-            <p>Zero Trust Security · Role-Based Access Control (RBAC) · NIST SP 800-207</p>
+    <div class="container">
+        <div class="page-title">
+            <h1>Roles and Permissions</h1>
+            <p>What each role can do in the system.</p>
         </div>
-    </div>
-
-    <div class="container" style="padding-top:0;">
 
         <div class="legend">
-            <strong style="color:#1e293b; margin-right:4px;">Access Legend:</strong>
-            <div class="legend-item"><div class="access-dot full"></div> Full Access</div>
-            <div class="legend-item"><div class="access-dot read"></div> Read Only</div>
-            <div class="legend-item"><div class="access-dot own"></div> Own Records Only</div>
-            <div class="legend-item"><div class="access-dot none"></div> No Access</div>
+            <strong style="color:#333;">Key:</strong>
+            <div class="legend-item"><div class="dot dot-full"></div> Full access</div>
+            <div class="legend-item"><div class="dot dot-read"></div> Read only</div>
+            <div class="legend-item"><div class="dot dot-own"></div> Own data only</div>
+            <div class="legend-item"><div class="dot dot-none"></div> No access</div>
         </div>
 
-        <div class="role-grid" id="roleGrid">
-            <!-- Built dynamically below -->
-        </div>
-
+        <div class="role-grid" id="roleGrid"></div>
     </div>
 
-    <!-- Global Footer -->
-    <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
-    </div>
-
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        var roleDefinitions = [
-            {
-                key: 'SuperAdmin',
-                icon: 'SA',
-                theme: 'theme-superadmin',
-                badge: 'Full Control',
-                desc: 'Unrestricted access across all departments and modules.',
-                permissions: [
-                    { label: 'Dashboard & KPIs',                    level: 'full', badge: 'Full Access' },
-                    { label: 'User Management (Create/Edit/Delete)', level: 'full', badge: 'Full Access' },
-                    { label: 'All Department Data',                  level: 'full', badge: 'Full Access' },
-                    { label: 'Device Registry & Approval',           level: 'full', badge: 'Full Access' },
-                    { label: 'Live Monitoring & Audit Logs',         level: 'full', badge: 'Full Access' },
-                    { label: 'Network / IP Rules',                   level: 'full', badge: 'Full Access' },
-                    { label: 'Risk Scores (all users)',              level: 'full', badge: 'Full Access' },
-                    { label: 'Security Posture',                     level: 'full', badge: 'Full Access' },
-                    { label: 'Session Kill Switch',                  level: 'full', badge: 'Full Access' },
-                ]
+        var ROLES = [
+            { key: 'SuperAdmin', badge: 'Full Control', desc: 'Complete access to everything.',
+              perms: [
+                { label: 'Dashboards', level: 'full', badge: 'Full' },
+                { label: 'User management', level: 'full', badge: 'Full' },
+                { label: 'Logs and reports', level: 'full', badge: 'Full' },
+                { label: 'Device management', level: 'full', badge: 'Full' },
+                { label: 'Live monitoring', level: 'full', badge: 'Full' },
+                { label: 'Network rules', level: 'full', badge: 'Full' },
+                { label: 'Risk settings', level: 'full', badge: 'Full' }
+              ]
             },
-            {
-                key: 'HR',
-                icon: 'HR',
-                theme: 'theme-hr',
-                badge: 'HR Dept',
-                desc: 'Human Resources staff. Manage employees within the HR department.',
-                permissions: [
-                    { label: 'Dashboard & Session Info',         level: 'read', badge: 'Read Only'   },
-                    { label: 'Create / Invite New Users',        level: 'full', badge: 'Full Access' },
-                    { label: 'Edit User Details',                level: 'full', badge: 'Full Access' },
-                    { label: 'Delete / Suspend Users',           level: 'full', badge: 'Full Access' },
-                    { label: 'Approve Pending Users',            level: 'full', badge: 'Full Access' },
-                    { label: 'Risk Score (own)',                  level: 'own',  badge: 'Own Only'    },
-                    { label: 'Live Monitoring & Audit Logs',     level: 'none', badge: 'No Access'   },
-                    { label: 'Network / IP Rules',               level: 'none', badge: 'No Access'   },
-                    { label: 'Session Kill Switch',              level: 'none', badge: 'No Access'   },
-                ]
+            { key: 'HR', badge: 'HR', desc: 'Manages user accounts.',
+              perms: [
+                { label: 'Add/remove users', level: 'full', badge: 'Full' },
+                { label: 'User profiles', level: 'full', badge: 'Full' },
+                { label: 'Access control', level: 'full', badge: 'Full' },
+                { label: 'Dashboard', level: 'read', badge: 'Read' },
+                { label: 'System logs', level: 'none', badge: 'No access' },
+                { label: 'Network settings', level: 'none', badge: 'No access' }
+              ]
             },
-            {
-                key: 'IT',
-                icon: 'IT',
-                theme: 'theme-it',
-                badge: 'IT Dept',
-                desc: 'IT staff. Infrastructure, network management, and device approvals.',
-                permissions: [
-                    { label: 'Dashboard & Session Info',         level: 'read', badge: 'Read Only'   },
-                    { label: 'Network / IP Rules Management',    level: 'full', badge: 'Full Access' },
-                    { label: 'Device Registry & Approval',       level: 'full', badge: 'Full Access' },
-                    { label: 'Live Monitoring',                  level: 'full', badge: 'Full Access' },
-                    { label: 'User Management (view)',           level: 'read', badge: 'Read Only'   },
-                    { label: 'Risk Score (own)',                  level: 'own',  badge: 'Own Only'    },
-                    { label: 'Audit Logs (system)',              level: 'read', badge: 'Read Only'   },
-                    { label: 'User Create / Delete',             level: 'none', badge: 'No Access'   },
-                    { label: 'Session Kill Switch',              level: 'none', badge: 'No Access'   },
-                ]
+            { key: 'IT', badge: 'IT', desc: 'Manages devices and network.',
+              perms: [
+                { label: 'Device registration', level: 'full', badge: 'Full' },
+                { label: 'Network config', level: 'full', badge: 'Full' },
+                { label: 'Live monitoring', level: 'full', badge: 'Full' },
+                { label: 'User directory', level: 'read', badge: 'Read' },
+                { label: 'User authentication', level: 'none', badge: 'No access' }
+              ]
             },
-            {
-                key: 'Finance',
-                icon: 'FIN',
-                theme: 'theme-finance',
-                badge: 'Finance Dept',
-                desc: 'Finance department. Access to own records and financial dashboard.',
-                permissions: [
-                    { label: 'Dashboard & Session Info',         level: 'read', badge: 'Read Only'   },
-                    { label: 'Risk Score (own)',                  level: 'own',  badge: 'Own Only'    },
-                    { label: 'My Profile & Password',            level: 'own',  badge: 'Own Only'    },
-                    { label: 'Security Posture (view)',          level: 'read', badge: 'Read Only'   },
-                    { label: 'User Management',                  level: 'none', badge: 'No Access'   },
-                    { label: 'Network / IP Rules',               level: 'none', badge: 'No Access'   },
-                    { label: 'Live Monitoring & Audit Logs',     level: 'none', badge: 'No Access'   },
-                    { label: 'Device Registry',                  level: 'none', badge: 'No Access'   },
-                    { label: 'Session Kill Switch',              level: 'none', badge: 'No Access'   },
-                ]
+            { key: 'Finance', badge: 'Finance', desc: 'Standard finance access.',
+              perms: [
+                { label: 'Own profile', level: 'own', badge: 'Own only' },
+                { label: 'Dashboard', level: 'read', badge: 'Read' },
+                { label: 'User management', level: 'none', badge: 'No access' },
+                { label: 'System settings', level: 'none', badge: 'No access' }
+              ]
             },
-            {
-                key: 'CustomerSupport',
-                icon: 'CS',
-                theme: 'theme-cs',
-                badge: 'CS Dept',
-                desc: 'Customer Support agents. Dashboard access and own risk profile.',
-                permissions: [
-                    { label: 'Dashboard & Session Info',         level: 'read', badge: 'Read Only'   },
-                    { label: 'Risk Score (own)',                  level: 'own',  badge: 'Own Only'    },
-                    { label: 'My Profile & Password',            level: 'own',  badge: 'Own Only'    },
-                    { label: 'Security Posture (view)',          level: 'read', badge: 'Read Only'   },
-                    { label: 'User Management',                  level: 'none', badge: 'No Access'   },
-                    { label: 'Network / IP Rules',               level: 'none', badge: 'No Access'   },
-                    { label: 'Live Monitoring & Audit Logs',     level: 'none', badge: 'No Access'   },
-                    { label: 'Device Registry',                  level: 'none', badge: 'No Access'   },
-                    { label: 'Session Kill Switch',              level: 'none', badge: 'No Access'   },
-                ]
+            { key: 'CustomerSupport', badge: 'Support', desc: 'Basic support access.',
+              perms: [
+                { label: 'Own profile', level: 'own', badge: 'Own only' },
+                { label: 'Dashboard', level: 'read', badge: 'Read' },
+                { label: 'User management', level: 'none', badge: 'No access' },
+                { label: 'System settings', level: 'none', badge: 'No access' }
+              ]
             }
         ];
 
-        function buildPortal(currentRole) {
+        function renderRoles(userRole) {
             var grid = document.getElementById('roleGrid');
             grid.innerHTML = '';
 
-            roleDefinitions.forEach(function (role) {
-                if (currentRole !== 'SuperAdmin' && role.key !== currentRole) {
-                    return;
-                }
+            ROLES.forEach(function(role) {
+                var isAdmin = userRole === 'SuperAdmin';
+                var isMine = role.key === userRole;
+                if (!isAdmin && !isMine) return;
 
-                var isYours = role.key === currentRole;
-
-                var items = role.permissions.map(function (p) {
-                    var dotClass   = 'access-dot ' + p.level;
-                    var badgeClass = 'access-badge badge-' + (p.level === 'full' ? 'full' : p.level === 'read' ? 'read' : p.level === 'own' ? 'own' : 'denied');
-                    return '<div class="access-item">' +
-                        '<div class="' + dotClass + '"></div>' +
-                        '<span class="access-label">' + p.label + '</span>' +
-                        '<span class="' + badgeClass + '">' + p.badge + '</span>' +
-                    '</div>';
+                var permsHtml = role.perms.map(function(p) {
+                    var badgeClass = p.level === 'full' ? 'badge-full' : p.level === 'read' ? 'badge-read' : p.level === 'own' ? 'badge-own' : 'badge-denied';
+                    return '<div class="perm-item"><div class="dot dot-' + p.level + '"></div><span class="perm-label">' + p.label + '</span><span class="perm-badge ' + badgeClass + '">' + p.badge + '</span></div>';
                 }).join('');
 
-                grid.innerHTML += '<div class="role-card ' + role.theme + (isYours ? ' yours' : '') + '">' +
-                    '<div class="role-card-header">' +
-                        '<div class="role-icon">' + role.icon + '</div>' +
-                        '<div>' +
-                            '<h3>' + role.key + (isYours ? '<span class="yours-tag">You</span>' : '') + '</h3>' +
-                            '<p>' + role.desc + '</p>' +
-                        '</div>' +
-                        '<span class="role-badge-inline">' + role.badge + '</span>' +
-                    '</div>' +
-                    '<div class="access-list">' + items + '</div>' +
-                '</div>';
+                grid.innerHTML += '<div class="role-card ' + (isMine ? 'yours' : '') + '">' +
+                    '<div class="role-header"><div><h3>' + role.key + (isMine ? '<span class="yours-tag">You</span>' : '') + '</h3><p>' + role.desc + '</p></div><span class="role-badge">' + role.badge + '</span></div>' +
+                    '<div class="perm-list">' + permsHtml + '</div></div>';
             });
         }
 
-        async function loadPortal() {
+        async function loadPage() {
             try {
                 var res = await fetch('/api/dashboard-data');
-                var d   = await res.json();
-                buildNavbar(d.user.role, 'portal', d.user.username);
-                buildPortal(d.user.role);
-            } catch (e) {
-                console.error('Portal load error:', e);
+                var data = await res.json();
+                buildNavbar(data.user.role, 'portal', data.user.username);
+                renderRoles(data.user.role);
+            } catch (err) {
                 location.href = '/login';
             }
         }
 
-        loadPortal();
+        loadPage();
     </script>
-
 </body>
-
 </html>

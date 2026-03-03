@@ -1,530 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Operations Telemetry - ZTS</title>
+    <title>Live Monitoring - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --primary-light: #4f46e5;
-            --bg-soc: #f8fafc;
-            --card-soc: #ffffff;
-            --border-soc: #e2e8f0;
-            --text-soc: #0f172a;
-            --text-soc-muted: #64748b;
-            --accent-soc: #3b82f6;
-            --danger-soc: #ef4444;
-            --success-soc: #10b981;
-            --warning-soc: #f59e0b;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
+        .container { max-width: 1400px; margin: 0 auto; }
 
-        body {
-            background-color: var(--bg-soc);
-            color: var(--text-soc);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 100px 24px 40px;
-            overflow-x: hidden;
-        }
+        .page-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+        .page-top h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+        .page-top p { color: #888; font-size: 0.85rem; margin: 4px 0 0; }
 
-        .soc-container { max-width: 1540px; margin: 0 auto; }
+        .live-tag { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 5px 12px; border-radius: 20px; border: 1px solid #bbf7d0; }
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #16a34a; }
 
-        .soc-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .soc-header h1 { font-size: 2.2rem; font-weight: 850; margin: 0; letter-spacing: -0.04em; color: var(--text-soc); }
-        .soc-header p { color: var(--text-soc-muted); margin-top: 4px; font-weight: 500; }
+        .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-box { background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0; cursor: pointer; }
+        .stat-box:hover { border-color: #2563eb; }
+        .stat-box .value { font-size: 1.6rem; font-weight: 700; margin-bottom: 2px; }
+        .stat-box .label { font-size: 0.65rem; font-weight: 600; color: #888; text-transform: uppercase; }
 
-        .live-pulse { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--success-soc); background: #f0fdf4; padding: 6px 14px; border-radius: 50px; border: 1px solid #dcfce7; text-transform: uppercase; letter-spacing: 0.05em; }
-        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-soc); }
-        /* KPI Dashboard */
-        .soc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; margin-bottom: 32px; }
-        .soc-stat-card { background: var(--card-soc); padding: 24px; border-radius: 20px; border: 1px solid var(--border-soc); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
-        .soc-stat-card .val { font-size: 2.4rem; font-weight: 850; margin-bottom: 4px; line-height: 1; letter-spacing: -0.02em; }
-        .soc-stat-card .lab { font-size: 0.7rem; font-weight: 800; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        .card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .toolbar { padding: 14px 18px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .toolbar .count { font-size: 0.8rem; font-weight: 600; color: #888; }
 
-        /* Main Log Grid */
-        .log-section { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        .log-card { background: var(--card-soc); border-radius: 24px; border: 1px solid var(--border-soc); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 12px 18px; background: #fafafa; color: #888; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #e0e0e0; }
+        td { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; font-size: 0.82rem; vertical-align: middle; }
+        tr:hover td { background: #fafafa; cursor: pointer; }
 
-        .log-toolbar { padding: 20px 32px; border-bottom: 1px solid var(--border-soc); display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .log-toolbar .count { font-size: 0.8rem; font-weight: 700; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; min-width: 60px; text-align: center; display: inline-block; }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        .badge-high { background: #ffedd5; color: #9a3412; }
+        .badge-medium { background: #dbeafe; color: #1e40af; }
+        .badge-info { background: #f0f0f0; color: #555; }
 
-        /* Table Design — FIXED ALIGNMENT */
-        .log-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .log-table thead th { 
-            padding: 16px 24px; 
-            background: #f8fafc; 
-            color: var(--text-soc-muted); 
-            font-size: 0.65rem; 
-            font-weight: 850; 
-            text-transform: uppercase; 
-            letter-spacing: 0.1em;
-            border-bottom: 1px solid var(--border-soc);
-        }
-        
-        /* Grid-like behavior for rows */
-        .log-row td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
-        .log-row:hover td { background: #fbfcfd; cursor: pointer; }
+        .mono { font-family: monospace; font-size: 0.75rem; color: #888; }
+        .user-block { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .user-icon { width: 28px; height: 28px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; font-weight: 700; }
 
-        .severity-pill { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; min-width: 75px; text-align: center; display: inline-block; }
-        .sev-CRITICAL { background: #fee2e2; color: #991b1b; }
-        .sev-HIGH { background: #ffedd5; color: #9a3412; }
-        .sev-MEDIUM { background: #dbeafe; color: #1e40af; }
-        .sev-INFO { background: #f1f5f9; color: #475569; }
+        .risk-bar { width: 80px; height: 6px; background: #eee; border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; transition: width 0.4s; }
 
-        .evt-type { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--text-soc); background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
-        .usr-tag { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-soc); }
-        .usr-tag .icon { width: 32px; height: 32px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: #fff; font-weight: 800; }
+        .details-row { display: none; background: #fafafa; }
+        .details-row.open { display: table-row; }
+        .details-content { padding: 24px; border-bottom: 1px solid #eee; }
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 28px; }
+        .details-box h4 { margin: 0 0 12px; font-size: 0.65rem; color: #888; text-transform: uppercase; font-weight: 700; }
+        .kv-row { margin-bottom: 8px; display: flex; font-size: 0.82rem; }
+        .kv-row .key { color: #888; width: 100px; font-weight: 600; }
+        .kv-row .val { color: #333; flex: 1; word-break: break-all; }
+        .json-box { background: #1e293b; color: #38bdf8; padding: 14px; border-radius: 8px; font-size: 0.72rem; font-family: monospace; max-height: 300px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; }
 
-        .meta-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soc-muted); font-weight: 500; }
-        
-        /* Inspection Panel */
-        .inspect-row { display: none; background: #fdfdfe; }
-        .inspect-row.open { display: table-row; }
-        .inspect-content { padding: 32px; border-bottom: 1px solid var(--border-soc); }
-        .inspect-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 40px; }
-        .inspect-box h4 { margin: 0 0 16px 0; font-size: 0.7rem; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 800; }
-        
-        .kv-group { margin-bottom: 10px; display: flex; align-items: flex-start; font-size: 0.85rem; }
-        .kv-group .key { color: var(--text-soc-muted); width: 140px; font-weight: 600; }
-        .kv-group .val { color: var(--text-soc); font-family: 'JetBrains Mono', monospace; word-break: break-all; flex: 1; font-weight: 500; }
+        .small-btn { padding: 6px 12px; border-radius: 4px; border: 1px solid #ddd; background: #fff; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+        .small-btn:hover { background: #f5f5f5; }
 
-        .raw-json { background: #0f172a; color: #38bdf8; padding: 20px; border-radius: 12px; font-size: 0.75rem; margin: 0; max-height: 400px; overflow-y: auto; line-height: 1.6; }
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-inner { background: #fff; width: 90%; max-width: 800px; border-radius: 12px; padding: 24px; max-height: 80vh; overflow-y: auto; }
 
-        .risk-meter { width: 100px; height: 8px; background: #e2e8f0; border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 12px; }
-        .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-soc); }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @media (max-width: 900px) { .stats-row { grid-template-columns: repeat(3, 1fr); } .details-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; border-bottom: 1px solid var(--border-soc); background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(16px); z-index: 1000;">
-        <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="soc-container">
-        <div class="soc-header">
-            <div>
-                <h1>Security Operations Telemetry</h1>
-                <p>Enterprise Sentinel &middot; Real-Time Threat Analysis & Intelligence</p>
-            </div>
-            <div class="live-pulse">
-                <div class="pulse-dot"></div>
-                <span id="connState">Establishing Handshake...</span>
-            </div>
+    <div class="container">
+        <div class="page-top">
+            <div><h1>Live Monitoring</h1><p>Real-time security events</p></div>
+            <div class="live-tag"><div class="live-dot"></div><span id="connState">Connecting...</span></div>
         </div>
 
-        <div class="soc-stats">
-            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('TOTAL')" onmouseover="this.style.boxShadow='0 0 0 2px var(--primary-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statTotal">0</div><div class="lab">Ingested Signals <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
-            </div>
-            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('CRITICAL')" onmouseover="this.style.boxShadow='0 0 0 2px var(--danger-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statCritical" style="color:var(--danger-soc)">0</div><div class="lab">Critical Alerts <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
-            </div>
-            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('HIGH')" onmouseover="this.style.boxShadow='0 0 0 2px var(--warning-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statHigh" style="color:var(--warning-soc)">0</div><div class="lab">High Risk Vectors <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
-            </div>
-            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('FAILURES')" onmouseover="this.style.boxShadow='0 0 0 2px var(--text-soc-muted)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statLoginFailed">0</div><div class="lab">Auth Failures <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
-            </div>
-            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showVpnModal()" onmouseover="this.style.boxShadow='0 0 0 2px var(--accent-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statVpn" style="color:var(--accent-soc)">0</div>
-                <div class="lab">VPN Detections <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
-            </div>
+        <div class="stats-row">
+            <div class="stat-box" onclick="showDetailsModal('TOTAL')"><div class="value" id="stat-total">0</div><div class="label">Total Events</div></div>
+            <div class="stat-box" onclick="showDetailsModal('CRITICAL')"><div class="value" id="stat-critical" style="color:#dc2626">0</div><div class="label" style="color:#dc2626">Critical</div></div>
+            <div class="stat-box" onclick="showDetailsModal('HIGH')"><div class="value" id="stat-high" style="color:#d97706">0</div><div class="label" style="color:#d97706">High Risk</div></div>
+            <div class="stat-box" onclick="showDetailsModal('FAILURES')"><div class="value" id="stat-failures">0</div><div class="label">Failed Logins</div></div>
+            <div class="stat-box" onclick="showDetailsModal('VPN')"><div class="value" id="stat-vpn" style="color:#2563eb">0</div><div class="label" style="color:#2563eb">VPN Usage</div></div>
         </div>
 
-        <div class="log-section">
-            <div class="log-card">
-                <div class="log-toolbar">
-                    <div class="count"><span id="syncCount">0</span> live telemetry packets</div>
-                    <div class="log-actions" style="display:flex; gap:12px;">
-                        <button class="btn btn-outline btn-sm" id="btn-pause" onclick="togglePause()"><i class="fas fa-pause"></i> Pause Feed</button>
-                        <button class="btn btn-outline btn-sm" onclick="clearLogs()"><i class="fas fa-redo"></i> Reset Feed</button>
-                    </div>
+        <div class="card">
+            <div class="toolbar">
+                <div class="count"><span id="eventCount">0</span> events</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="small-btn" id="btn-pause" onclick="togglePause()">Pause</button>
+                    <button class="small-btn" onclick="clearFeed()">Clear</button>
                 </div>
-                <div class="table-container" style="max-height: 850px; overflow-y: auto;">
-                    <table class="log-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 30px;"></th>
-                                <th style="width: 180px;">Event Timestamp</th>
-                                <th style="width: 100px;">Priority</th>
-                                <th style="width: 200px;">Internal Event</th>
-                                <th style="width: 220px;">Identity Principal</th>
-                                <th>Deployment Source / Network</th>
-                                <th style="width: 180px;">Risk Profile</th>
-                            </tr>
-                        </thead>
-                        <tbody id="eventBody">
-                            <tr><td colspan="7" style="text-align:center; padding: 120px; color: var(--text-soc-muted); font-size: 1.1rem; font-weight:600;"><i class="fas fa-circle-notch fa-spin"></i> Synchronizing Sentinel Data Stream...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            </div>
+            <div style="max-height:700px; overflow-y:auto;">
+                <table>
+                    <thead><tr><th style="width:24px;"></th><th style="width:160px;">Time</th><th style="width:90px;">Severity</th><th style="width:180px;">Type</th><th style="width:200px;">User</th><th>Location</th><th style="width:160px;">Risk</th></tr></thead>
+                    <tbody id="eventsList"><tr><td colspan="7" style="text-align:center; padding:80px; color:#aaa;">Loading...</td></tr></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- VPN Detail Modal -->
-    <div id="vpnModal" style="position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); display:none; justify-content:center; align-items:center; z-index:2000;">
-        <div style="background:#fff; width:90%; max-width:700px; border-radius:24px; padding:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); max-height:80vh; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-                <h3 style="margin:0; font-size:1.3rem; font-weight:800;"><i class="fas fa-shield-alt" style="color:var(--accent-soc); margin-right:8px;"></i>VPN Detection Intelligence</h3>
-                <button class="btn btn-outline btn-sm" onclick="hideVpnModal()"><i class="fas fa-times"></i> Close</button>
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal-bg">
+        <div class="modal-inner">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 id="modalTitle" style="margin:0;">Details</h3>
+                <button class="small-btn" onclick="closeModal()">Close</button>
             </div>
-            <table class="log-table" style="font-size:0.85rem;">
-                <thead>
-                    <tr>
-                        <th>Identity</th>
-                        <th>Source IP</th>
-                        <th>Country</th>
-                        <th>Login Time</th>
-                        <th>Access Window</th>
-                        <th>Risk</th>
-                    </tr>
-                </thead>
-                <tbody id="vpnDetailBody">
-                    <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-soc-muted);">Loading VPN telemetry...</td></tr>
-                </tbody>
+            <table>
+                <thead><tr><th>User</th><th>Time</th><th>IP</th><th>Details</th></tr></thead>
+                <tbody id="modalBody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Generic KPI Detail Modal -->
-    <div id="kpiModal" style="position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); display:none; justify-content:center; align-items:center; z-index:2000;">
-        <div style="background:#fff; width:90%; max-width:800px; border-radius:24px; padding:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); max-height:80vh; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-                <h3 style="margin:0; font-size:1.3rem; font-weight:800;" id="kpiModalTitle"><i class="fas fa-list" style="color:var(--primary-soc); margin-right:8px;"></i>Telemetry Details</h3>
-                <button class="btn btn-outline btn-sm" onclick="hideKpiModal()"><i class="fas fa-times"></i> Close</button>
-            </div>
-            <table class="log-table" style="font-size:0.85rem;">
-                <thead>
-                    <tr>
-                        <th style="width: 25%;">Identity</th>
-                        <th style="width: 25%;">Event Time</th>
-                        <th style="width: 20%;">Source IP</th>
-                        <th style="width: 30%;">Reason / Event Type</th>
-                    </tr>
-                </thead>
-                <tbody id="kpiDetailBody">
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <div class="zts-footer"><div class="footer-brand">ZTS Admin Portal</div></div>
 
-    <!-- Global Footer -->
-    <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
-    </div>
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        let events = [];
-        let paused = false;
-        const MAX_LOGS = 1000;
+        var events = [];
+        var isPaused = false;
+        var MAX_EVENTS = 1000;
 
-        async function init() {
-            const res = await fetch('/api/session');
-            const session = await res.json();
+        async function loadPage() {
+            var session = await (await fetch('/api/session')).json();
             if (!session.loggedIn) return location.href = '/login';
-
             buildNavbar(session.user.role, 'live-monitoring', session.user.username);
-            
-            loadStats();
-            fetchHistory();
-            connect();
-
-            setInterval(loadStats, 10000); // 10s KPI refresh
+            updateStats();
+            loadHistory();
+            startLiveStream();
+            setInterval(updateStats, 10000);
         }
 
-        async function fetchHistory() {
+        async function loadHistory() {
             try {
-                const res = await fetch('/api/monitor/events?limit=300');
+                var res = await fetch('/api/monitor/events?limit=300');
                 events = await res.json();
-                renderTable();
-            } catch (err) {}
+                renderEvents();
+            } catch (err) { console.error(err); }
         }
 
-        function renderTable() {
-            const body = document.getElementById('eventBody');
-            body.innerHTML = '';
-            events.forEach(e => appendRow(body, e));
-            document.getElementById('syncCount').textContent = events.length;
+        function renderEvents() {
+            var tbody = document.getElementById('eventsList'); tbody.innerHTML = '';
+            events.forEach(function(e) { addEventRow(tbody, e, false); });
+            document.getElementById('eventCount').textContent = events.length;
         }
 
-        function appendRow(container, evt) {
-            const uId = evt.id || Math.random().toString(36).substr(2, 9);
-            
-            // Risk color logic
-            const rScore = evt.risk_score || 0;
-            const rColor = rScore >= 60 ? 'var(--danger-soc)' : rScore >= 30 ? 'var(--warning-soc)' : 'var(--success-soc)';
+        function addEventRow(container, evt, toTop) {
+            var id = evt.id || Math.random().toString(36).substr(2, 9);
+            var score = evt.risk_score || 0;
+            var color = score >= 60 ? '#dc2626' : score >= 30 ? '#d97706' : '#16a34a';
+            var severity = evt.severity || 'INFO';
+            var badgeClass = severity === 'CRITICAL' ? 'badge-critical' : severity === 'HIGH' ? 'badge-high' : severity === 'MEDIUM' ? 'badge-medium' : 'badge-info';
+            var details = evt.details || {};
 
-            const isVPN = evt.event_type === 'VPN_DETECTED' || (evt.details && evt.details.vpn);
-
-            const tr = document.createElement('tr');
+            var tr = document.createElement('tr');
             tr.className = 'log-row';
-            tr.onclick = () => toggleInspect(uId);
-            tr.innerHTML = `
-                <td style="color:var(--text-soc-muted); font-size:0.6rem;"><i class="fas fa-chevron-right" id="chevron-${uId}"></i></td>
-                <td class="meta-cell">${formatDateToISO(evt.timestamp || new Date())}</td>
-                <td><span class="severity-pill sev-${evt.severity || 'INFO'}">${evt.severity || 'INFO'}</span></td>
-                <td><span class="evt-type">${evt.event_type || 'TELEMETRY_DATA'}</span></td>
-                <td>
-                    <div class="usr-tag">
-                        <div class="icon">${(evt.username || 'S')[0].toUpperCase()}</div>
-                        <div style="display:flex; flex-direction:column;">
-                            <span>${evt.username || 'System'}</span>
-                            ${evt.details && evt.details.role ? `<span style="font-size:0.55rem; color:var(--text-soc-muted); font-weight:800; letter-spacing:0.05em; text-transform:uppercase; margin-top:2px;">${evt.details.role}</span>` : ''}
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="meta-cell">
-                        ${evt.ip || '0.0.0.0'}
-                        <div style="font-size:0.65rem; color:var(--accent-soc); font-weight:700; margin-top:2px;">
-                            ${evt.location || 'Local Network / Unknown'}
-                            ${isVPN ? ' &middot; <span style="color:var(--danger-soc)">VPN</span>' : ''}
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="risk-meter"><div class="risk-fill" style="width:${rScore}%; background:${rColor}"></div></div>
-                    <span style="font-weight:800; font-family:'JetBrains Mono'">${rScore}</span>
-                </td>
-            `;
+            tr.onclick = function() { toggleRow(id); };
+            tr.innerHTML = '<td style="color:#aaa; font-size:0.7rem;">+</td>' +
+                '<td class="mono">' + fmtDate(evt.timestamp || new Date()) + '</td>' +
+                '<td><span class="badge ' + badgeClass + '">' + severity + '</span></td>' +
+                '<td><span class="mono" style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">' + (evt.event_type || 'SYSTEM') + '</span></td>' +
+                '<td><div class="user-block"><div class="user-icon">' + ((evt.username || 'S')[0].toUpperCase()) + '</div><div><div>' + (evt.username || 'System') + '</div>' + (details.role ? '<div style="font-size:0.6rem; color:#888;">' + details.role + '</div>' : '') + '</div></div></td>' +
+                '<td><div class="mono">' + (evt.ip || '-') + '</div><div style="font-size:0.7rem; color:#2563eb; font-weight:600;">' + (evt.location || 'Unknown') + (details.vpn ? ' <span style="color:#dc2626;">(VPN)</span>' : '') + '</div></td>' +
+                '<td><div class="risk-bar"><div class="risk-fill" style="width:' + score + '%; background:' + color + '"></div></div><span class="mono">' + score + '</span></td>';
 
-            const inspectRow = document.createElement('tr');
-            inspectRow.id = `inspect-${uId}`;
-            inspectRow.className = 'inspect-row';
+            var dRow = document.createElement('tr');
+            dRow.id = 'details-' + id;
+            dRow.className = 'details-row';
+            dRow.innerHTML = '<td colspan="7"><div class="details-content"><div class="details-grid">' +
+                '<div class="details-box"><h4>User Info</h4>' +
+                '<div class="kv-row"><span class="key">User ID</span><span class="val">' + (evt.user_id || '-') + '</span></div>' +
+                '<div class="kv-row"><span class="key">Username</span><span class="val">' + (evt.username || '-') + '</span></div>' +
+                '<div class="kv-row"><span class="key">IP</span><span class="val">' + (evt.ip || '-') + '</span></div>' +
+                '<div class="kv-row"><span class="key">Location</span><span class="val">' + (evt.location || '-') + '</span></div></div>' +
+                '<div class="details-box"><h4>Event Info</h4>' +
+                '<div class="kv-row"><span class="key">Event ID</span><span class="val">' + id + '</span></div>' +
+                '<div class="kv-row"><span class="key">Action</span><span class="val">' + (evt.event_type || '-') + '</span></div>' +
+                '<div class="kv-row"><span class="key">Risk</span><span class="val">' + score + '</span></div>' +
+                '<div class="kv-row"><span class="key">Device</span><span class="val">' + (details.browser || details.device || 'Unknown') + '</span></div></div>' +
+                '<div class="details-box"><h4>Raw Data</h4><pre class="json-box">' + JSON.stringify(details, null, 2) + '</pre></div>' +
+                '</div></div></td>';
 
-            // Determine timing context
-            const evtTime = new Date(evt.timestamp || new Date());
-            const evtHour = evtTime.getHours();
-            const isOffHours = evtHour >= 22 || evtHour < 6;
-            const accessWindow = isOffHours ? '<span style="color:var(--danger-soc); font-weight:700;">OFF-HOURS</span>' : '<span style="color:var(--success-soc); font-weight:700;">OFFICE HOURS</span>';
-
-            // Device info from details
-            const deviceInfo = evt.details && evt.details.browser ? evt.details.browser : (evt.details && evt.details.device ? evt.details.device : 'N/A');
-            const roleInfo = evt.details && evt.details.role ? evt.details.role : 'N/A';
-
-            inspectRow.innerHTML = `
-                <td colspan="7">
-                    <div class="inspect-content">
-                        <div class="inspect-grid">
-                            <div class="inspect-box">
-                                <h4>Entity Intel</h4>
-                                <div class="kv-group"><span class="key">Internal ID</span><span class="val">${evt.user_id || 'N/A'}</span></div>
-                                <div class="kv-group"><span class="key">Source IP</span><span class="val">${evt.ip || '0.0.0.0'}</span></div>
-                                <div class="kv-group"><span class="key">Geo Context</span><span class="val">${evt.location || 'Unknown'}</span>${isVPN ? ' <span class="severity-pill sev-HIGH" style="font-size:0.5rem; margin-left:8px;">VPN detected</span>' : ''}</div>
-                                <div class="kv-group"><span class="key">Access Window</span><span class="val">${accessWindow}</span></div>
-                                <div class="kv-group"><span class="key">Role</span><span class="val">${roleInfo}</span></div>
-                            </div>
-                            <div class="inspect-box">
-                                <h4>Policy Audit</h4>
-                                <div class="kv-group"><span class="key">Signal ID</span><span class="val">${uId}</span></div>
-                                <div class="kv-group"><span class="key">Event Class</span><span class="val">${evt.event_type}</span></div>
-                                <div class="kv-group"><span class="key">Trust Score</span><span class="val">${evt.risk_score}</span></div>
-                                <div class="kv-group"><span class="key">Device</span><span class="val" style="font-size:0.7rem;">${deviceInfo}</span></div>
-                                ${isVPN ? '<div class="kv-group"><span class="key">VPN Status</span><span class="val" style="color:var(--danger-soc); font-weight:800;">\u26A0 TUNNEL ACTIVE</span></div>' : ''}
-                                ${isOffHours ? '<div class="kv-group"><span class="key">Time Alert</span><span class="val" style="color:var(--warning-soc); font-weight:800;">\u23F0 OFF-HOURS ACCESS</span></div>' : ''}
-                            </div>
-                            <div class="inspect-box">
-                                <h4>Telemetry Hash</h4>
-                                <pre class="raw-json">${JSON.stringify(evt.details || {}, null, 2)}</pre>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            `;
-
-            container.appendChild(tr);
-            container.appendChild(inspectRow);
+            if (toTop) { container.prepend(dRow); container.prepend(tr); }
+            else { container.appendChild(tr); container.appendChild(dRow); }
         }
 
-        function toggleInspect(id) {
-            const row = document.getElementById(`inspect-${id}`);
-            const chevron = document.getElementById(`chevron-${id}`);
-            const isOpen = row.classList.contains('open');
-            
-            if (isOpen) {
-                row.classList.remove('open');
-                chevron.classList.remove('fa-chevron-down');
-                chevron.classList.add('fa-chevron-right');
-            } else {
-                row.classList.add('open');
-                chevron.classList.remove('fa-chevron-right');
-                chevron.classList.add('fa-chevron-down');
-            }
+        function toggleRow(id) {
+            var row = document.getElementById('details-' + id);
+            row.classList.toggle('open');
         }
 
-        function formatDateToISO(str) {
-            try {
-                const d = new Date(str);
-                return d.toLocaleString('en-GB', { hour12: false }).replace(',', '');
-            } catch(e) { return str; }
+        function fmtDate(str) {
+            try { return new Date(str).toLocaleString('en-GB', { hour12: false }); }
+            catch (e) { return str; }
         }
 
-        function connect() {
-            const es = new EventSource('/api/monitor/stream');
-            es.onopen = () => { document.getElementById('connState').textContent = 'Live Sentinel Active'; };
-            es.onmessage = (m) => {
+        function startLiveStream() {
+            var source = new EventSource('/api/monitor/stream');
+            source.onopen = function() { document.getElementById('connState').textContent = 'Live'; document.querySelector('.live-dot').style.background = '#16a34a'; };
+            source.onmessage = function(msg) {
                 try {
-                    const data = JSON.parse(m.data);
+                    var data = JSON.parse(msg.data);
                     if (data.type === 'ping' || data.type === 'connected') return;
-                    if (!paused) {
+                    if (!isPaused) {
                         events.unshift(data);
-                        if (events.length > MAX_LOGS) events.pop();
-                        
-                        const body = document.getElementById('eventBody');
-                        if (body.children.length === 1 && body.children[0].textContent.includes('Synchronizing')) body.innerHTML = '';
-                        
-                        // To insert at top, we need to insert the inspect row then the main row before it
-                        const uId = data.id || Math.random().toString(36).substr(2, 9);
-                        appendRowAtTop(body, data);
-                        document.getElementById('syncCount').textContent = events.length;
+                        if (events.length > MAX_EVENTS) events.pop();
+                        var tbody = document.getElementById('eventsList');
+                        if (tbody.children.length === 1 && tbody.children[0].textContent.indexOf('Loading') >= 0) tbody.innerHTML = '';
+                        addEventRow(tbody, data, true);
+                        document.getElementById('eventCount').textContent = events.length;
                     }
-                } catch (e) {}
+                } catch (e) { console.error(e); }
             };
-            es.onerror = () => { document.getElementById('connState').textContent = 'Sentinel Disconnected'; };
+            source.onerror = function() { document.getElementById('connState').textContent = 'Disconnected'; document.querySelector('.live-dot').style.background = '#dc2626'; };
         }
 
-        function appendRowAtTop(container, data) {
-            // Temporarily use a wrapper to create the elements
-            const temp = document.createElement('tbody');
-            appendRow(temp, data);
-            
-            // Move rows to the real body in reverse order so they stay together
-            const inspectRow = temp.lastElementChild;
-            const mainRow = temp.firstElementChild;
-            
-            container.insertBefore(inspectRow, container.firstChild);
-            container.insertBefore(mainRow, container.firstChild);
-        }
-
-        async function loadStats() {
+        async function updateStats() {
             try {
-                const res = await fetch('/api/monitor/stats');
-                const d = await res.json();
-                document.getElementById('statTotal').textContent = d.total || 0;
-                document.getElementById('statCritical').textContent = d.critical || 0;
-                document.getElementById('statHigh').textContent = d.high || 0;
-                document.getElementById('statLoginFailed').textContent = d.login_failed || 0;
-                document.getElementById('statVpn').textContent = d.vpn_detected || 0;
-            } catch(e) {}
+                var res = await fetch('/api/monitor/stats');
+                var stats = await res.json();
+                document.getElementById('stat-total').textContent = stats.total || 0;
+                document.getElementById('stat-critical').textContent = stats.critical || 0;
+                document.getElementById('stat-high').textContent = stats.high || 0;
+                document.getElementById('stat-failures').textContent = stats.login_failed || 0;
+                document.getElementById('stat-vpn').textContent = stats.vpn_detected || 0;
+            } catch (e) { console.error(e); }
         }
 
         function togglePause() {
-            paused = !paused;
-            const btn = document.getElementById('btn-pause');
-            if (paused) {
-                btn.classList.add('paused');
-                btn.innerHTML = '<i class="fas fa-play"></i> Resume Feed';
-            } else {
-                btn.classList.remove('paused');
-                btn.innerHTML = '<i class="fas fa-pause"></i> Pause Feed';
-            }
+            isPaused = !isPaused;
+            document.getElementById('btn-pause').textContent = isPaused ? 'Resume' : 'Pause';
         }
 
-        function clearLogs() { events = []; renderTable(); }
+        function clearFeed() { events = []; renderEvents(); }
 
-        // VPN Detail Modal
-        function showVpnModal() {
-            document.getElementById('vpnModal').style.display = 'flex';
-            const vpnEvents = events.filter(e => e.event_type === 'VPN_DETECTED' || (e.details && e.details.vpn));
-            const tbody = document.getElementById('vpnDetailBody');
-            tbody.innerHTML = '';
-            if (!vpnEvents.length) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-soc-muted);">No VPN events in current feed. Try loading more history.</td></tr>';
-                return;
-            }
-            vpnEvents.forEach(evt => {
-                const evtTime = new Date(evt.timestamp || new Date());
-                const evtHour = evtTime.getHours();
-                const isOffHours = evtHour >= 22 || evtHour < 6;
-                const accessBadge = isOffHours
-                    ? '<span style="background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700;">OFF-HOURS</span>'
-                    : '<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700;">OFFICE</span>';
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${evt.username || 'System'}</strong></td>
-                    <td class="meta-cell">${evt.ip || '—'}</td>
-                    <td>${evt.location || '—'}</td>
-                    <td class="meta-cell">${formatDateToISO(evt.timestamp)}</td>
-                    <td>${accessBadge}</td>
-                    <td><span style="font-weight:800; color:${evt.risk_score >= 60 ? 'var(--danger-soc)' : evt.risk_score >= 30 ? 'var(--warning-soc)' : 'var(--success-soc)'}">${evt.risk_score || 0}</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        function showDetailsModal(category) {
+            var filtered = []; var header = '';
+            if (category === 'TOTAL') { filtered = events; header = 'All Events'; }
+            else if (category === 'CRITICAL') { filtered = events.filter(function(e) { return e.severity === 'CRITICAL'; }); header = 'Critical Events'; }
+            else if (category === 'HIGH') { filtered = events.filter(function(e) { return e.severity === 'HIGH'; }); header = 'High Risk Events'; }
+            else if (category === 'FAILURES') { filtered = events.filter(function(e) { return String(e.event_type).indexOf('FAIL') >= 0 || String(e.event_type).indexOf('BLOCK') >= 0; }); header = 'Failed Logins'; }
+            else if (category === 'VPN') { filtered = events.filter(function(e) { return e.event_type === 'VPN_DETECTED' || (e.details && e.details.vpn); }); header = 'VPN Usage'; }
 
-        function hideVpnModal() {
-            document.getElementById('vpnModal').style.display = 'none';
-        }
-
-        function showKpiModal(type) {
-            let filtered = [];
-            let title = "";
-            let iconColor = "var(--primary-soc)";
-
-            if (type === 'TOTAL') {
-                filtered = events;
-                title = "All Ingested Signals";
-            } else if (type === 'CRITICAL') {
-                filtered = events.filter(e => e.severity === 'CRITICAL');
-                title = "Critical Alerts";
-                iconColor = "var(--danger-soc)";
-            } else if (type === 'HIGH') {
-                filtered = events.filter(e => e.severity === 'HIGH');
-                title = "High Risk Vectors";
-                iconColor = "var(--warning-soc)";
-            } else if (type === 'FAILURES') {
-                filtered = events.filter(e => (e.event_type || '').includes('FAIL') || (e.event_type || '').includes('BLOCK'));
-                title = "Authentication Failures";
-                iconColor = "var(--text-soc-muted)";
-            }
-
-            document.getElementById('kpiModalTitle').innerHTML = `<i class="fas fa-list" style="color:${iconColor}; margin-right:8px;"></i>${title}`;
-            const tb = document.getElementById('kpiDetailBody');
-            tb.innerHTML = '';
-            
-            if (filtered.length === 0) {
-                tb.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-soc-muted);">No logs match this criteria.</td></tr>`;
-            } else {
-                filtered.forEach(e => {
-                    const failReason = (e.details && e.details.reason) ? e.details.reason : e.event_type;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${e.username || 'System'}</strong></td>
-                        <td class="mono">${formatDateToISO(e.timestamp || new Date())}</td>
-                        <td class="mono">${e.ip || '0.0.0.0'}</td>
-                        <td>${failReason}</td>
-                    `;
-                    tb.appendChild(tr);
+            document.getElementById('modalTitle').textContent = header;
+            var tbody = document.getElementById('modalBody'); tbody.innerHTML = '';
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:#aaa;">No events found.</td></tr>'; }
+            else {
+                filtered.forEach(function(e) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td><strong>' + (e.username || 'System') + '</strong></td><td class="mono">' + fmtDate(e.timestamp || new Date()) + '</td><td class="mono">' + (e.ip || '-') + '</td><td>' + ((e.details && e.details.reason) || e.event_type) + '</td>';
+                    tbody.appendChild(tr);
                 });
             }
-            
-            document.getElementById('kpiModal').style.display = 'flex';
+            document.getElementById('detailsModal').style.display = 'flex';
         }
 
-        function hideKpiModal() {
-            document.getElementById('kpiModal').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('detailsModal').style.display = 'none'; }
 
-        init();
+        loadPage();
     </script>
 </body>
 </html>

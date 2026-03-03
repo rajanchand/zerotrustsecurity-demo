@@ -1,214 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Access Authority & Entitlements - ZTS</title>
+    <title>User Permissions - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f8fafc;
-            --panel: #ffffff;
-            --border: #e2e8f0;
-            --text-bold: #0f172a;
-            --text-soft: #64748b;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 120px; }
+        .container { max-width: 1300px; margin: 0 auto; }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 140px; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .page-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+        .page-top h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+        .page-top p { color: #888; font-size: 0.85rem; margin: 4px 0 0; }
 
-        .header-panel { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .header-panel h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-        .header-panel p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
-
-        .access-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        
+        .card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
-        th { padding: 16px 20px; background: #f8fafc; color: var(--text-soft); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); text-align: left; }
-        td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
-        tr:hover td { background: #fbfcfd; }
-        tr.modified td { background: #fffbeb; }
+        th { padding: 14px 18px; background: #fafafa; color: #888; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        td { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; font-size: 0.82rem; vertical-align: middle; }
+        tr:hover td { background: #fafafa; }
+        tr.changed td { background: #fffbeb; }
 
-        .id-tag { display: flex; align-items: center; gap: 12px; }
-        .avatar-box { width: 36px; height: 36px; background: #e0e7ff; color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
-        .role-pill { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: var(--text-soft); }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; background: #e0e7ff; color: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .role-tag { font-size: 0.6rem; font-weight: 600; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
 
-        /* Modern Switch */
-        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch { position: relative; display: inline-block; width: 32px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; transition: .2s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; transition: .2s; border-radius: 18px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50%; }
         input:checked + .slider { background: #16a34a; }
-        input:checked + .slider:before { transform: translateX(16px); }
-        input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+        input:checked + .slider:before { transform: translateX(14px); }
+        input:disabled + .slider { opacity: 0.3; cursor: not-allowed; }
 
-        /* floating action board */
-        .action-board {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: #0f172a; padding: 16px 32px; border-radius: 100px;
-            display: flex; align-items: center; gap: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
-            z-index: 1001; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(40px);
+        .save-bar {
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; padding: 12px 24px; border-radius: 50px;
+            display: flex; align-items: center; gap: 16px;
+            opacity: 0; pointer-events: none; transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
-        .action-board.active { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
-        .action-board span { color: #fff; font-size: 0.9rem; font-weight: 600; }
-        .btn-deploy { background: #fff; color: #0f172a; border: none; padding: 10px 24px; border-radius: 50px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
-        .btn-deploy:hover { background: #f8fafc; transform: scale(1.05); }
+        .save-bar.show { opacity: 1; pointer-events: auto; }
+        .save-bar span { color: #fff; font-size: 0.85rem; font-weight: 600; }
+        .save-btn { background: #fff; color: #333; border: none; padding: 8px 18px; border-radius: 50px; font-weight: 700; cursor: pointer; font-size: 0.8rem; }
+        .cancel-btn { background: transparent; color: #aaa; border: 1px solid #555; padding: 8px 14px; border-radius: 50px; font-size: 0.75rem; cursor: pointer; }
 
-        /* Identity Challenge Modal */
-        .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal { background: #fff; width: 440px; border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; }
-        .modal i { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
-        .modal h3 { margin: 0 0 12px; font-size: 1.5rem; font-weight: 800; }
-        .modal p { color: var(--text-soft); font-size: 0.9rem; margin-bottom: 24px; }
-        .form-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 1rem; text-align: center; box-sizing: border-box; }
-        
-        #toast-box { position: fixed; top: 24px; right: 24px; z-index: 3010; }
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: #fff; width: 100%; max-width: 380px; border-radius: 12px; padding: 28px; text-align: center; }
+        .modal h3 { margin: 0 0 8px; font-size: 1.1rem; }
+        .modal p { color: #888; font-size: 0.85rem; margin-bottom: 16px; }
+        .modal input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; text-align: center; box-sizing: border-box; margin-bottom: 12px; }
+        .modal-error { color: #dc2626; font-size: 0.8rem; display: none; margin-bottom: 10px; }
+
+        .small-btn { padding: 8px 14px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
-        <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="header-panel">
-            <div>
-                <h1>Identity Entitlements</h1>
-                <p>Granular Access Authority management for <span id="accountCount">...</span> identities.</p>
-            </div>
-            <button class="btn btn-outline" onclick="const b=this; b.innerHTML='<i class=\'fas fa-sync fa-spin\'></i> Synchronizing...'; loadPermissions().then(()=>{setTimeout(()=>{b.innerHTML='<i class=\'fas fa-sync\'></i> Synchronize Assets'},500)})"><i class="fas fa-sync"></i> Synchronize Assets</button>
+        <div class="page-top">
+            <div><h1>User Permissions</h1><p>Toggle permissions for <span id="accountCount">...</span> users.</p></div>
+            <button class="small-btn" onclick="loadUsers()">Refresh</button>
         </div>
-
-        <div class="access-card">
+        <div class="card">
             <table>
-                <thead>
-                    <tr>
-                        <th>Identity Principal</th>
-                        <th>Create</th>
-                        <th>Edit</th>
-                        <th>Delete</th>
-                        <th>Susp</th>
-                        <th>Appr</th>
-                        <th>Dev</th>
-                        <th>Net</th>
-                        <th>Mon</th>
-                        <th>Dept</th>
-                    </tr>
-                </thead>
-                <tbody id="userTableBody">
-                    <tr><td colspan="10" style="text-align: center; padding: 80px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Parsing Identity Matrix...</td></tr>
-                </tbody>
+                <thead><tr><th>User</th><th>Create</th><th>Edit</th><th>Delete</th><th>Suspend</th><th>Approve</th><th>Devices</th><th>Network</th><th>Monitor</th><th>Dept</th></tr></thead>
+                <tbody id="userTableBody"><tr><td colspan="10" style="text-align:center; padding:60px; color:#aaa;">Loading...</td></tr></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Floating Action Board -->
-    <div id="actionBar" class="action-board">
-        <span><i class="fas fa-satellite-dish" style="margin-right: 12px; color: #3b82f6;"></i> <span id="pendingCount">0</span> Provisioning Changes Ready</span>
-        <button class="btn-deploy" onclick="saveBulkChanges()">Deploy Policies</button>
-        <button class="btn btn-sm btn-outline" style="color:var(--text-soft); border-color:rgba(255,255,255,0.1)" onclick="loadPermissions()">Cancel</button>
+    <div id="actionBar" class="save-bar">
+        <span><span id="pendingCount">0</span> changes</span>
+        <button class="save-btn" onclick="saveChanges()">Save</button>
+        <button class="cancel-btn" onclick="loadUsers()">Cancel</button>
     </div>
 
-    <!-- ID Challenge -->
-    <div id="reAuthModal" class="overlay">
+    <div id="reAuthModal" class="modal-bg">
         <div class="modal">
-            <i class="fas fa-user-shield"></i>
-            <h3>High-Privilege Challenge</h3>
-            <p>Policy change detected on administrative entitlements. Verification required to proceed.</p>
-            <div style="margin-bottom: 24px;"><input type="password" id="reAuthPassword" class="form-input" placeholder="Confirm Password"></div>
-            <p id="reAuthError" style="color:red; font-size:0.8rem; display:none; margin-bottom:12px;"></p>
-            <div style="display:flex; gap:12px;">
-                <button class="btn btn-primary" onclick="submitReAuth()" style="flex:1;">Authorize Deployment</button>
-                <button class="btn btn-outline" onclick="hideModal('reAuthModal')">Abort</button>
+            <h3>Password Required</h3>
+            <p>Confirm your password to save changes.</p>
+            <input type="password" id="reAuthPassword" placeholder="Password">
+            <p id="reAuthError" class="modal-error"></p>
+            <div style="display:flex; gap:8px;">
+                <button class="save-btn" onclick="confirmPassword()" style="flex:1; background:#2563eb; color:#fff; padding:10px; border-radius:6px;">Submit</button>
+                <button class="small-btn" onclick="document.getElementById('reAuthModal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="toast-box"></div>
+    <div id="toast-box" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
 
-    <!-- Global Footer -->
-    <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
-    </div>
-
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        const PERM_KEYS = ['user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve', 'device_approve', 'network_manage', 'monitor_live', 'dept_manage'];
-        let originalState = {};
-        let pendingUpdates = {};
+        var PERMS = ['user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve', 'device_approve', 'network_manage', 'monitor_live', 'dept_manage'];
+        var saved = {};
+        var edits = {};
+        var cb = null;
 
-        async function loadPermissions() {
+        async function initPage() {
+            var res = await fetch('/api/session');
+            var session = await res.json();
+            if (!session.loggedIn) return location.href = '/login';
+            buildNavbar(session.user.role, 'user-access', session.user.username);
+            await loadUsers();
+        }
+
+        async function loadUsers() {
             try {
-                const users = await(await fetch('/api/mapping/permissions')).json();
-                originalState = {}; pendingUpdates = {};
-                users.forEach(u => originalState[u.id] = JSON.parse(JSON.stringify(u.permissions || {})));
+                var res = await fetch('/api/mapping/permissions');
+                var users = await res.json();
+                saved = {}; edits = {};
+                users.forEach(function(u) { saved[u.id] = JSON.parse(JSON.stringify(u.permissions || {})); });
                 document.getElementById('accountCount').textContent = users.length;
                 renderTable(users);
                 updateBar();
-            } catch(e) {}
+            } catch (err) { console.error(err); }
         }
 
         function renderTable(users) {
-            const body = document.getElementById('userTableBody'); body.innerHTML = '';
-            users.forEach(u => {
-                const tr = document.createElement('tr'); tr.id = `row-${u.id}`;
-                const isSuper = u.role === 'SuperAdmin';
-                let html = `<td><div class="id-tag"><div class="avatar-box">${u.username[0].toUpperCase()}</div><div><strong>${u.username}</strong><br><span class="role-pill">${u.role}</span></div></div></td>`;
-                PERM_KEYS.forEach(k => {
-                    const chk = (u.permissions && u.permissions[k]) || isSuper;
-                    html += `<td style="text-align:center"><label class="switch"><input type="checkbox" onchange="track(${u.id},'${k}',this.checked)" ${chk?'checked':''} ${isSuper?'disabled':''}><span class="slider"></span></label></td>`;
+            var tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = '';
+            users.forEach(function(user) {
+                var tr = document.createElement('tr');
+                tr.id = 'row-' + user.id;
+                var isSA = user.role === 'SuperAdmin';
+                var html = '<td><div class="user-info"><div class="user-avatar">' + user.username[0].toUpperCase() + '</div><div><strong>' + user.username + '</strong><br><span class="role-tag">' + user.role + '</span></div></div></td>';
+                PERMS.forEach(function(p) {
+                    var on = (user.permissions && user.permissions[p]) || isSA;
+                    html += '<td style="text-align:center"><label class="switch"><input type="checkbox" onchange="editPerm(' + user.id + ', \'' + p + '\', this.checked)" ' + (on ? 'checked' : '') + ' ' + (isSA ? 'disabled' : '') + '><span class="slider"></span></label></td>';
                 });
-                tr.innerHTML = html; body.appendChild(tr);
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
             });
         }
 
-        function track(uid, key, val) {
-            if(!pendingUpdates[uid]) pendingUpdates[uid] = JSON.parse(JSON.stringify(originalState[uid]));
-            pendingUpdates[uid][key] = val;
-            const diff = JSON.stringify(pendingUpdates[uid]) !== JSON.stringify(originalState[uid]);
-            const r = document.getElementById(`row-${uid}`);
-            if(diff) r.classList.add('modified'); else { r.classList.remove('modified'); delete pendingUpdates[uid]; }
+        function editPerm(id, p, checked) {
+            if (!edits[id]) edits[id] = JSON.parse(JSON.stringify(saved[id]));
+            edits[id][p] = checked;
+            var changed = JSON.stringify(edits[id]) !== JSON.stringify(saved[id]);
+            var row = document.getElementById('row-' + id);
+            if (changed) { row.classList.add('changed'); } else { row.classList.remove('changed'); delete edits[id]; }
             updateBar();
         }
 
         function updateBar() {
-            const c = Object.keys(pendingUpdates).length;
-            document.getElementById('pendingCount').textContent = c;
-            document.getElementById('actionBar').classList.toggle('active', c > 0);
+            var count = Object.keys(edits).length;
+            document.getElementById('pendingCount').textContent = count;
+            document.getElementById('actionBar').classList.toggle('show', count > 0);
         }
 
-        async function saveBulkChanges() {
-            const ups = Object.keys(pendingUpdates).map(id => ({ userId: parseInt(id), permissions: pendingUpdates[id] }));
-            const res = await postJSON('/api/mapping/permissions/bulk-update', { updates: ups });
-            if(res.success) { 
-                showToast('Access Policies Deployed', 'success'); 
-                setTimeout(() => { location.href = '/mapping'; }, 1000); 
-            }
-            else if(res.requireReAuth) handleReAuth(saveBulkChanges);
-            else showToast(res.message, 'error');
+        async function saveChanges() {
+            var updates = Object.keys(edits).map(function(id) { return { userId: parseInt(id), permissions: edits[id] }; });
+            var res = await postJSON('/api/mapping/permissions/bulk-update', { updates: updates });
+            if (res.success) { showToast('Permissions saved', 'success'); setTimeout(function() { location.href = '/mapping'; }, 800); }
+            else if (res.requireReAuth) { cb = saveChanges; document.getElementById('reAuthPassword').value = ''; document.getElementById('reAuthModal').style.display = 'flex'; }
+            else { showToast(res.message, 'error'); }
         }
 
-        let reAuthCb = null;
-        function handleReAuth(cb) { reAuthCb = cb; document.getElementById('reAuthPassword').value=''; document.getElementById('reAuthModal').style.display='flex'; }
-        async function submitReAuth() {
-            const r = await postJSON('/api/verify-reauth', {password: document.getElementById('reAuthPassword').value});
-            if(r.success) { hideModal('reAuthModal'); if(reAuthCb) reAuthCb(); }
-            else { document.getElementById('reAuthError').textContent = r.message; document.getElementById('reAuthError').style.display='block'; }
+        async function confirmPassword() {
+            var res = await postJSON('/api/verify-reauth', { password: document.getElementById('reAuthPassword').value });
+            if (res.success) { document.getElementById('reAuthModal').style.display = 'none'; if (cb) { cb(); cb = null; } }
+            else { var e = document.getElementById('reAuthError'); e.textContent = res.message; e.style.display = 'block'; }
         }
-        function hideModal(id) { document.getElementById(id).style.display='none'; }
-        
-        init();
-        async function init() { const s = await(await fetch('/api/session')).json(); if(!s.loggedIn) return location.href='/login'; buildNavbar(s.user.role, 'user-access', s.user.username); loadPermissions(); }
+
+        initPage();
     </script>
 </body>
 </html>

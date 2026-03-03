@@ -1,144 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Center - ZTS</title>
+    <title>My Profile - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f1f5f9;
-            --panel: #ffffff;
-            --text-main: #0f172a;
-            --text-soft: #64748b;
-            --border: #e2e8f0;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
+        .container { max-width: 900px; margin: 0 auto; }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 100px 24px 40px; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .profile-top { background: #fff; border-radius: 10px; padding: 28px; display: flex; align-items: center; gap: 24px; margin-bottom: 20px; border: 1px solid #e0e0e0; }
+        .avatar { width: 70px; height: 70px; background: #2563eb; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 700; }
+        .profile-top h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+        .profile-top p { margin: 4px 0 0; color: #888; font-size: 0.85rem; }
 
-        .profile-hero { 
-            background: #ffffff;
-            border-radius: 24px; padding: 40px; color: #0f172a;
-            display: flex; align-items: center; gap: 32px; margin-bottom: 32px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-        }
-        .hero-avatar { 
-            width: 100px; height: 100px; background: #3b82f6; border-radius: 20px; 
-            display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-        }
-        .hero-details h1 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
-        .hero-details p { margin: 4px 0 0; opacity: 0.7; font-weight: 500; }
+        .two-col { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+        .card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 16px; }
+        .card-head { padding: 12px 18px; border-bottom: 1px solid #eee; font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; }
 
-        .id-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+        .field { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; }
+        .field:last-child { border-bottom: none; }
+        .field .label { color: #888; font-size: 0.85rem; }
+        .field .value { font-weight: 600; font-size: 0.85rem; }
 
-        .id-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .id-card-head { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); }
-        
-        .id-field { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .id-field:last-child { border-bottom: none; }
-        .id-field .lab { font-weight: 600; font-size: 0.9rem; color: var(--text-soft); }
-        .id-field .val { font-weight: 700; color: var(--text-main); }
+        .session-row { padding: 10px 18px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; font-size: 0.82rem; }
+        .session-row:last-child { border-bottom: none; }
 
-        .session-item { padding: 12px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-        .session-info { font-size: 0.85rem; font-weight: 600; }
-        .session-ip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+        .risk-display { text-align: center; padding: 20px; }
+        .risk-num { font-size: 2.2rem; font-weight: 700; }
+        .risk-label { font-size: 0.8rem; font-weight: 600; margin-top: 4px; }
 
-        .stat-pill { background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-        .stat-pill.active { background: #dcfce7; color: #166534; }
+        .card-body { padding: 14px 18px; }
+        .simple-btn { width: 100%; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+        .simple-btn:hover { background: #eee; }
+        .primary-btn { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+        .primary-btn:hover { background: #1d4ed8; }
+
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: #fff; width: 100%; max-width: 400px; border-radius: 12px; padding: 28px; }
+        .modal h3 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 700; }
+        .modal p { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+        .modal label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+        .modal input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box; margin-bottom: 12px; }
+        .modal input:focus { outline: none; border-color: #2563eb; }
+        .modal-error { color: #dc2626; font-size: 0.8rem; margin-bottom: 10px; display: none; }
+        .modal-buttons { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
-        <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
+    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+        <button class="menu-toggle">Menu</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="profile-hero">
-            <div class="hero-avatar" id="avatarArea">?</div>
-            <div class="hero-details">
+        <div class="profile-top">
+            <div class="avatar" id="avatarArea">?</div>
+            <div>
                 <h1 id="hero-name">Loading...</h1>
                 <p id="hero-role">--</p>
-                <div style="margin-top: 16px; display:flex; gap:12px;">
-                    <span class="stat-pill active"><i class="fas fa-check-circle"></i> Identity Verified</span>
-                    <span class="stat-pill"><i class="fas fa-shield-alt"></i> Adaptive MFA Active</span>
-                </div>
             </div>
         </div>
 
-        <div class="id-grid">
-            <div class="id-main">
-                <div class="id-card" style="margin-bottom: 24px;">
-                    <div class="id-card-head">Internal Directory Attributes</div>
-                    <div class="id-field"><span class="lab">Organization ID</span><span class="val" id="f-id">--</span></div>
-                    <div class="id-field"><span class="lab">Principal Name</span><span class="val" id="f-user">--</span></div>
-                    <div class="id-field"><span class="lab">Primary Endpoint</span><span class="val" id="f-email">--</span></div>
-                    <div class="id-field"><span class="lab">Org Unit</span><span class="val" id="f-dept">--</span></div>
-                    <div class="id-field"><span class="lab">Risk Governance</span><span class="val" id="f-role">--</span></div>
-                </div>
-
-                <div class="id-card">
-                    <div class="id-card-head">Active Access Tokens</div>
-                    <div id="sessionList">
-                        <div style="padding: 30px; text-align: center; color: var(--text-soft);">Polling active state...</div>
+        <div class="two-col">
+            <div>
+                <div class="card">
+                    <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Account Details</span>
+                        <button class="simple-btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="showEditProfileModal()">Edit</button>
                     </div>
+                    <div class="field"><span class="label">User ID</span><span class="value" id="f-id">--</span></div>
+                    <div class="field"><span class="label">Username</span><span class="value" id="f-user">--</span></div>
+                    <div class="field"><span class="label">Email</span><span class="value" id="f-email">--</span></div>
+                    <div class="field"><span class="label">Phone</span><span class="value" id="f-phone">--</span></div>
+                    <div class="field"><span class="label">Department</span><span class="value" id="f-dept">--</span></div>
+                    <div class="field"><span class="label">Role</span><span class="value" id="f-role">--</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-head">Recent Logins</div>
+                    <div id="sessionList"><div style="padding:20px; text-align:center; color:#aaa;">Loading...</div></div>
                 </div>
             </div>
-
-            <div class="id-side">
-                <div class="id-card" style="margin-bottom: 24px;">
-                    <div class="id-card-head">Security Posture</div>
-                    <div style="padding: 24px; text-align: center;">
-                        <div id="riskScore" style="font-size: 3rem; font-weight: 800; color: var(--primary);">--</div>
-                        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase;" id="riskLabel">LOW RISK</div>
-                        <p style="font-size: 0.7rem; color: var(--text-soft); margin-top: 10px;">Calculated based on your most recent authentication context.</p>
-                        <a href="/risk" class="btn btn-outline btn-sm" style="margin-top: 12px; width: 100%;">Audit Profile</a>
+            <div>
+                <div class="card">
+                    <div class="card-head">Risk Score</div>
+                    <div class="risk-display">
+                        <div id="riskScore" class="risk-num">--</div>
+                        <div id="riskLabel" class="risk-label">LOW RISK</div>
+                        <p style="font-size:0.7rem; color:#aaa; margin-top:8px;">Based on your recent logins.</p>
+                        <a href="/risk" class="simple-btn" style="display:inline-block; margin-top:8px; text-decoration:none; color:#333; text-align:center;">View Details</a>
                     </div>
                 </div>
-
-                <div class="id-card">
-                    <div class="id-card-head">Credential Management</div>
-                    <div style="padding: 20px;">
-                        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="showPasswordModal()"><i class="fas fa-key"></i> Update Credentials</button>
-                        <p style="font-size: 0.65rem; color: var(--text-soft); margin-top: 8px;">Managed by Organization Identity Policy.</p>
+                <div class="card">
+                    <div class="card-head">Password</div>
+                    <div class="card-body">
+                        <button class="simple-btn" onclick="showPasswordModal()">Change Password</button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Password Change Modal -->
-    <div id="pwModal" style="position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);display:none;justify-content:center;align-items:center;z-index:2000;">
-        <div style="background:#fff;width:100%;max-width:440px;border-radius:24px;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-            <h3 style="margin:0 0 8px;font-size:1.5rem;font-weight:800;">Update Credentials</h3>
-            <p style="color:var(--text-soft);font-size:0.9rem;margin-bottom:24px;">Enter your current password and choose a new one.</p>
-            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">Current Password</label><input type="password" id="pw-current" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
-            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">New Password</label><input type="password" id="pw-new" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
-            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">Confirm New Password</label><input type="password" id="pw-confirm" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
-            <p id="pw-error" style="color:#dc2626;font-size:0.8rem;margin-bottom:12px;display:none;"></p>
-            <div style="display:flex;gap:12px;">
-                <button class="btn btn-primary" style="flex:1;padding:14px;border-radius:12px;" onclick="submitPasswordChange()">Update Password</button>
-                <button class="btn btn-outline" style="padding:14px;border-radius:12px;" onclick="document.getElementById('pwModal').style.display='none'">Cancel</button>
+                <div class="card">
+                    <div class="card-head">Home Office</div>
+                    <div class="card-body">
+                        <button class="primary-btn" onclick="showLocationModal()">Save Current Location</button>
+                        <p style="font-size:0.65rem; color:#aaa; margin-top:6px;">Save your current network so it is not flagged as suspicious.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Global Footer -->
-    <div class="zts-footer">
-        <div class="footer-brand">ZTS Enterprise Suite</div>
-        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
-        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    <!-- Password Modal -->
+    <div id="pwModal" class="modal-bg">
+        <div class="modal">
+            <h3>Change Password</h3>
+            <p>Enter your current password and choose a new one.</p>
+            <label>Current Password</label><input type="password" id="pw-current">
+            <label>New Password</label><input type="password" id="pw-new">
+            <label>Confirm New Password</label><input type="password" id="pw-confirm">
+            <p id="pw-error" class="modal-error"></p>
+            <div class="modal-buttons">
+                <button class="primary-btn" style="flex:1;" onclick="updatePassword()">Update</button>
+                <button class="simple-btn" onclick="document.getElementById('pwModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
     </div>
 
-    <script src="/js/app.js?v=2.0.0"></script>
+    <!-- Location Modal -->
+    <div id="locModal" class="modal-bg">
+        <div class="modal">
+            <h3>Save Location</h3>
+            <p>Save your current IP as a known location.</p>
+            <label>Label</label><input type="text" id="loc-label" value="Home">
+            <p id="loc-error" class="modal-error"></p>
+            <div class="modal-buttons">
+                <button class="primary-btn" style="flex:1;" onclick="saveLocation()">Save</button>
+                <button class="simple-btn" onclick="document.getElementById('locModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal-bg">
+        <div class="modal">
+            <h3>Edit Profile</h3>
+            <p>Update your contact details.</p>
+            <label>Email Address</label><input type="email" id="edit-profile-email" placeholder="e.g. you@example.com">
+            <label>Contact Number</label><input type="text" id="edit-profile-phone" placeholder="e.g. +1 555-1234">
+            <p id="edit-profile-error" class="modal-error"></p>
+            <div class="modal-buttons">
+                <button class="primary-btn" style="flex:1;" onclick="saveProfileEdit()">Save</button>
+                <button class="simple-btn" onclick="document.getElementById('editProfileModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-box" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
+
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
         function showPasswordModal() {
             document.getElementById('pw-current').value = '';
@@ -148,68 +168,116 @@
             document.getElementById('pwModal').style.display = 'flex';
         }
 
-        async function submitPasswordChange() {
-            var errEl = document.getElementById('pw-error');
-            errEl.style.display = 'none';
-            var current = document.getElementById('pw-current').value;
-            var newPw = document.getElementById('pw-new').value;
-            var confirm = document.getElementById('pw-confirm').value;
-            if (!current || !newPw) { errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return; }
-            if (newPw !== confirm) { errEl.textContent = 'New passwords do not match.'; errEl.style.display = 'block'; return; }
-            if (newPw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
-            var res = await postJSON('/api/profile/update-password', { currentPassword: current, newPassword: newPw });
-            if (res.success) { document.getElementById('pwModal').style.display = 'none'; showToast('Password updated successfully', 'success'); }
-            else { errEl.textContent = res.message || 'Failed to update password.'; errEl.style.display = 'block'; }
+        async function updatePassword() {
+            var err = document.getElementById('pw-error');
+            err.style.display = 'none';
+            var cur = document.getElementById('pw-current').value;
+            var newP = document.getElementById('pw-new').value;
+            var conf = document.getElementById('pw-confirm').value;
+
+            if (!cur || !newP) { err.textContent = 'Please fill all fields.'; err.style.display = 'block'; return; }
+            if (newP !== conf) { err.textContent = 'Passwords do not match.'; err.style.display = 'block'; return; }
+            if (newP.length < 8) { err.textContent = 'Must be at least 8 characters.'; err.style.display = 'block'; return; }
+
+            var res = await postJSON('/api/profile/update-password', { currentPassword: cur, newPassword: newP });
+            if (res.success) { document.getElementById('pwModal').style.display = 'none'; showToast('Password updated', 'success'); }
+            else { err.textContent = res.message || 'Error.'; err.style.display = 'block'; }
+        }
+
+        function showLocationModal() {
+            document.getElementById('loc-error').style.display = 'none';
+            document.getElementById('locModal').style.display = 'flex';
+        }
+
+        async function saveLocation() {
+            var err = document.getElementById('loc-error');
+            err.style.display = 'none';
+            var label = document.getElementById('loc-label').value;
+            if (!label) { err.textContent = 'Please add a label.'; err.style.display = 'block'; return; }
+            var res = await postJSON('/api/profile/trusted-locations/request', { label: label });
+            if (res.success) { document.getElementById('locModal').style.display = 'none'; showToast(res.message, 'success'); }
+            else { err.textContent = res.message || 'Error.'; err.style.display = 'block'; }
         }
 
         async function loadProfile() {
             try {
-                const s = await(await fetch('/api/session')).json();
-                if(!s.loggedIn) return location.href='/login';
-                
-                buildNavbar(s.user.role, 'profile', s.user.username);
-                
-                document.getElementById('avatarArea').textContent = s.user.username[0].toUpperCase();
-                document.getElementById('hero-name').textContent = s.user.username;
-                document.getElementById('hero-role').textContent = s.user.role;
-                
-                document.getElementById('f-id').textContent = 'ZTS-' + String(s.user.id).padStart(5, '0');
-                document.getElementById('f-user').textContent = s.user.username;
-                document.getElementById('f-email').textContent = s.user.email || 'No email on record';
-                document.getElementById('f-dept').textContent = s.user.department || 'Enterprise General';
-                document.getElementById('f-role').textContent = s.user.role;
+                var res = await fetch('/api/session');
+                var data = await res.json();
+                if (!data.loggedIn) return location.href = '/login';
+                buildNavbar(data.user.role, 'profile', data.user.username);
+                var sessionUser = data.user;
 
-                var riskScore = s.user.riskScore || s.risk && s.risk.score || 0;
-                var riskLevel = s.user.riskLevel || s.risk && s.risk.level || 'Low';
-                document.getElementById('riskScore').textContent = riskScore;
-                document.getElementById('riskLabel').textContent = riskLevel.toUpperCase() + ' RISK';
-                var rColor = riskScore >= 60 ? '#ef4444' : riskScore >= 30 ? '#f59e0b' : '#10b981';
-                document.getElementById('riskScore').style.color = rColor;
+                // Fetch fresh db details for email/phone
+                var profileRes = await fetch('/api/profile');
+                var profileUser = await profileRes.json();
+                var user = { ...sessionUser, ...profileUser };
 
-                // Sessions
-                var d = {};
-                try { d = await(await fetch('/api/admin/users/' + s.user.id + '/forensics')).json(); } catch(e) { d = {}; }
-                const sl = document.getElementById('sessionList');
-                sl.innerHTML = '';
-                if(d.inventory && d.inventory.sessions && d.inventory.sessions.length) {
-                    d.inventory.sessions.slice(0, 5).forEach(sess => {
-                        const div = document.createElement('div');
-                        div.className = 'session-item';
-                        div.innerHTML = `
-                            <div>
-                                <div class="session-info">${sess.browser} on ${sess.os}</div>
-                                <div class="session-ip">${sess.ip} &middot; ${sess.country}</div>
-                            </div>
-                            <div class="evt-time">${formatDate(sess.login_at)}</div>
-                        `;
-                        sl.appendChild(div);
+                document.getElementById('avatarArea').textContent = user.username[0].toUpperCase();
+                document.getElementById('hero-name').textContent = user.username;
+                document.getElementById('hero-role').textContent = user.role;
+                document.getElementById('f-id').textContent = 'ID-' + user.id;
+                document.getElementById('f-user').textContent = user.username;
+                document.getElementById('f-email').textContent = user.email || 'Not set';
+                document.getElementById('f-phone').textContent = user.phone || 'Not set';
+                document.getElementById('f-dept').textContent = user.department || 'General';
+                document.getElementById('f-role').textContent = user.role;
+
+                var score = user.riskScore || (data.risk && data.risk.score) || 0;
+                var level = user.riskLevel || (data.risk && data.risk.level) || 'Low';
+                document.getElementById('riskScore').textContent = score;
+                document.getElementById('riskLabel').textContent = level.toUpperCase() + ' RISK';
+                document.getElementById('riskScore').style.color = score >= 60 ? '#dc2626' : score >= 30 ? '#d97706' : '#16a34a';
+
+                await loadLogins(user.id);
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadLogins(userId) {
+            try {
+                var res = await fetch('/api/admin/users/' + userId + '/forensics');
+                var data = await res.json();
+                var container = document.getElementById('sessionList');
+                container.innerHTML = '';
+                var sessions = (data.inventory && data.inventory.sessions) || [];
+                if (sessions.length > 0) {
+                    sessions.slice(0, 5).forEach(function(s) {
+                        var div = document.createElement('div');
+                        div.className = 'session-row';
+                        div.innerHTML = '<div><div style="font-weight:600;">' + s.browser + ' on ' + s.os + '</div><div style="font-size:0.75rem; color:#aaa;">' + s.ip + ' · ' + s.country + '</div></div><div style="font-size:0.75rem; color:#aaa;">' + formatDate(s.login_at) + '</div>';
+                        container.appendChild(div);
                     });
                 } else {
-                    sl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-soft);">No active tokens identified.</div>';
+                    container.innerHTML = '<div style="padding:16px; text-align:center; color:#aaa;">No login history.</div>';
                 }
-
-            } catch(e) {}
+            } catch (err) { console.error(err); }
         }
+
+        function showEditProfileModal() {
+            var emailText = document.getElementById('f-email').textContent;
+            var phoneText = document.getElementById('f-phone').textContent;
+            document.getElementById('edit-profile-email').value = emailText !== 'Not set' ? emailText : '';
+            document.getElementById('edit-profile-phone').value = phoneText !== 'Not set' ? phoneText : '';
+            document.getElementById('edit-profile-error').style.display = 'none';
+            document.getElementById('editProfileModal').style.display = 'flex';
+        }
+
+        async function saveProfileEdit() {
+            var err = document.getElementById('edit-profile-error');
+            err.style.display = 'none';
+            var email = document.getElementById('edit-profile-email').value;
+            var phone = document.getElementById('edit-profile-phone').value;
+
+            var res = await postJSON('/api/profile/update', { email: email, phone: phone });
+            if (res.success) { 
+                document.getElementById('editProfileModal').style.display = 'none'; 
+                showToast('Profile updated', 'success'); 
+                loadProfile(); 
+            } else { 
+                err.textContent = res.message || 'Error updating profile.'; 
+                err.style.display = 'block'; 
+            }
+        }
+
         loadProfile();
     </script>
 </body>

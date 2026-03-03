@@ -1,154 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Login - ZTS Secure Gateway</title>
+    <title>Login - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text-main: #0f172a;
-            --text-soft: #64748b;
-        }
-
         body { 
             font-family: 'Inter', sans-serif; 
-            background: #f8fafc;
+            background: #f5f5f5;
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 20px;
         }
 
         .login-box {
-            background: #fff; width: 100%; max-width: 440px;
-            padding: 48px; border-radius: 28px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
+            background: #fff; width: 100%; max-width: 400px;
+            padding: 40px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
         }
 
-        .login-head { text-align: center; margin-bottom: 32px; }
-        .login-head .logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: -0.05em; margin-bottom: 8px; }
-        .login-head h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main); }
-        .login-head p { margin: 8px 0 0; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; }
+        .login-head { text-align: center; margin-bottom: 28px; }
+        .login-head .logo { font-size: 1.4rem; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .login-head p { margin: 6px 0 0; color: #888; font-size: 0.85rem; }
 
-        .form-row { margin-bottom: 20px; }
-        .form-row label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: var(--text-soft); }
+        .form-row { margin-bottom: 16px; }
+        .form-row label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: #555; }
         .form-row input { 
-            width: 100%; padding: 14px 18px; border: 1px solid #e2e8f0; border-radius: 12px;
-            font-size: 1rem; font-weight: 500; box-sizing: border-box; transition: all 0.2s;
+            width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 0.9rem; box-sizing: border-box;
         }
-        .form-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.1); }
+        .form-row input:focus { outline: none; border-color: #2563eb; }
 
         .login-btn { 
-            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
-            color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s;
-            margin-top: 12px;
+            width: 100%; padding: 12px; background: #2563eb; border: none; border-radius: 6px;
+            color: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            margin-top: 8px;
         }
-        .login-btn:active { transform: scale(0.98); }
+        .login-btn:hover { background: #1d4ed8; }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .footer-note { text-align: center; margin-top: 32px; font-size: 0.75rem; color: var(--text-soft); line-height: 1.6; }
-        .footer-note strong { color: var(--text-main); }
+        .footer-note { text-align: center; margin-top: 24px; font-size: 0.75rem; color: #999; line-height: 1.5; }
 
-        #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
-        #infoArea { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+        #error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 10px; border-radius: 6px; font-size: 0.8rem; text-align: center; margin-bottom: 16px; display: none; }
+        #info-msg { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px; border-radius: 6px; font-size: 0.8rem; text-align: center; margin-bottom: 16px; display: none; }
 
-        .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; vertical-align: middle; margin-right: 8px; animation: spin 0.7s linear infinite; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; vertical-align: middle; margin-right: 6px; animation: spin 0.7s linear infinite; }
     </style>
 </head>
 <body>
     <div class="login-box">
         <div class="login-head">
-            <div class="logo">Zero Trust Security</div>
-            <h1>Welcome back</h1>
-            <p>Sign in to your organisation account</p>
+            <div class="logo">ZTS Admin Portal</div>
+            <p>Sign in to your account</p>
         </div>
 
-        <div id="infoArea"></div>
-        <div id="errorArea"></div>
+        <div id="info-msg"></div>
+        <div id="error-msg"></div>
 
-        <form id="loginForm">
+        <form id="login-form">
             <div class="form-row">
-                <label>Corporate Account</label>
-                <input type="text" id="username" placeholder="Username" required autofocus>
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter your username" required autofocus>
             </div>
             <div class="form-row">
-                <label>Security Credential</label>
-                <input type="password" id="password" placeholder="Password" required>
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="login-btn">Authenticate</button>
+            <button type="submit" class="login-btn">Sign In</button>
         </form>
 
         <div class="footer-note">
-            This system is restricted to <strong>Authorized Personnel Only</strong>.<br>
-            All access and authentication attempts are audited under NIST SP 800-207 guidelines.
+            Only authorised staff can access this system.<br>
+            All logins are recorded.
         </div>
     </div>
 
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.2.0"></script>
     <script>
-        // Show redirect messages
-        (function() {
+        // Check for redirect messages in URL
+        function checkUrlParams() {
             var params = new URLSearchParams(window.location.search);
-            var msg = params.get('msg');
+            var code = params.get('msg');
+            
             var messages = {
-                'session_expired': 'Your session has expired due to inactivity. Please log in again.',
-                'account_blocked': 'Your account has been blocked by an administrator.',
-                'off_hours':       'Access is restricted during off-hours. Please try again during business hours.',
-                'session_invalid': 'Your session was invalidated. This may be due to a login from another device.',
-                'password_changed': 'Password updated successfully. Please log in with your new credentials.'
+                'session_expired': 'Your session expired. Please sign in again.',
+                'account_blocked': 'Your account has been blocked.',
+                'off_hours': 'You cannot log in outside working hours.',
+                'session_invalid': 'Your session was ended. Please sign in again.',
+                'password_changed': 'Password updated. Please sign in with your new password.'
             };
-            if (msg && messages[msg]) {
-                var info = document.getElementById('infoArea');
-                info.textContent = messages[msg];
-                info.style.display = 'block';
+            
+            if (code && messages[code]) {
+                var box = document.getElementById('info-msg');
+                box.textContent = messages[code];
+                box.style.display = 'block';
             }
-        })();
+        }
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // Handle login form
+        async function handleLogin(e) {
             e.preventDefault();
-            var err = document.getElementById('errorArea');
-            var info = document.getElementById('infoArea');
-            err.style.display = 'none';
-            info.style.display = 'none';
-
+            
+            var errorBox = document.getElementById('error-msg');
+            var infoBox = document.getElementById('info-msg');
             var btn = document.querySelector('.login-btn');
+            
+            errorBox.style.display = 'none';
+            infoBox.style.display = 'none';
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+            btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
             try {
-                // Gather fingerprint from app.js helper
-                var fp = getFingerprint();
-                
-                var res = await postJSON('/api/login', {
+                var result = await postJSON('/api/login', {
                     username: document.getElementById('username').value,
                     password: document.getElementById('password').value,
-                    fingerprint: fp
+                    fingerprint: getFingerprint()
                 });
 
-                if (res.success) {
-                    btn.innerHTML = '<i class="fas fa-check"></i> Redirecting...';
-                    location.href = res.redirect || '/dashboard';
+                if (result.success) {
+                    btn.textContent = 'Success!';
+                    location.href = result.redirect || '/dashboard';
                 } else {
                     btn.disabled = false;
-                    btn.innerHTML = 'Authenticate';
-                    err.textContent = res.message;
-                    err.style.display = 'block';
+                    btn.textContent = 'Sign In';
+                    errorBox.textContent = result.message || 'Wrong username or password.';
+                    errorBox.style.display = 'block';
                 }
-            } catch (ex) {
+            } catch (err) {
                 btn.disabled = false;
-                btn.innerHTML = 'Authenticate';
-                err.textContent = 'Unable to connect. Please try again.';
-                err.style.display = 'block';
+                btn.textContent = 'Sign In';
+                errorBox.textContent = 'Could not connect to the server. Try again.';
+                errorBox.style.display = 'block';
             }
-        });
+        }
+
+        checkUrlParams();
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
     </script>
 </body>
 </html>

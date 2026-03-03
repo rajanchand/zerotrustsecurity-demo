@@ -1,159 +1,91 @@
-// app.js
-// client-side javascript for ZTS
+/**
+ * ZTS Shared Functions
+ */
 
-// show a toast notification (success, error, or info)
-// replaces the old browser alert() dialogs
+// Show a small notification message
 function showToast(message, type) {
-    type = type || 'info';
-    var icon = type === 'success' ? '✓ ' : (type === 'error' ? '✕ ' : 'ℹ ');
-
-    // remove any existing toast
-    var old = document.querySelector('.toast');
-    if (old) old.remove();
+    if (!type) type = 'info';
+    var existing = document.querySelector('.toast');
+    if (existing) existing.remove();
 
     var toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
-    toast.innerHTML = '<span class="toast-icon">' + icon + '</span>' + message;
+    toast.textContent = message;
     document.body.appendChild(toast);
 
-    // trigger animation
-    setTimeout(function () { toast.classList.add('show'); }, 10);
-
-    // auto-hide after 3.5 seconds
-    setTimeout(function () {
+    setTimeout(function() { toast.classList.add('show'); }, 10);
+    setTimeout(function() {
         toast.classList.remove('show');
-        setTimeout(function () { toast.remove(); }, 300);
+        setTimeout(function() { toast.remove(); }, 300);
     }, 3500);
 }
 
-/**
- * Skeleton Loader Helper
- * Renders placeholder rows for tables during data fetch.
- */
-function renderSkeletons(targetId, rowCount, columnCount) {
-    var area = document.getElementById(targetId);
-    if (!area) return;
-    var html = '';
-    for (var i = 0; i < rowCount; i++) {
-        html += '<tr>';
-        for (var j = 0; j < columnCount; j++) {
-            html += '<td><div class="skeleton"></div></td>';
-        }
-        html += '</tr>';
-    }
-    area.innerHTML = html;
-}
-
-/**
- * Empty State Helper
- * Renders a professional empty state message.
- */
-function renderEmptyState(targetId, colSpan, message, icon) {
-    var area = document.getElementById(targetId);
-    if (!area) return;
-    icon = icon || 'fa-folder-open';
-    area.innerHTML = `
-        <tr>
-            <td colspan="${colSpan}">
-                <div class="empty-state">
-                    <i class="fas ${icon}"></i>
-                    <p>${message}</p>
-                    <div class="hint">No forensic signals detected matching the current criteria.</div>
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-// generate a  device fingerprint
+// Get a simple device fingerprint
 function getFingerprint() {
-    var parts = [];
-    parts.push(navigator.userAgent);
-    parts.push(screen.width + 'x' + screen.height);
-    parts.push(screen.colorDepth);
-    parts.push(new Date().getTimezoneOffset());
-    parts.push(navigator.language);
-    parts.push(navigator.platform);
-
-    var hash = 0;
+    var parts = [
+        navigator.userAgent,
+        screen.width + 'x' + screen.height,
+        screen.colorDepth,
+        new Date().getTimezoneOffset(),
+        navigator.language,
+        navigator.platform
+    ];
     var str = parts.join('|');
+    var hash = 0;
     for (var i = 0; i < str.length; i++) {
-        var char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
     }
     return 'fp-' + Math.abs(hash).toString(16);
 }
 
-// format a UTC date to readable form
+// Format a date nicely
 function formatDate(dateStr) {
     if (!dateStr) return '-';
     var d = new Date(dateStr);
     var day = String(d.getDate()).padStart(2, '0');
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    var month = months[d.getMonth()];
-    var year = d.getFullYear();
-    var hours = String(d.getHours()).padStart(2, '0');
-    var mins = String(d.getMinutes()).padStart(2, '0');
-    return day + ' ' + month + ' ' + year + ', ' + hours + ':' + mins;
+    var time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    return day + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ', ' + time;
 }
 
-/**
- * Recursively renders an object or value to a clean string or HTML.
- * Solves the [object Object] bug in tables and logs.
- */
+// Show a JSON value as readable text
 function renderJSON(val) {
     if (val === null || val === undefined) return '-';
     if (typeof val !== 'object') return val;
-    
-    // If it's an object, let's try to make it readable
     try {
         if (Object.keys(val).length === 0) return '{}';
-        
-        // Custom formatting for common fields
         if (val.reason) return val.reason;
         if (val.message) return val.message;
         if (val.action) return val.action;
-        
-        var summary = [];
-        for (var k in val) {
-            if (typeof val[k] === 'object') {
-                summary.push(k + ': (...)');
-            } else {
-                summary.push(k + ': ' + val[k]);
-            }
-            if (summary.length > 2) break; // Keep it short for tables
+        var parts = [];
+        for (var key in val) {
+            parts.push(key + ': ' + (typeof val[key] === 'object' ? '(...)' : val[key]));
+            if (parts.length > 2) break;
         }
-        return summary.join(', ');
+        return parts.join(', ');
     } catch (e) {
-        return '[Complex Object]';
+        return '[Object]';
     }
 }
 
-// store csrf token globally
 var csrfToken = '';
 
-// fetch csrf token on load 
-async function fetchCSRFToken() {
-    try {
-        var res = await fetch('/api/csrf-token');
-        var data = await res.json();
-        if (data.csrfToken) {
-            csrfToken = data.csrfToken;
-        }
-    } catch (e) {
-        console.error('Failed to fetch CSRF token');
-    }
+// Get CSRF token from server
+function fetchCSRFToken() {
+    fetch('/api/csrf-token').then(function(res) {
+        return res.json();
+    }).then(function(data) {
+        if (data.csrfToken) csrfToken = data.csrfToken;
+    }).catch(function() {});
 }
-
-// fetch immediately
 fetchCSRFToken();
 
-// send POST request
+// Send POST request with JSON data
 async function postJSON(url, data) {
     var headers = { 'Content-Type': 'application/json' };
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
-    
+
     try {
         var response = await fetch(url, {
             method: 'POST',
@@ -161,180 +93,128 @@ async function postJSON(url, data) {
             body: JSON.stringify(data)
         });
 
-        // Handle re-authentication requirement (Step-up Auth)
         if (response.status === 401 && url !== '/api/verify-reauth') {
-            return { requireReAuth: true, success: false, message: 'Identity verification required' };
+            return { requireReAuth: true, success: false, message: 'Please confirm your password' };
         }
 
-        // Handle Forbidden / Session Expired
         if (response.status === 403) {
-            var err = await response.json().catch(() => ({ message: 'Access Denied' }));
-            if (err.requireReAuth) {
-                return { requireReAuth: true, success: false, message: err.message };
-            }
-            return { success: false, message: err.message || 'Forbidden' };
+            var err = {};
+            try { err = await response.json(); } catch(e) { err = { message: 'Access denied' }; }
+            return { requireReAuth: !!err.requireReAuth, success: false, message: err.message || 'Access denied' };
         }
 
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        var contentType = response.headers.get('content-type');
+        if (contentType && contentType.indexOf('application/json') >= 0) {
             return await response.json();
-        } else {
-            return { success: response.ok, message: response.ok ? 'Success' : 'Server error (status: ' + response.status + ')' };
         }
+
+        return { success: response.ok, message: response.ok ? 'OK' : 'Server error (' + response.status + ')' };
     } catch (e) {
-        console.error('Fetch error:', e);
-        return { success: false, message: 'Network error or server unreachable' };
+        return { success: false, message: 'Could not connect to the server' };
     }
 }
 
-// build horizontal navbar
+// Build the navigation bar
 function buildNavbar(role, activePage, username) {
     var nav = document.getElementById('mainNav');
     if (!nav) return;
 
     var html = '';
 
-    // Dashboard - direct link
-    html += '<div class="nav-item' + (activePage === 'dashboard' ? ' active' : '') + '">';
-    html += '<a href="/dashboard" class="nav-link' + (activePage === 'dashboard' ? ' active' : '') + '">Dashboard</a>';
-    html += '</div>';
+    // Dashboard - everyone
+    html += '<div class="nav-item ' + (activePage === 'dashboard' ? 'active' : '') + '">';
+    html += '<a href="/dashboard" class="nav-link">Dashboard</a></div>';
 
-    // Portal - role access overview (all users)
-    html += '<div class="nav-item' + (activePage === 'portal' ? ' active' : '') + '">';
-    html += '<a href="/portal" class="nav-link' + (activePage === 'portal' ? ' active' : '') + '">Portal</a>';
-    html += '</div>';
+    // Roles - everyone
+    html += '<div class="nav-item ' + (activePage === 'portal' ? 'active' : '') + '">';
+    html += '<a href="/portal" class="nav-link">Roles</a></div>';
 
-    // Network dropdown
+    // Network - SuperAdmin, IT only
     if (role === 'SuperAdmin' || role === 'IT') {
-        var networkActive = (activePage === 'network') ? ' active' : '';
-        html += '<div class="nav-item' + networkActive + '">';
-        html += '<button class="nav-link' + networkActive + '" onclick="toggleDropdown(this)">Network <span class="arrow">▾</span></button>';
-        html += '<div class="dropdown-menu">';
-        html += '<a href="/network"' + (activePage === 'network' ? ' class="active"' : '') + '>IP Rule</a>';
-        html += '</div>';
-        html += '</div>';
+        html += '<div class="nav-item ' + (activePage === 'network' ? 'active' : '') + '">';
+        html += '<a href="/network" class="nav-link">Network</a></div>';
     }
 
-    // Mapping dropdown (SuperAdmin, IT, and HR)
+    // Mapping - SuperAdmin, IT, HR
     if (role === 'SuperAdmin' || role === 'IT' || role === 'HR') {
-        var mappingActive = (activePage === 'mapping' || activePage === 'register-device' || activePage === 'live-monitoring') ? ' active' : '';
-        html += '<div class="nav-item' + mappingActive + '">';
-        html += '<button class="nav-link' + mappingActive + '" onclick="toggleDropdown(this)">Mapping <span class="arrow">▾</span></button>';
+        var mappingActive = (activePage === 'mapping' || activePage === 'register-device' || activePage === 'user-access');
+        html += '<div class="nav-item ' + (mappingActive ? 'active' : '') + '">';
+        html += '<button class="nav-link" onclick="toggleDropdown(this)">Mapping <span class="arrow">&#9662;</span></button>';
         html += '<div class="dropdown-menu">';
-        html += '<a href="/mapping"' + (activePage === 'mapping' ? ' class="active"' : '') + '>User Management</a>';
-        
+        html += '<a href="/mapping" ' + (activePage === 'mapping' ? 'class="active"' : '') + '>Users</a>';
         if (role === 'SuperAdmin') {
-            html += '<a href="/admin/user-access"' + (activePage === 'user-access' ? ' class="active"' : '') + '>User Access Dashboard</a>';
+            html += '<a href="/admin/user-access" ' + (activePage === 'user-access' ? 'class="active"' : '') + '>Permissions</a>';
         }
-        
-        // HR doesn't have access to Device Management
         if (role !== 'HR') {
-            html += '<a href="/register-device"' + (activePage === 'register-device' ? ' class="active"' : '') + '>Register Device</a>';
+            html += '<a href="/register-device" ' + (activePage === 'register-device' ? 'class="active"' : '') + '>Devices</a>';
         }
-        
-        html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
     }
 
-    // Live Monitoring - separate nav item for SuperAdmin and IT
+    // Live Monitor - SuperAdmin, IT
     if (role === 'SuperAdmin' || role === 'IT') {
-        var monActive = (activePage === 'live-monitoring') ? ' active' : '';
-        html += '<div class="nav-item' + monActive + '">';
-        html += '<a href="/admin/live-monitoring" class="nav-link' + monActive + '" style="display:flex;align-items:center;gap:5px;">';
-        html += '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse-nav 1.5s infinite;"></span>';
-        html += 'Live Monitor</a>';
-        html += '</div>';
+        html += '<div class="nav-item ' + (activePage === 'live-monitoring' ? 'active' : '') + '">';
+        html += '<a href="/admin/live-monitoring" class="nav-link">Live Monitor</a></div>';
     }
 
-    // Security dropdown
-    var securityActive = (activePage === 'risk' || activePage === 'user-log') ? ' active' : '';
-    html += '<div class="nav-item' + securityActive + '">';
-    html += '<button class="nav-link' + securityActive + '" onclick="toggleDropdown(this)">Security <span class="arrow">▾</span></button>';
-    html += '<div class="dropdown-menu">';
-    html += '<a href="/risk"' + (activePage === 'risk' ? ' class="active"' : '') + '>Risk Score</a>';
-    if (role === 'SuperAdmin') {
-        html += '<a href="/admin/user-log"' + (activePage === 'user-log' ? ' class="active"' : '') + '>User Log</a>';
+    // Analytics - SuperAdmin, IT
+    if (role === 'SuperAdmin' || role === 'IT') {
+        html += '<div class="nav-item ' + (activePage === 'remote-analytics' ? 'active' : '') + '">';
+        html += '<a href="/admin/remote-analytics" class="nav-link">Analytics</a></div>';
     }
-    html += '</div>';
-    html += '</div>';
+
+    // Security - everyone
+    var secActive = (activePage === 'risk' || activePage === 'user-log');
+    html += '<div class="nav-item ' + (secActive ? 'active' : '') + '">';
+    html += '<button class="nav-link" onclick="toggleDropdown(this)">Security <span class="arrow">&#9662;</span></button>';
+    html += '<div class="dropdown-menu">';
+    html += '<a href="/risk" ' + (activePage === 'risk' ? 'class="active"' : '') + '>Risk Score</a>';
+    if (role === 'SuperAdmin') {
+        html += '<a href="/admin/user-log" ' + (activePage === 'user-log' ? 'class="active"' : '') + '>Activity Logs</a>';
+    }
+    html += '</div></div>';
 
     nav.innerHTML = html;
 
-    // build user menu
+    // User menu
     var userMenu = document.getElementById('userMenu');
     if (userMenu) {
         var initial = username ? username.charAt(0).toUpperCase() : '?';
-        var userHtml = '';
-
-        userHtml += '<button class="user-menu-btn" onclick="toggleUserMenu(this)">';
-        userHtml += '<div class="user-avatar">' + initial + '</div>';
-        userHtml += '<span>' + username + '</span>';
-        userHtml += '<span class="arrow">▾</span>';
-        userHtml += '</button>';
-        userHtml += '<div class="dropdown-menu">';
-        userHtml += '<a href="/profile"' + (activePage === 'profile' ? ' class="active"' : '') + '>Profile</a>';
-        userHtml += '<div class="dropdown-divider"></div>';
-        userHtml += '<a href="/logout" style="color:#e74c3c;">Logout</a>';
-        userHtml += '</div>';
-        userMenu.innerHTML = userHtml;
+        userMenu.innerHTML = '<button class="user-menu-btn" onclick="toggleUserMenu(this)">' +
+            '<div class="user-avatar">' + initial + '</div>' +
+            '<span>' + username + '</span>' +
+            '<span class="arrow">&#9662;</span></button>' +
+            '<div class="dropdown-menu">' +
+            '<a href="/profile" ' + (activePage === 'profile' ? 'class="active"' : '') + '>My Profile</a>' +
+            '<div class="dropdown-divider"></div>' +
+            '<a href="/logout" style="color:#ef4444;">Sign Out</a></div>';
     }
 }
 
-// toggle dropdown open/close
 function toggleDropdown(btn) {
     var item = btn.closest('.nav-item');
     var wasOpen = item.classList.contains('open');
-
-    // close all dropdowns
-    document.querySelectorAll('.nav-item.open').forEach(function (el) {
-        el.classList.remove('open');
-    });
-    document.querySelectorAll('.user-menu.open').forEach(function (el) {
-        el.classList.remove('open');
-    });
-
-    if (!wasOpen) {
-        item.classList.add('open');
-    }
+    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!wasOpen) item.classList.add('open');
 }
 
-// toggle user menu
 function toggleUserMenu(btn) {
     var menu = btn.closest('.user-menu');
     var wasOpen = menu.classList.contains('open');
-
-    // close all
-    document.querySelectorAll('.nav-item.open').forEach(function (el) {
-        el.classList.remove('open');
-    });
-    document.querySelectorAll('.user-menu.open').forEach(function (el) {
-        el.classList.remove('open');
-    });
-
-    if (!wasOpen) {
-        menu.classList.add('open');
-    }
+    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!wasOpen) menu.classList.add('open');
 }
 
-// close dropdowns when clicking outside
-document.addEventListener('click', function (e) {
+document.addEventListener('click', function(e) {
     if (!e.target.closest('.nav-item') && !e.target.closest('.user-menu')) {
-        document.querySelectorAll('.nav-item.open').forEach(function (el) {
-            el.classList.remove('open');
-        });
-        document.querySelectorAll('.user-menu.open').forEach(function (el) {
-            el.classList.remove('open');
-        });
+        document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
     }
 });
 
-// mobile menu toggle
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     var toggle = document.querySelector('.menu-toggle');
     var navMenu = document.querySelector('.nav-menu');
     if (toggle && navMenu) {
-        toggle.addEventListener('click', function () {
-            navMenu.classList.toggle('open');
-        });
+        toggle.addEventListener('click', function() { navMenu.classList.toggle('open'); });
     }
 });
