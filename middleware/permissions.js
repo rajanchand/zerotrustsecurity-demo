@@ -1,31 +1,32 @@
-// middleware/permissions.js
-
-function requirePermission(permName) {
-    return function (req, res, next) {
-        // SuperAdmin always has all permissions
+/**
+ * Middleware: check if a user has a specific permission.
+ * SuperAdmin always passes. Other roles need the permission set in their profile.
+ */
+function requirePermission(permissionName) {
+    return function(req, res, next) {
+        // SuperAdmin can do everything
         if (req.session.role === 'SuperAdmin') {
             return next();
         }
 
-        var permissions = req.session.permissions || {};
+        var userPermissions = req.session.permissions || {};
 
-        if (permissions[permName] === true) {
+        if (userPermissions[permissionName] === true) {
             return next();
         }
 
-        // Determine response type safely — req.headers.accept may be absent
-        var acceptHeader = req.headers && req.headers.accept ? req.headers.accept : '';
-        var isJSON = req.xhr || acceptHeader.indexOf('json') > -1;
+        // Check if it's an API request
+        var isApiRequest = req.xhr || (req.headers?.accept || '').includes('json');
 
-        if (isJSON) {
+        if (isApiRequest) {
             return res.status(403).json({
                 success: false,
-                message: 'Access denied: missing permission (' + permName + ').'
+                message: 'You do not have permission for this action.'
             });
         }
 
-        res.status(403).send('Access Denied: Missing Permission (' + permName + ')');
+        res.status(403).send('You do not have permission for this action.');
     };
 }
 
-module.exports = { requirePermission };
+module.exports = { requirePermission: requirePermission };

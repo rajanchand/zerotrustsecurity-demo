@@ -1,70 +1,94 @@
-// services/auditService.js
-// Records security events and user actions to the audit_log table.
-// Used throughout the app to maintain a tamper-evident trail for compliance.
-
 const { supabase } = require('../db');
 
 /**
- * Writes a single security event to audit_log.
- * @param {number|null} userId  - ID of the affected user (null for system events)
- * @param {string}      action  - Event type in SCREAMING_SNAKE_CASE (e.g. LOGIN_FAILED)
- * @param {string}      detail  - Human-readable description
- * @param {string}      ip      - Originating IP address
+ * Save an event to the audit log.
+ * @param {string|number} userId - The user's ID.
+ * @param {string} action - What happened (e.g. LOGIN_SUCCESS).
+ * @param {string} detail - Extra info about the event.
+ * @param {string} ip - The user's IP address.
+ * @param {string} [correlationId] - Optional ID for linking related events.
  */
-async function logEvent(userId, action, detail, ip) {
-  try {
-    const { data, error } = await supabase.from('audit_log').insert({
-      user_id: userId,
-      action:  action,
-      detail:  detail || '',
-      ip:      ip     || ''
-    }).select().single();
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    // Never let an audit failure crash the caller — log to stderr only
-    console.error('[audit] Failed to write log entry:', action, err && err.message);
-  }
+async function logEvent(userId, action, detail, ip, correlationId) {
+    try {
+        var record = {
+            user_id: userId,
+            action: action,
+            detail: detail || '',
+            ip: ip || '',
+            correlation_id: correlationId || null
+        };
+
+        var { data, error } = await supabase
+            .from('audit_log')
+            .insert(record)
+            .select()
+            .single();
+
+        // If correlation_id column doesn't exist, try without it
+        if (error?.code === '42703') {
+            var fallback = { ...record };
+            delete fallback.correlation_id;
+            var result = await supabase.from('audit_log').insert(fallback).select().single();
+            if (result.error) throw result.error;
+            return result.data;
+        }
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error('[Audit] Failed to save log for ' + action + ':', err?.message);
+    }
 }
 
-async function getUserAuditLog(userId, limit = 30) {
-  const { data } = await supabase
-    .from('audit_log')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+/**
+ * Get audit logs for a specific user.
+ */
+async function getUserAuditLog(userId, limit) {
+    if (!limit) limit = 30;
+    var { data } = await supabase
+        .from('audit_log')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-  return data || [];
+    return data || [];
 }
 
-async function getAllAuditLogs(limit = 100) {
-  const { data: logs } = await supabase
-    .from('audit_log')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+/**
+ * Get all audit logs with usernames attached.
+ */
+async function getAllAuditLogs(limit) {
+    if (!limit) limit = 100;
+    var { data: logs } = await supabase
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-  if (!logs || !logs.length) return [];
+    if (!logs?.length) return [];
 
-  const userIds = [];
-  logs.forEach(r => {
-    if (r.user_id && !userIds.includes(r.user_id)) userIds.push(r.user_id);
-  });
+    var userIds = [...new Set(logs.map(function(log) { return log.user_id; }).filter(Boolean))];
 
-  const userMap = {};
-  if (userIds.length > 0) {
-    const { data: users } = await supabase.from('users').select('id, username, role').in('id', userIds);
-    (users || []).forEach(u => { userMap[u.id] = u; });
-  }
+    var userMap = {};
+    if (userIds.length > 0) {
+        var { data: users } = await supabase
+            .from('users')
+            .select('id, username, role')
+            .in('id', userIds);
 
-  return logs.map(row => {
-    const u = userMap[row.user_id] || {};
-    return Object.assign({}, row, {
-      username: u.username || 'System',
-      role: u.role || ''
+        if (users) {
+            users.forEach(function(u) { userMap[u.id] = u; });
+        }
+    }
+
+    return logs.map(function(log) {
+        return {
+            ...log,
+            username: userMap[log.user_id]?.username || 'System',
+            role: userMap[log.user_id]?.role || 'System'
+        };
     });
-  });
 }
 
 module.exports = { logEvent, getUserAuditLog, getAllAuditLogs };

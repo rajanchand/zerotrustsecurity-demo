@@ -1,63 +1,80 @@
-// middleware/hmacVerify.js
+var crypto = require('crypto');
 
-const crypto = require('crypto');
+// HMAC secret for request signing
+var HMAC_SECRET = process.env.HMAC_SECRET || process.env.SESSION_SECRET || 'zts-hmac-default';
 
-const HMAC_SECRET = process.env.HMAC_SECRET || process.env.SESSION_SECRET || 'zts-hmac-default';
-const MAX_TIMESTAMP_DRIFT = 5 * 60 * 1000; // 5 minutes — replay protection
+// Requests older than 5 minutes are rejected
+var MAX_AGE = 5 * 60 * 1000;
 
+/**
+ * Middleware: verify HMAC signature on requests.
+ * If no signature header is sent, skip (not all requests need it).
+ */
 function verifyHMAC(req, res, next) {
     var signature = req.headers['x-hmac-signature'];
     var timestamp = req.headers['x-hmac-timestamp'];
 
-    // skip if no signature header present (allow graceful degradation)
+    // No signature? Skip HMAC check
     if (!signature) {
-        // mark request as unsigned for audit
         req.hmacVerified = false;
         return next();
     }
 
-    // check timestamp freshness (replay protection)
     if (!timestamp) {
-        return res.status(400).json({ success: false, message: 'Missing HMAC timestamp.' });
+        return res.status(400).json({ success: false, message: 'Request timestamp is required.' });
     }
 
     var ts = parseInt(timestamp);
     var now = Date.now();
-    if (isNaN(ts) || Math.abs(now - ts) > MAX_TIMESTAMP_DRIFT) {
-        return res.status(403).json({ success: false, message: 'Request expired or invalid timestamp.' });
+
+    if (isNaN(ts) || Math.abs(now - ts) > MAX_AGE) {
+        return res.status(403).json({ success: false, message: 'Request expired. Please try again.' });
     }
 
-    // build the payload to sign: sessionToken + body + timestamp
-    var sessionToken = (req.session && req.session.sessionToken) || '';
+    // Build the expected signature
+    var sessionToken = req.session?.sessionToken || '';
     var body = JSON.stringify(req.body || {});
     var payload = sessionToken + body + timestamp;
 
-    var expectedSignature = crypto
+    var expected = crypto
         .createHmac('sha256', HMAC_SECRET)
         .update(payload)
         .digest('hex');
 
-    if (signature !== expectedSignature) {
-        var { logSecurityEvent } = require('../services/monitorService');
-        logSecurityEvent({
-            event_type: 'HMAC_VIOLATION',
-            user_id: req.session ? req.session.userId : null,
-            username: req.session ? req.session.username : 'unknown',
-            ip: req.ip,
-            details: { path: req.path, method: req.method, reason: 'Invalid HMAC signature' }
-        }).catch(function () { });
+    // Compare using timing-safe method
+    var isValid = false;
+    if (signature.length === expected.length) {
+        isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    }
 
-        return res.status(403).json({ success: false, message: 'Invalid request signature.' });
+    if (!isValid) {
+        var { logSecurityEvent } = require('../services/monitorService');
+
+        logSecurityEvent({
+            event_type: 'INTEGRITY_VIOLATION',
+            user_id: req.session?.userId || null,
+            username: req.session?.username || 'System',
+            ip: req.ip,
+            details: {
+                path: req.path,
+                method: req.method,
+                reason: 'HMAC signature mismatch'
+            }
+        }).catch(function() {});
+
+        return res.status(403).json({ success: false, message: 'Request verification failed.' });
     }
 
     req.hmacVerified = true;
     next();
 }
 
-// utility: generate HMAC for testing/client use
-function generateHMAC(sessionToken, body, timestamp) {
-    var payload = sessionToken + JSON.stringify(body || {}) + timestamp;
+/**
+ * Generate an HMAC signature for a request.
+ */
+function generateHMAC(sessionToken, requestBody, timestamp) {
+    var payload = sessionToken + JSON.stringify(requestBody || {}) + timestamp;
     return crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');
 }
 
-module.exports = { verifyHMAC, generateHMAC };
+module.exports = { verifyHMAC: verifyHMAC, generateHMAC: generateHMAC };

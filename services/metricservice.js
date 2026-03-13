@@ -1,42 +1,53 @@
-// services/metricsService.js
-const client = require('prom-client');
+var client = require('prom-client');
 
-// Default system metrics (CPU, memory, event loop lag, etc.)
-const register = new client.Registry();
-client.collectDefaultMetrics({ register });
+// Prometheus metrics registry
+var registry = new client.Registry();
 
-// ── Custom ZTS counters ──
+// Collect default Node.js metrics
+client.collectDefaultMetrics({ register: registry });
 
-const loginTotal = new client.Counter({
-    name: 'zts_login_total',
-    help: 'Total login attempts',
-    labelNames: ['result'], // 'success' or 'failed'
-    registers: [register]
+// Login attempts (success/failure)
+var loginTotal = new client.Counter({
+    name: 'zts_login_attempts_total',
+    help: 'Total login attempts by outcome',
+    labelNames: ['outcome'],
+    registers: [registry]
 });
 
-const vpnDetected = new client.Counter({
+// VPN detections
+var vpnDetected = new client.Counter({
     name: 'zts_vpn_detected_total',
-    help: 'Total VPN logins detected',
-    registers: [register]
+    help: 'Number of VPN connections detected',
+    registers: [registry]
 });
 
-const otpSent = new client.Counter({
+// OTP codes sent
+var otpSent = new client.Counter({
     name: 'zts_otp_sent_total',
-    help: 'Total OTPs sent',
-    registers: [register]
+    help: 'Number of OTP codes sent',
+    registers: [registry]
 });
 
-const riskScore = new client.Gauge({
-    name: 'zts_risk_score_last',
-    help: 'Risk score of the most recent login',
-    labelNames: ['username'],
-    registers: [register]
+// Latest risk score per user
+var riskScore = new client.Gauge({
+    name: 'zts_risk_score_latest',
+    help: 'Latest risk score for a user',
+    labelNames: ['user'],
+    registers: [registry]
 });
 
-const activeUsers = new client.Gauge({
+// Active sessions count
+var activeUsers = new client.Gauge({
     name: 'zts_active_sessions',
-    help: 'Currently active user sessions',
-    registers: [register]
+    help: 'Number of active sessions',
+    registers: [registry]
 });
 
-module.exports = { register, loginTotal, vpnDetected, otpSent, riskScore, activeUsers };
+module.exports = {
+    register: registry,
+    loginTotal: loginTotal,
+    vpnDetected: vpnDetected,
+    otpSent: otpSent,
+    riskScore: riskScore,
+    activeUsers: activeUsers
+};

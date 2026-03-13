@@ -1,25 +1,47 @@
-// middleware/rbac.js
-
+/**
+ * Middleware: check if the user's role is allowed to access a route.
+ * SuperAdmin always passes.
+ */
 function requireRole(allowedRoles) {
-    return function (req, res, next) {
+    return function(req, res, next) {
         var userRole = req.session.role;
 
-        // SuperAdmin always passes through
         if (userRole === 'SuperAdmin') {
             return next();
         }
 
         if (!allowedRoles.includes(userRole)) {
             return res.status(403).send(
-                '<html><body style="font-family:sans-serif;text-align:center;padding:80px;background:#f8fafc;">' +
-                '<h1 style="color:#0f172a;">403 — Access Denied</h1>' +
-                '<p style="color:#64748b;">You do not have permission to view this page.</p>' +
-                '<div style="margin:20px 0; background:#fff; display:inline-block; padding:20px; border-radius:12px; border:1px solid #e2e8f0; text-align:left;">' +
-                '<p style="margin:0 0 10px; color:#334155;">Your role: <strong>' + userRole + '</strong></p>' +
-                '<p style="margin:0; color:#334155;">Required: <strong>' + allowedRoles.join(', ') + '</strong></p>' +
-                '</div><br>' +
-                '<button onclick="window.location.href=\'/dashboard\'" style="padding:12px 24px; background:#3730a3; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer;">Return to Dashboard</button>' +
-                '</body></html>'
+                '<!DOCTYPE html>' +
+                '<html lang="en">' +
+                '<head>' +
+                    '<meta charset="UTF-8">' +
+                    '<title>Access Denied - ZTS</title>' +
+                    '<style>' +
+                        'body { font-family: "Inter", system-ui, sans-serif; text-align: center; padding: 100px 20px; background: #fafafa; color: #333; margin: 0; }' +
+                        '.box { max-width: 480px; margin: 0 auto; background: #fff; padding: 48px; border-radius: 12px; border: 1px solid #e0e0e0; }' +
+                        'h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: #dc2626; }' +
+                        'p { color: #666; font-size: 15px; margin-bottom: 24px; }' +
+                        '.info { text-align: left; background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; border: 1px solid #eee; }' +
+                        '.info-row { margin-bottom: 8px; display: flex; justify-content: space-between; }' +
+                        '.info-row strong { color: #333; }' +
+                        '.info-row span { color: #888; }' +
+                        '.btn { background: #333; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }' +
+                        '.btn:hover { background: #555; }' +
+                    '</style>' +
+                '</head>' +
+                '<body>' +
+                    '<div class="box">' +
+                        '<h1>Access Denied</h1>' +
+                        '<p>You do not have permission to view this page.</p>' +
+                        '<div class="info">' +
+                            '<div class="info-row"><strong>Your Role</strong> <span>' + (userRole || 'None') + '</span></div>' +
+                            '<div class="info-row"><strong>Required Role</strong> <span>' + allowedRoles.join(', ') + '</span></div>' +
+                        '</div>' +
+                        '<button class="btn" onclick="window.location.href=\'/dashboard\'">Go to Dashboard</button>' +
+                    '</div>' +
+                '</body>' +
+                '</html>'
             );
         }
 
@@ -27,4 +49,4 @@ function requireRole(allowedRoles) {
     };
 }
 
-module.exports = { requireRole };
+module.exports = { requireRole: requireRole };

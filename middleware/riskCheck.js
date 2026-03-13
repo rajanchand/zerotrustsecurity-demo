@@ -1,95 +1,104 @@
-// middleware/riskCheck.js
-
 var { logSecurityEvent } = require('../services/monitorService');
 
-// per user request tracking for behavioral anomaly detection
+// Track request patterns per user
 var requestTracker = {};
 
+/**
+ * Middleware: monitor user behaviour and flag high-risk activity.
+ * Checks for too many requests or IP address changes.
+ */
 function flagHighRisk(req, res, next) {
-    if (!req.session || !req.session.userId) {
+    if (!req.session?.userId) {
         return next();
     }
 
     var userId = req.session.userId;
     var now = Date.now();
 
-    // 1. Static risk check from login
+    // Check if user already has a risk score from login
     if (req.session.riskScore) {
         req.session.highRisk = req.session.riskScore > 60;
     }
 
-    // 2. CONTINUOUS RISK: detect behavioral anomalies per-request
-
-    // initialize tracker for this user
+    // Set up tracking for this user
     if (!requestTracker[userId]) {
-        requestTracker[userId] = { requests: [], lastIP: req.ip, riskDelta: 0 };
+        requestTracker[userId] = {
+            requests: [],
+            lastIP: req.ip,
+            riskBoost: 0
+        };
     }
-    var tracker = requestTracker[userId];
 
-    // add current request timestamp
+    var tracker = requestTracker[userId];
     tracker.requests.push(now);
 
-    // keep only last 2 minutes of requests
-    var twoMinAgo = now - 2 * 60 * 1000;
-    tracker.requests = tracker.requests.filter(function (t) { return t > twoMinAgo; });
+    // Only keep requests from the last 2 minutes
+    var twoMinutesAgo = now - 2 * 60 * 1000;
+    tracker.requests = tracker.requests.filter(function(t) { return t > twoMinutesAgo; });
 
-    // Normalise the client IP once — used for velocity logging and IP-change detection
-    var rawIp = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
-    var currentIP = rawIp.split(',')[0].trim().replace('::ffff:', '');
+    // Get clean IP address
+    var ip = (req.headers['x-forwarded-for'] || req.ip || '127.0.0.1')
+        .split(',')[0]
+        .trim()
+        .replace('::ffff:', '');
 
-    // Check: request velocity anomaly (>200 requests in 2 minutes = genuine automation/attack)
+    // Too many requests in 2 minutes? Add risk
     if (tracker.requests.length > 200) {
-        // only log once per 60 seconds per user to prevent flooding
-        if (!tracker.lastAnomalyLog || (now - tracker.lastAnomalyLog) > 60000) {
-            tracker.lastAnomalyLog = now;
-            tracker.riskDelta = Math.min(tracker.riskDelta + 10, 40);
+        if (!tracker.lastWarning || (now - tracker.lastWarning) > 60000) {
+            tracker.lastWarning = now;
+            tracker.riskBoost = Math.min(tracker.riskBoost + 10, 40);
+
             logSecurityEvent({
-                event_type: 'BEHAVIORAL_ANOMALY',
+                event_type: 'RISK_ALERT',
                 user_id: userId,
-                username: req.session.username || 'unknown',
+                username: req.session.username || 'System',
                 ip: req.ip,
-                details: { reason: 'High request velocity', count: tracker.requests.length, window: '2min' }
-            }).catch(function () { });
+                details: { reason: 'Too many requests', count: tracker.requests.length }
+            }).catch(function() {});
         }
     }
 
-    // Check: IP changed mid-session (use the same normalised currentIP throughout)
-    if (tracker.lastIP && tracker.lastIP !== currentIP) {
-        tracker.riskDelta = Math.min(tracker.riskDelta + 20, 40);
+    // IP address changed mid-session? Add risk
+    if (tracker.lastIP && tracker.lastIP !== ip) {
+        tracker.riskBoost = Math.min(tracker.riskBoost + 20, 40);
+
         logSecurityEvent({
-            event_type: 'IP_CHANGE_MIDSESSION',
+            event_type: 'NETWORK_CHANGE',
             user_id: userId,
-            username: req.session.username || 'unknown',
-            ip: currentIP,
-            details: { reason: 'IP address changed during active session', previous_ip: tracker.lastIP, new_ip: currentIP }
-        }).catch(function () { });
-        tracker.lastIP = currentIP;
+            username: req.session.username || 'System',
+            ip: ip,
+            details: { previous_ip: tracker.lastIP, current_ip: ip }
+        }).catch(function() {});
+
+        tracker.lastIP = ip;
     }
 
-    // Apply continuous risk delta to session risk score
-    if (tracker.riskDelta > 0) {
-        var baseScore = req.session.riskScore || 0;
-        var effectiveScore = Math.min(baseScore + tracker.riskDelta, 100);
-        req.session.highRisk = effectiveScore > 60;
+    // Apply risk boost to session
+    if (tracker.riskBoost > 0) {
+        var currentRisk = req.session.riskScore || 0;
+        var totalRisk = Math.min(currentRisk + tracker.riskBoost, 100);
+        req.session.highRisk = totalRisk > 60;
 
-        // slowly decay risk delta over time
-        tracker.riskDelta = Math.max(0, tracker.riskDelta - 1);
+        // Slowly reduce the boost over time
+        tracker.riskBoost = Math.max(0, tracker.riskBoost - 1);
     }
 
     next();
 }
 
-// Cleanup stale trackers every 10 minutes.
-// Remove entries that have had no requests in the last 10 minutes OR have an empty request list.
-setInterval(function () {
+// Clean up old trackers every 10 minutes
+setInterval(function() {
     var cutoff = Date.now() - 10 * 60 * 1000;
-    Object.keys(requestTracker).forEach(function (uid) {
-        var t = requestTracker[uid];
-        var lastSeen = t.requests.length ? t.requests[t.requests.length - 1] : 0;
-        if (lastSeen < cutoff) {
-            delete requestTracker[uid];
+    Object.keys(requestTracker).forEach(function(userId) {
+        var tracker = requestTracker[userId];
+        var lastRequest = tracker.requests.length
+            ? tracker.requests[tracker.requests.length - 1]
+            : 0;
+
+        if (lastRequest < cutoff) {
+            delete requestTracker[userId];
         }
     });
-}, 10 * 60 * 1000).unref(); // .unref() so this timer doesn't prevent process from exiting cleanly
+}, 10 * 60 * 1000).unref();
 
-module.exports = { flagHighRisk };
+module.exports = { flagHighRisk: flagHighRisk };

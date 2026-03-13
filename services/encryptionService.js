@@ -1,17 +1,20 @@
-// services/encryptionService.js
+var crypto = require('crypto');
 
-const crypto = require('crypto');
+var ALGORITHM = 'aes-256-gcm';
+var IV_LENGTH = 16;
 
-const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
-
-// derive a 32-byte key from the env secret
+/**
+ * Get the encryption key from environment variables.
+ * Creates a 32-byte key using SHA-256 hash.
+ */
 function getKey() {
-    var secret = process.env.ENCRYPTION_KEY || process.env.SESSION_SECRET || 'zts-default-encryption-key';
+    var secret = process.env.ENCRYPTION_KEY || process.env.SESSION_SECRET || 'zts-default-key';
     return crypto.createHash('sha256').update(secret).digest();
 }
 
+/**
+ * Encrypt a string. Returns format: "iv:authTag:ciphertext"
+ */
 function encrypt(text) {
     if (!text) return text;
 
@@ -22,34 +25,38 @@ function encrypt(text) {
     var encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    var authTag = cipher.getAuthTag();
+    var tag = cipher.getAuthTag();
 
-    // format: iv:authTag:ciphertext
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    return iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted;
 }
 
-function decrypt(cipherText) {
-    if (!cipherText) return cipherText;
+/**
+ * Decrypt a string in "iv:authTag:ciphertext" format.
+ */
+function decrypt(encrypted) {
+    if (!encrypted) return encrypted;
 
-    // check if it looks encrypted (has the iv:tag:data format)
-    var parts = cipherText.split(':');
+    var parts = encrypted.split(':');
     if (parts.length !== 3) {
-        // not encrypted, return as-is (backwards compatibility)
-        return cipherText;
+        // Not encrypted, return as-is
+        return encrypted;
     }
 
     var key = getKey();
     var iv = Buffer.from(parts[0], 'hex');
-    var authTag = Buffer.from(parts[1], 'hex');
-    var encrypted = parts[2];
+    var tag = Buffer.from(parts[1], 'hex');
+    var ciphertext = parts[2];
 
     var decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-    decipher.setAuthTag(authTag);
+    decipher.setAuthTag(tag);
 
-    var decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    var decrypted = decipher.update(ciphertext, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
     return decrypted;
 }
 
-module.exports = { encrypt, decrypt };
+module.exports = {
+    encrypt: encrypt,
+    decrypt: decrypt
+};

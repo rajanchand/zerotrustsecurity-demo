@@ -1,22 +1,24 @@
-// middleware/passwordPolicy.js
-
+/**
+ * Check if a password meets the minimum requirements.
+ * Returns { valid: true/false, errors: [...] }
+ */
 function validatePassword(password) {
     var errors = [];
 
     if (!password || password.length < 12) {
-        errors.push('Password must be at least 12 characters long.');
+        errors.push('Password must be at least 12 characters.');
     }
     if (!/[A-Z]/.test(password)) {
-        errors.push('Password must contain at least one uppercase letter.');
+        errors.push('Must include an uppercase letter.');
     }
     if (!/[a-z]/.test(password)) {
-        errors.push('Password must contain at least one lowercase letter.');
+        errors.push('Must include a lowercase letter.');
     }
     if (!/[0-9]/.test(password)) {
-        errors.push('Password must contain at least one number.');
+        errors.push('Must include a number.');
     }
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-        errors.push('Password must contain at least one special character (!@#$%^&* etc).');
+        errors.push('Must include a special character (e.g., !@#$%^&*).');
     }
 
     return {
@@ -25,4 +27,4 @@ function validatePassword(password) {
     };
 }
 
-module.exports = { validatePassword };
+module.exports = { validatePassword: validatePassword };

@@ -1,168 +1,155 @@
-// services/emailService.js
-// sends transactional emails using the Resend API
-// falls back to console logging in dev when no API key is set
+const { Resend } = require('resend');
 
-var { Resend } = require('resend');
-
-// ── helper: get the Resend client (lazy so missing key doesn't crash startup) ──
-function getClient() {
-    var key = process.env.RESEND_API_KEY;
-    if (!key) return null;
-    return new Resend(key);
+// Get the email client
+function getResendClient() {
+    var apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) return null;
+    return new Resend(apiKey);
 }
 
-// the address emails are sent FROM — must be verified in your Resend account
-// use the Resend onboarding address for quick testing without domain setup
 var FROM_ADDRESS = process.env.EMAIL_FROM || 'ZTS Security <onboarding@resend.dev>';
-var ADMIN_EMAIL  = process.env.ADMIN_EMAIL || process.env.RESEND_TO_EMAIL || '';
+var ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.RESEND_TO_EMAIL || '';
 
-// ────────────────────────────────────────────────────────────────
-// Send OTP email to the user
-// ────────────────────────────────────────────────────────────────
-async function sendOTPEmail(toEmail, username, otpCode) {
-    var resend = getClient();
-    if (!resend) {
-        console.log('  [email] No RESEND_API_KEY — OTP for ' + username + ': ' + otpCode);
-        return { sent: false, reason: 'No Resend API key configured' };
+/**
+ * Send the OTP login code to a user by email.
+ */
+async function sendOTPEmail(recipientEmail, username, otpCode) {
+    var client = getResendClient();
+
+    if (!client) {
+        console.log('[Email] No email service set up. OTP for ' + username + ': ' + otpCode);
+        return { dispatched: false, failureReason: 'Email service not configured' };
     }
 
-    // Resend free tier only allows sending to the verified account email.
-    // If RESEND_TO_OVERRIDE is set, route all emails there (demo mode).
-    var deliverTo = process.env.RESEND_TO_OVERRIDE || toEmail;
+    var toAddress = process.env.RESEND_TO_OVERRIDE || recipientEmail;
 
-    var html = [
-        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">',
-        '  <h2 style="color:#0984e3;margin-bottom:4px;">ZTS Zero Trust Security</h2>',
-        '  <p style="color:#636e72;font-size:13px;margin-top:0;">Multi-Factor Authentication</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:15px;">Hello <strong>' + username + '</strong>,</p>',
-        '  <p style="font-size:14px;color:#2d3436;">Your one-time login code is:</p>',
-        '  <div style="background:#f4f5f7;border-radius:8px;padding:20px;text-align:center;margin:20px 0;">',
-        '    <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#0984e3;">' + otpCode + '</span>',
-        '  </div>',
-        '  <p style="font-size:13px;color:#636e72;">This code will expires in <strong>5 minutes</strong>. Please Do not share it with anyone.</p>',
-        '  <p style="font-size:13px;color:#636e72;">If you do not initate this request, contact your administrator immediately.</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:11px;color:#b2bec3;">ZTS — Zero Trust Security Project Team | NIST SP 800-207</p>',
-        '</div>'
-    ].join('\n');
+    var html = `
+        <div style="font-family:'Inter',sans-serif;max-width:480px;margin:0 auto;padding:40px;background:#ffffff;border:1px solid #f1f5f9;border-radius:12px;">
+          <h2 style="color:#0f172a;margin-bottom:8px;font-size:18px;font-weight:700;">Your Login Code</h2>
+          <p style="color:#64748b;font-size:13px;margin:0;">ZTS Admin Portal</p>
+          <hr style="border:none;border-top:1px solid #f1f5f9;margin:32px 0;">
+          <p style="font-size:14px;color:#334155;line-height:1.6;">Hi <strong>${username}</strong>,</p>
+          <p style="font-size:14px;color:#334155;line-height:1.6;">Here is your login code:</p>
+          <div style="background:#f8fafc;border-radius:8px;padding:32px;text-align:center;margin:32px 0;border:1px solid #e2e8f0;">
+            <span style="font-size:36px;font-weight:800;letter-spacing:12px;color:#0f172a;font-family:monospace;">${otpCode}</span>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;line-height:1.6;">This code is valid for <strong>5 minutes</strong>. If you did not request this, please contact your administrator.</p>
+          <hr style="border:none;border-top:1px solid #f1f5f9;margin:32px 0;">
+          <p style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:600;">ZTS Admin Portal</p>
+        </div>
+    `;
 
     try {
-        var { data, error } = await resend.emails.send({
-            from:    FROM_ADDRESS,
-            to:      [deliverTo],
-            subject: 'Your ZTS Login Code (' + username + '): ' + otpCode,
-            html:    html
+        var result = await client.emails.send({
+            from: FROM_ADDRESS,
+            to: [toAddress],
+            subject: 'Your Login Code - ZTS',
+            html: html
         });
 
-        if (error) {
-            console.error('  [email] Resend error sending OTP to ' + deliverTo + ':', error.message);
-            return { sent: false, reason: error.message };
+        if (result.error) {
+            console.error('[Email] Failed to send OTP: ' + result.error.message);
+            return { dispatched: false, failureReason: result.error.message };
         }
 
-        console.log('  [email] OTP sent to ' + deliverTo + ' for user ' + username + ' (id: ' + (data && data.id) + ')');
-        return { sent: true };
+        console.log('[Email] OTP code sent to: ' + toAddress);
+        return { dispatched: true };
     } catch (err) {
-        console.error('  [email] Failed to send OTP to ' + deliverTo + ':', err.message);
-        return { sent: false, reason: err.message };
+        console.error('[Email] Error sending OTP: ' + err.message);
+        return { dispatched: false, failureReason: err.message };
     }
 }
 
-// ────────────────────────────────────────────────────────────────
-// Send login alert email to admin
-// ────────────────────────────────────────────────────────────────
-async function sendLoginAlertEmail(username, ip, country) {
-    var resend = getClient();
-    if (!resend || !ADMIN_EMAIL) {
-        console.log('  [email] No config — Login alert for ' + username + ' skipped');
-        return { sent: false, reason: 'No Resend key or admin email configured' };
+/**
+ * Send a login alert email to the admin.
+ */
+async function sendLoginAlertEmail(username, ip, location) {
+    var client = getResendClient();
+
+    if (!client || !ADMIN_EMAIL) {
+        console.log('[Email] Login alert skipped for: ' + username);
+        return { dispatched: false, failureReason: 'Email not configured' };
     }
 
-    var html = [
-        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">',
-        '  <h2 style="color:#e17055;margin-bottom:4px;">ZTS Security Alert</h2>',
-        '  <p style="color:#636e72;font-size:13px;margin-top:0;">New User Login Detected</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:15px;">A user has just logged into the system.</p>',
-        '  <ul style="font-size:14px;color:#2d3436;background:#f4f5f7;border-radius:8px;padding:20px;list-style-type:none;">',
-        '    <li style="margin-bottom:8px;"><strong>Username:</strong> ' + username + '</li>',
-        '    <li style="margin-bottom:8px;"><strong>IP Address:</strong> ' + ip + '</li>',
-        '    <li><strong>Location:</strong> ' + country + '</li>',
-        '  </ul>',
-        '  <p style="font-size:13px;color:#636e72;">If this looks suspicious, check the session logs in the admin dashboard.</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:11px;color:#b2bec3;">ZTS — Zero Trust Security Demo</p>',
-        '</div>'
-    ].join('\n');
+    var html = `
+        <div style="font-family:'Inter',sans-serif;max-width:520px;margin:0 auto;padding:40px;background:#ffffff;border:1px solid #f1f5f9;border-radius:12px;">
+          <h2 style="color:#0f172a;margin-bottom:8px;font-size:18px;font-weight:700;">Login Alert</h2>
+          <p style="color:#64748b;font-size:13px;margin:0;">A user has logged in</p>
+          <hr style="border:none;border-top:1px solid #f1f5f9;margin:32px 0;">
+          <div style="background:#f8fafc;border-radius:8px;padding:24px;border:1px solid #e2e8f0;">
+            <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse;">
+              <tr><td style="padding:8px 0;font-weight:600;width:140px;color:#64748b;">Username</td><td style="font-weight:500;color:#0f172a;">${username}</td></tr>
+              <tr><td style="padding:8px 0;font-weight:600;color:#64748b;">IP Address</td><td style="font-weight:500;color:#0f172a;">${ip}</td></tr>
+              <tr><td style="padding:8px 0;font-weight:600;color:#64748b;">Location</td><td style="font-weight:500;color:#0f172a;">${location}</td></tr>
+            </table>
+          </div>
+          <p style="font-size:12px;color:#94a3b8;margin-top:24px;line-height:1.6;">This alert was sent automatically after a successful login.</p>
+          <hr style="border:none;border-top:1px solid #f1f5f9;margin:32px 0;">
+          <p style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:600;">ZTS Admin Portal</p>
+        </div>
+    `;
 
     try {
-        var { error } = await resend.emails.send({
-            from:    FROM_ADDRESS,
-            to:      [ADMIN_EMAIL],
-            subject: 'ZTS Security Alert: New Login Detected',
-            html:    html
+        var result = await client.emails.send({
+            from: FROM_ADDRESS,
+            to: [ADMIN_EMAIL],
+            subject: 'Login Alert - ' + username + ' - ZTS',
+            html: html
         });
 
-        if (error) {
-            console.error('  [email] Login alert failed:', error.message);
-            return { sent: false, reason: error.message };
-        }
-
-        console.log('  [email] Login alert sent to admin for ' + username);
-        return { sent: true };
+        if (result.error) return { dispatched: false, failureReason: result.error.message };
+        console.log('[Email] Login alert sent for: ' + username);
+        return { dispatched: true };
     } catch (err) {
-        console.error('  [email] Login alert error:', err.message);
-        return { sent: false, reason: err.message };
+        return { dispatched: false, failureReason: err.message };
     }
 }
 
-// ────────────────────────────────────────────────────────────────
-// Send anomaly/security alert email to admin
-// ────────────────────────────────────────────────────────────────
-async function sendAnomalyAlertEmail(username, ip, country, reason) {
-    var resend = getClient();
-    if (!resend || !ADMIN_EMAIL) {
-        console.log('  [email] No config — Anomaly alert for ' + username + ' skipped');
-        return { sent: false, reason: 'No Resend key or admin email configured' };
+/**
+ * Send a security alert email to the admin.
+ */
+async function sendAnomalyAlertEmail(username, ip, location, alertMessage) {
+    var client = getResendClient();
+
+    if (!client || !ADMIN_EMAIL) {
+        console.log('[Alert] Security alert skipped: ' + alertMessage);
+        return { dispatched: false, failureReason: 'Email not configured' };
     }
 
-    var html = [
-        '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #ff7675;border-radius:8px;">',
-        '  <h2 style="color:#d63031;margin-bottom:4px;">🚨 Critical Security Alert</h2>',
-        '  <p style="color:#636e72;font-size:13px;margin-top:0;">Suspicious Login Activity</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <div style="background:#fff3f3;border-left:4px solid #d63031;padding:12px 16px;margin:20px 0;">',
-        '    <p style="margin:0;font-size:14px;color:#d63031;"><strong>Alert Reason:</strong> ' + reason + '</p>',
-        '  </div>',
-        '  <ul style="font-size:14px;color:#2d3436;background:#f4f5f7;border-radius:8px;padding:20px;list-style-type:none;margin:0;">',
-        '    <li style="margin-bottom:8px;"><strong>Username:</strong> ' + username + '</li>',
-        '    <li style="margin-bottom:8px;"><strong>IP Address:</strong> ' + ip + '</li>',
-        '    <li><strong>Location:</strong> ' + country + '</li>',
-        '  </ul>',
-        '  <p style="font-size:13px;color:#636e72;margin-top:20px;">Please investigate in the SuperAdmin dashboard immediately.</p>',
-        '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:11px;color:#b2bec3;text-align:center;">ZTS — Zero Trust Security Alerts</p>',
-        '</div>'
-    ].join('\n');
+    var html = `
+        <div style="font-family:'Inter',sans-serif;max-width:520px;margin:0 auto;padding:40px;background:#fffafb;border:1px solid #fee2e2;border-radius:12px;">
+          <h2 style="color:#991b1b;margin-bottom:4px;font-size:18px;font-weight:700;">Security Alert</h2>
+          <p style="color:#b91c1c;font-size:13px;margin:0;font-weight:600;text-transform:uppercase;">Action Required</p>
+          <hr style="border:none;border-top:1px solid #fee2e2;margin:32px 0;">
+          <div style="background:#ffffff;border-left:4px solid #dc2626;padding:20px;margin:24px 0;border:1px solid #fecaca;border-radius:0 8px 8px 0;">
+            <p style="margin:0;font-size:15px;color:#991b1b;font-weight:700;">Issue: ${alertMessage}</p>
+          </div>
+          <div style="background:#fef2f2;border-radius:8px;padding:24px;border:1px solid #fecaca;">
+            <table style="width:100%;font-size:14px;color:#7f1d1d;border-collapse:collapse;">
+              <tr><td style="padding:8px 0;font-weight:600;width:140px;color:#b91c1c;">Username</td><td style="font-weight:600;">${username}</td></tr>
+              <tr><td style="padding:8px 0;font-weight:600;color:#b91c1c;">IP Address</td><td style="font-weight:600;">${ip}</td></tr>
+              <tr><td style="padding:8px 0;font-weight:600;color:#b91c1c;">Location</td><td style="font-weight:600;">${location}</td></tr>
+            </table>
+          </div>
+          <p style="font-size:12px;color:#991b1b;margin-top:24px;line-height:1.6;font-weight:500;">Please review this event as soon as possible.</p>
+          <hr style="border:none;border-top:1px solid #fee2e2;margin:32px 0;">
+          <p style="font-size:11px;color:#f87171;text-transform:uppercase;letter-spacing:1px;font-weight:700;">ZTS Security Alert</p>
+        </div>
+    `;
 
     try {
-        var { error } = await resend.emails.send({
-            from:    FROM_ADDRESS,
-            to:      [ADMIN_EMAIL],
-            subject: '🚨 ZTS Alert: Anomalous Login — ' + reason,
-            html:    html
+        var result = await client.emails.send({
+            from: FROM_ADDRESS,
+            to: [ADMIN_EMAIL],
+            subject: 'Security Alert: ' + alertMessage + ' - ZTS',
+            html: html
         });
 
-        if (error) {
-            console.error('  [email] Anomaly alert failed:', error.message);
-            return { sent: false, reason: error.message };
-        }
-
-        console.log('  [email] Anomaly alert sent to admin for ' + username);
-        return { sent: true };
+        if (result.error) return { dispatched: false, failureReason: result.error.message };
+        console.log('[Alert] Security alert sent: ' + alertMessage);
+        return { dispatched: true };
     } catch (err) {
-        console.error('  [email] Anomaly alert error:', err.message);
-        return { sent: false, reason: err.message };
+        return { dispatched: false, failureReason: err.message };
     }
 }
 

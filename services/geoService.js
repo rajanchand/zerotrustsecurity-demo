@@ -1,107 +1,146 @@
-// services/geoService.js
-// IP geolocation and VPN detection via ip-api.com
+var http = require('http');
 
-'use strict';
+// Cache geo lookups for 30 minutes
+var CACHE_TTL = 30 * 60 * 1000;
+var geoCache = {};
 
-const http = require('http');
-
-// In-memory cache with TTL — prevents unbounded memory growth and stale data.
-// ip-api.com free tier: 45 requests/min, so caching aggressively is important.
-const GEO_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const geoCache = {};
-
-// Strip IPv4-mapped IPv6 prefix (::ffff:1.2.3.4 → 1.2.3.4)
-function normaliseIP(ip) {
+/**
+ * Clean up IPv6-mapped IPv4 addresses (e.g., "::ffff:1.2.3.4" -> "1.2.3.4").
+ */
+function cleanIP(ip) {
     if (!ip) return ip;
-    if (ip.startsWith('::ffff:')) return ip.slice(7);
-    return ip;
+    return ip.startsWith('::ffff:') ? ip.slice(7) : ip;
 }
 
-function isPrivateIP(ip) {
+/**
+ * Check if an IP is a local/private network address.
+ */
+function isLocalIP(ip) {
     if (!ip) return true;
-    const n = normaliseIP(ip);
+    var clean = cleanIP(ip);
     return (
-        n === '127.0.0.1' ||
-        n === '::1'        ||
-        n.startsWith('192.168.') ||
-        n.startsWith('10.')      ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(n)
+        clean === '127.0.0.1' ||
+        clean === '::1' ||
+        clean.startsWith('192.168.') ||
+        clean.startsWith('10.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(clean)
     );
 }
 
+/**
+ * Look up the country, city, ISP, and proxy status for an IP address.
+ * Uses ip-api.com with a local cache.
+ */
 function getGeoFromIP(ip) {
-    return new Promise((resolve) => {
-        const normIP = normaliseIP(ip);
+    return new Promise(function(resolve) {
+        var clean = cleanIP(ip);
 
-        if (isPrivateIP(normIP)) {
-            return resolve({ country: 'Local Network', city: 'Local', isp: 'Local', isProxy: false });
+        // Local IPs don't need lookup
+        if (isLocalIP(clean)) {
+            return resolve({
+                country: 'Local Network',
+                city: 'Private',
+                isp: 'Local',
+                isProxy: false
+            });
         }
 
-        const cached = geoCache[normIP];
+        // Check cache first
+        var cached = geoCache[clean];
         if (cached && cached.expiresAt > Date.now()) {
             return resolve(cached.data);
         }
 
-        const url = `http://ip-api.com/json/${normIP}?fields=status,country,city,isp,proxy`;
+        // Look up the IP
+        var url = 'http://ip-api.com/json/' + clean + '?fields=status,country,city,isp,proxy';
 
-        const req = http.get(url, (res) => {
-            let body = '';
-            res.on('data', (chunk) => { body += chunk; });
-            res.on('end', () => {
+        var req = http.get(url, function(res) {
+            var body = '';
+            res.on('data', function(chunk) { body += chunk; });
+            res.on('end', function() {
                 try {
-                    const data = JSON.parse(body);
-                    if (data.status === 'success') {
-                        const result = {
-                            country: data.country  || 'Unknown',
-                            city:    data.city     || 'Unknown',
-                            isp:     data.isp      || 'Unknown',
-                            isProxy: !!data.proxy
+                    var result = JSON.parse(body);
+                    if (result.status === 'success') {
+                        var geo = {
+                            country: result.country || 'Unknown',
+                            city: result.city || 'Unknown',
+                            isp: result.isp || 'Unknown',
+                            isProxy: !!result.proxy
                         };
-                        geoCache[normIP] = { data: result, expiresAt: Date.now() + GEO_CACHE_TTL_MS };
-                        resolve(result);
+                        geoCache[clean] = {
+                            data: geo,
+                            expiresAt: Date.now() + CACHE_TTL
+                        };
+                        resolve(geo);
                     } else {
                         resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
                     }
-                } catch (e) {
+                } catch (err) {
                     resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
                 }
             });
         });
 
-        // 5-second timeout — prevent login requests from hanging if ip-api.com is unreachable
-        req.setTimeout(5000, () => {
+        req.setTimeout(5000, function() {
             req.destroy();
             resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
         });
 
-        req.on('error', () => {
+        req.on('error', function() {
             resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
         });
     });
 }
 
+/**
+ * Get the country for an IP from cache. Returns 'Unknown' if not cached.
+ */
 function getCountryFromIP(ip) {
-    const normIP = normaliseIP(ip);
-    if (isPrivateIP(normIP)) return 'Local Network';
-    const cached = geoCache[normIP];
+    var clean = cleanIP(ip);
+    if (isLocalIP(clean)) return 'Local Network';
+    var cached = geoCache[clean];
     if (cached && cached.expiresAt > Date.now()) return cached.data.country;
-    return 'Resolving...';
+    return 'Unknown';
 }
 
+/**
+ * Check if an IP address looks like it's from a VPN or proxy.
+ */
 function isVPNConnection(ip) {
     if (!ip) return false;
-    const normIP = normaliseIP(ip);
-    const cached = geoCache[normIP];
+    var clean = cleanIP(ip);
+    var cached = geoCache[clean];
+
     if (cached && cached.expiresAt > Date.now() && cached.data.isProxy) return true;
 
-    const vpnRanges = ['10.8.', '10.9.', '172.20.', '172.29.', '100.64.'];
-    return vpnRanges.some((range) => normIP.startsWith(range));
+    // Known VPN IP ranges
+    var vpnRanges = ['10.8.', '10.9.', '172.20.', '172.29.', '100.64.'];
+    return vpnRanges.some(function(range) { return clean.startsWith(range); });
 }
 
-function checkImpossibleTravel(currentCountry, lastCountry, timeDiffMinutes) {
-    if (!lastCountry || !currentCountry) return false;
-    if (currentCountry === lastCountry)   return false;
-    return timeDiffMinutes < 120;
+/**
+ * Check for impossible travel: same user logging in from two countries
+ * within 2 hours (120 minutes).
+ */
+function checkImpossibleTravel(currentCountry, previousCountry, minutesBetween) {
+    if (!previousCountry || !currentCountry) return false;
+    if (currentCountry === previousCountry) return false;
+    return minutesBetween < 120;
 }
 
-module.exports = { getCountryFromIP, getGeoFromIP, isVPNConnection, checkImpossibleTravel };
+// Clean up expired cache entries every 15 minutes
+setInterval(function() {
+    var now = Date.now();
+    Object.keys(geoCache).forEach(function(key) {
+        if (geoCache[key].expiresAt < now) {
+            delete geoCache[key];
+        }
+    });
+}, 15 * 60 * 1000).unref();
+
+module.exports = {
+    getCountryFromIP: getCountryFromIP,
+    getGeoFromIP: getGeoFromIP,
+    isVPNConnection: isVPNConnection,
+    checkImpossibleTravel: checkImpossibleTravel
+};

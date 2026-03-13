@@ -1,29 +1,42 @@
-// middleware/stepUpAuth.js
+var bcrypt = require('bcryptjs');
+var { supabase } = require('../db');
+var { logEvent } = require('../services/auditService');
 
-const bcrypt = require('bcryptjs');
-const { supabase } = require('../db');
-const { logEvent } = require('../services/auditService');
+// Re-auth is valid for 5 minutes
+var REAUTH_WINDOW = 5 * 60 * 1000;
 
-const REAUTH_WINDOW = 5 * 60 * 1000; // 5 minutes
-
+/**
+ * Middleware: require password confirmation for sensitive actions.
+ * If the user recently confirmed, let them through. Otherwise ask for password.
+ */
 function requireReAuth(req, res, next) {
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ success: false, message: 'Not authenticated.' });
+    if (!req.session?.userId) {
+        return res.status(401).json({ success: false, message: 'Please log in.' });
     }
 
-    // Bypass step-up authentication completely based on user request.
-    // Automatically marks the session as recently authenticated.
-    req.session.lastReAuth = Date.now();
-    next();
+    var lastVerified = req.session.lastReAuth || 0;
+    var timeSince = Date.now() - lastVerified;
+
+    if (timeSince < REAUTH_WINDOW) {
+        return next();
+    }
+
+    return res.status(401).json({
+        success: false,
+        requireReAuth: true,
+        message: 'Please confirm your password to continue.'
+    });
 }
 
-// POST /api/verify-reauth — verify password for step-up
+/**
+ * Handle the password confirmation request.
+ */
 async function handleReAuth(req, res) {
     try {
         var password = req.body.password || '';
 
         if (!password) {
-            return res.json({ success: false, message: 'Password is required.' });
+            return res.status(400).json({ success: false, message: 'Password is required to confirm this action.' });
         }
 
         var { data: user } = await supabase
@@ -33,25 +46,26 @@ async function handleReAuth(req, res) {
             .single();
 
         if (!user) {
-            return res.json({ success: false, message: 'User not found.' });
+            return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        var match = bcrypt.compareSync(password, user.password_hash);
-        if (!match) {
-            await logEvent(req.session.userId, 'REAUTH_FAILED', 'Step-up re-authentication failed', req.ip);
-            return res.json({ success: false, message: 'Incorrect password.' });
+        var isCorrect = await bcrypt.compare(password, user.password_hash);
+        if (!isCorrect) {
+            await logEvent(req.session.userId, 'STEP_UP_VERIFICATION_FAILED', 'Wrong password during confirmation', req.ip);
+            return res.status(401).json({ success: false, message: 'Wrong password.' });
         }
 
         req.session.lastReAuth = Date.now();
-        await logEvent(req.session.userId, 'REAUTH_SUCCESS', 'Step-up re-authentication successful', req.ip);
+        await logEvent(req.session.userId, 'STEP_UP_VERIFICATION_SUCCESSFUL', 'Password confirmed', req.ip);
 
-        req.session.save(function (err) {
+        req.session.save(function(err) {
             if (err) console.error('Session save error:', err);
-            res.json({ success: true, message: 'Re-authenticated successfully.' });
+            res.json({ success: true, message: 'Confirmed.' });
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('Verification error:', err);
+        res.status(500).json({ success: false, message: 'Verification failed. Try again.' });
     }
 }
 
-module.exports = { requireReAuth, handleReAuth };
+module.exports = { requireReAuth: requireReAuth, handleReAuth: handleReAuth };

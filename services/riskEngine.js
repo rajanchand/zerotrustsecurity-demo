@@ -1,145 +1,174 @@
-// services/riskEngine.js
-// Calculates a contextual risk score for each login attempt using a
-// weighted factor model (NIST SP 800-207 Continuous Verification principle).
-// Higher scores indicate more anomalous access patterns.
+var { supabase } = require('../db');
+var { logSecurityEvent } = require('./monitorService');
 
-const { supabase } = require('../db');
-const { logSecurityEvent } = require('./monitorService');
-
-// Risk factor weights — total score determines trust level:
-//   0-30   => Low    (trusted, may skip MFA on repeat devices)
-//   31-60  => Medium (requires OTP verification)
-//   61+    => High   (triggers alert + admin notification)
-const RISK_WEIGHTS = {
-    NEW_DEVICE:       25,  // first time logging in from this device fingerprint
-    NEW_COUNTRY:      30,  // login from a country not seen before for this user
-    MULTIPLE_FAILURES: 20, // repeated wrong password attempts in this session
-    VPN_ANONYMIZER:   30,  // connection originates from a known VPN/proxy range
-    UNUSUAL_HOURS:    15,  // login outside standard business hours (6am-10pm)
-    ADMIN_UNKNOWN_IP: 40   // admin or IT role logging in from a non-whitelisted IP
+// How many points each risk factor adds
+var RISK_POINTS = {
+    NEW_DEVICE: 25,
+    NEW_COUNTRY: 30,
+    FAILED_LOGINS: 20,
+    VPN: 30,
+    OFF_HOURS: 15,
+    ADMIN_UNKNOWN_IP: 40
 };
 
+/**
+ * Get risk level from score: Low (0-30), Medium (31-60), High (61+)
+ */
 function getRiskLevel(score) {
     if (score <= 30) return 'Low';
     if (score <= 60) return 'Medium';
     return 'High';
 }
 
-// Calculate dynamically requested risk
-// params: { userId, isNewDevice, isNewCountry, failedAttempts, isVPN, isAdminUnknownIP, role, isUnusualHours }
-async function calculateRisk(params) {
-    let score = 0;
-    const factors = [];
+/**
+ * Calculate risk score for a login attempt.
+ * Returns { score, level, factors }
+ */
+async function calculateRisk(data) {
+    var score = 0;
+    var factors = [];
 
-    // 1. Device Trust
-    if (params.isNewDevice) {
-        score += RISK_WEIGHTS.NEW_DEVICE;
-        factors.push({ factor: 'New Device Detected', points: RISK_WEIGHTS.NEW_DEVICE });
+    if (data.isNewDevice) {
+        score += RISK_POINTS.NEW_DEVICE;
+        factors.push({ factor: 'Unknown device', points: RISK_POINTS.NEW_DEVICE });
     }
 
-    // 2. Location Anomaly
-    if (params.isNewCountry) {
-        score += RISK_WEIGHTS.NEW_COUNTRY;
-        factors.push({ factor: 'New Country / Location', points: RISK_WEIGHTS.NEW_COUNTRY });
+    if (data.isNewCountry) {
+        score += RISK_POINTS.NEW_COUNTRY;
+        factors.push({ factor: 'New location', points: RISK_POINTS.NEW_COUNTRY });
     }
 
-    // 3. Authentication Behavior
-    if (params.failedAttempts >= 3) {
-        score += RISK_WEIGHTS.MULTIPLE_FAILURES; 
-        factors.push({ factor: `Multiple Failed Logins (${params.failedAttempts})`, points: RISK_WEIGHTS.MULTIPLE_FAILURES });
+    if (data.failedAttempts >= 3) {
+        score += RISK_POINTS.FAILED_LOGINS;
+        factors.push({ factor: 'Failed logins (' + data.failedAttempts + ' attempts)', points: RISK_POINTS.FAILED_LOGINS });
     }
 
-    // 4. Network Context
-    if (params.isVPN) {
-        score += RISK_WEIGHTS.VPN_ANONYMIZER; 
-        factors.push({ factor: 'VPN Connection Detected', points: RISK_WEIGHTS.VPN_ANONYMIZER });
+    if (data.isVPN) {
+        score += RISK_POINTS.VPN;
+        factors.push({ factor: 'VPN detected', points: RISK_POINTS.VPN });
     }
 
-    // 5. Privileged Access
-    if (params.isAdminUnknownIP && (params.role === 'SuperAdmin' || params.role === 'IT')) {
-        score += RISK_WEIGHTS.ADMIN_UNKNOWN_IP;
-        factors.push({ factor: 'Admin Login from Unknown IP', points: RISK_WEIGHTS.ADMIN_UNKNOWN_IP });
+    if (data.isAdminUnknownIP && ['SuperAdmin', 'IT'].includes(data.role)) {
+        score += RISK_POINTS.ADMIN_UNKNOWN_IP;
+        factors.push({ factor: 'Admin on unknown network', points: RISK_POINTS.ADMIN_UNKNOWN_IP });
     }
 
-    // 6. Remote Work Context: Working Hours Anomaly
-    if (params.isUnusualHours) {
-        score += RISK_WEIGHTS.UNUSUAL_HOURS;
-        factors.push({ factor: 'Login outside typical business hours', points: RISK_WEIGHTS.UNUSUAL_HOURS });
+    if (data.isUnusualHours) {
+        score += RISK_POINTS.OFF_HOURS;
+        factors.push({ factor: 'Off-hours login', points: RISK_POINTS.OFF_HOURS });
     }
 
-    if (score > 100) score = 100;
+    // Adjust for network trust (can add or reduce risk)
+    if (data.networkTrustModifier) {
+        score += data.networkTrustModifier;
+        if (data.networkTrustModifier < 0) {
+            factors.push({ factor: 'Known network', points: data.networkTrustModifier });
+        } else if (data.networkTrustModifier > 0) {
+            factors.push({ factor: 'Untrusted network', points: data.networkTrustModifier });
+        }
+    }
 
-    const level = getRiskLevel(score);
+    // Keep score between 0 and 100
+    score = Math.min(100, Math.max(0, score));
 
+    var level = getRiskLevel(score);
+
+    // Save to database
     await supabase.from('risk_logs').insert({
-        user_id: params.userId,
+        user_id: data.userId,
         score: score,
         level: level,
         factors_json: JSON.stringify({
             factors: factors,
-            ip: params.ip || '',
-            country: params.country || params.location || ''
+            ip: data.ip || 'Unknown',
+            country: data.country || data.location || 'Unknown'
         })
     });
 
+    // Log security event if risk > 0
     if (score > 0) {
         logSecurityEvent({
-            event_type: 'RISK_SCORE_CHANGED',
-            user_id: params.userId,
-            username: params.username || '',
-            ip: params.ip || '',
+            event_type: 'RISK_SCORE_THRESHOLD_ADJUSTED',
+            user_id: data.userId,
+            username: data.username || 'System',
+            ip: data.ip || '',
             risk_score: score,
-            details: { level: level, factors: factors, role: params.role }
-        }).catch(() => {});
+            details: { level: level, factors: factors, role: data.role }
+        }).catch(function() {});
     }
 
-    return { score, level, factors };
+    return {
+        score: score,
+        level: level,
+        factors: factors
+    };
 }
 
-async function getRiskHistory(userId, limit = 20) {
-    const { data } = await supabase
+/**
+ * Get risk history for a user.
+ */
+async function getRiskHistory(userId, limit) {
+    limit = limit || 20;
+    var { data: logs } = await supabase
         .from('risk_logs')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-    return data || [];
+    return logs || [];
 }
 
-async function getAllRiskHistory(limit = 50) {
-    const { data: logs } = await supabase
+/**
+ * Get all risk logs (for admin view).
+ */
+async function getAllRiskHistory(limit) {
+    limit = limit || 50;
+    var { data: logs } = await supabase
         .from('risk_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
 
-    if (!logs || !logs.length) return [];
+    if (!logs || logs.length === 0) return [];
 
-    const userIds = [];
-    logs.forEach(r => {
-        if (r.user_id && !userIds.includes(r.user_id)) userIds.push(r.user_id);
+    // Get usernames for each log
+    var userIds = [];
+    logs.forEach(function(log) {
+        if (log.user_id && userIds.indexOf(log.user_id) === -1) {
+            userIds.push(log.user_id);
+        }
     });
 
-    const userMap = {};
+    var userMap = {};
     if (userIds.length > 0) {
-        const { data: users } = await supabase.from('users').select('id, username, role').in('id', userIds);
-        (users || []).forEach(u => { userMap[u.id] = u; });
+        var { data: users } = await supabase
+            .from('users')
+            .select('id, username, role')
+            .in('id', userIds);
+
+        (users || []).forEach(function(u) { userMap[u.id] = u; });
     }
 
-    return logs.map(row => {
-        const u = userMap[row.user_id] || {};
+    return logs.map(function(log) {
+        var user = userMap[log.user_id] || {};
         return {
-            id: row.id,
-            user_id: row.user_id,
-            score: row.score,
-            level: row.level,
-            factors_json: row.factors_json,
-            created_at: row.created_at,
-            username: u.username || 'Unknown',
-            role: u.role || 'Unknown'
+            id: log.id,
+            user_id: log.user_id,
+            score: log.score,
+            level: log.level,
+            factors_json: log.factors_json,
+            created_at: log.created_at,
+            username: user.username || 'Unknown',
+            role: user.role || 'N/A'
         };
     });
 }
 
-module.exports = { calculateRisk, getRiskHistory, getAllRiskHistory, RISK_WEIGHTS, getRiskLevel };
+module.exports = {
+    calculateRisk: calculateRisk,
+    getRiskHistory: getRiskHistory,
+    getAllRiskHistory: getAllRiskHistory,
+    RISK_WEIGHTS: RISK_POINTS,
+    getRiskLevel: getRiskLevel
+};
