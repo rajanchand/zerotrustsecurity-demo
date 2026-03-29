@@ -1,23 +1,17 @@
-// routes/profileRoutes.js
-// user profile: view/edit own details, change password
-// includes: password policy enforcement, password history
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+const { supabase } = require('../db');
+const { logEvent } = require('../services/auditService');
+const { validatePassword } = require('../middleware/passwordPolicy');
 
-var express = require('express');
-var bcrypt = require('bcryptjs');
-var path = require('path');
-var { supabase } = require('../db');
-var { logEvent } = require('../services/auditService');
-var { validatePassword } = require('../middleware/passwordPolicy');
+const router = express.Router();
 
-var router = express.Router();
-
-// serve profile page
-router.get('/profile', function (req, res) {
+router.get('/profile', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'profile.html'));
 });
 
-// get own profile data
-router.get('/api/profile', async function (req, res) {
+router.get('/api/profile', async (req, res) => {
     try {
         var { data: user } = await supabase
             .from('users')
@@ -25,188 +19,172 @@ router.get('/api/profile', async function (req, res) {
             .eq('id', req.session.userId)
             .single();
 
-        if (!user) return res.json({ error: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
 
-        // add password age info
         if (user.password_changed_at) {
-            var daysSinceChange = Math.floor((Date.now() - new Date(user.password_changed_at).getTime()) / (1000 * 60 * 60 * 24));
-            user.passwordAgeDays = daysSinceChange;
-            user.passwordExpiresSoon = daysSinceChange > 75; // warn at 75 days
-            user.passwordExpired = daysSinceChange > 90;
+            var now = Date.now();
+            var lastChange = new Date(user.password_changed_at).getTime();
+            var ageDays = Math.floor((now - lastChange) / (1000 * 60 * 60 * 24));
+
+            user.credentialAgeDays = ageDays;
+            user.credentialRotationRequested = ageDays > 75;
+            user.credentialRotationMandated = ageDays > 90;
         }
 
         res.json(user);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to load profile' });
+        console.error('Profile load error:', err);
+        res.status(500).json({ error: 'Failed to load profile.' });
     }
 });
 
-// update own profile (name, phone, email)
-router.post('/api/profile/update', async function (req, res) {
+router.post('/api/profile/update', async (req, res) => {
     try {
-        var { name, phone, email } = req.body;
+        var { name = '', phone = '', email = '' } = req.body;
 
-        await supabase.from('users').update({
-            name: name || '',
-            phone: phone || '',
-            email: email || ''
-        }).eq('id', req.session.userId);
+        await supabase.from('users').update({ name, phone, email }).eq('id', req.session.userId);
 
-        await logEvent(req.session.userId, 'PROFILE_UPDATED', 'Updated profile details', req.ip);
+        await logEvent(req.session.userId, 'PROFILE_SYNCHRONIZED', 'Profile updated', req.ip);
         res.json({ success: true, message: 'Profile updated.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('Profile update error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update profile.' });
     }
 });
 
-// change own password — with policy enforcement and password history
-router.post('/api/profile/change-password', async function (req, res) {
+router.post('/api/profile/change-password', async (req, res) => {
     try {
         var { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword) {
-            return res.json({ success: false, message: 'Both current and new password are required.' });
+            return res.status(400).json({ success: false, message: 'Please fill in all fields.' });
         }
 
-        // PASSWORD POLICY: enforce strong passwords
-        var policy = validatePassword(newPassword);
-        if (!policy.valid) {
-            return res.json({ success: false, message: policy.errors.join(' ') });
+        var policyCheck = validatePassword(newPassword);
+        if (!policyCheck.valid) {
+            return res.status(400).json({ success: false, message: policyCheck.errors.join(' ') });
         }
 
-        // verify current password
         var { data: user } = await supabase
             .from('users')
             .select('password_hash')
             .eq('id', req.session.userId)
             .single();
 
-        if (!user) return res.json({ success: false, message: 'User not found.' });
-
-        var match = bcrypt.compareSync(currentPassword, user.password_hash);
-        if (!match) {
-            return res.json({ success: false, message: 'Current password is incorrect.' });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
-        // PASSWORD HISTORY: check against last 3 passwords
+        var isCurrentCorrect = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isCurrentCorrect) {
+            return res.status(401).json({ success: false, message: 'Current password is wrong.' });
+        }
+
         try {
-            var { data: history } = await supabase
+            var { data: oldPasswords } = await supabase
                 .from('password_history')
                 .select('password_hash')
                 .eq('user_id', req.session.userId)
                 .order('created_at', { ascending: false })
                 .limit(3);
 
-            if (history && history.length > 0) {
-                for (var i = 0; i < history.length; i++) {
-                    if (bcrypt.compareSync(newPassword, history[i].password_hash)) {
-                        return res.json({ success: false, message: 'Cannot reuse your last 3 passwords. Please choose a different password.' });
+            if (oldPasswords?.length) {
+                for (var old of oldPasswords) {
+                    if (await bcrypt.compare(newPassword, old.password_hash)) {
+                        return res.status(400).json({ success: false, message: 'This password was used recently. Please choose a different one.' });
                     }
                 }
             }
-        } catch (e) {
-            // password_history table may not exist yet — skip check
+        } catch (err) {
+            // Password history check is optional
         }
 
-        // also check against current password
-        if (bcrypt.compareSync(newPassword, user.password_hash)) {
-            return res.json({ success: false, message: 'New password must be different from current password.' });
+        if (await bcrypt.compare(newPassword, user.password_hash)) {
+            return res.status(400).json({ success: false, message: 'New password must be different from current password.' });
         }
 
-        // hash and save new password
         var newHash = bcrypt.hashSync(newPassword, 10);
         await supabase.from('users').update({
             password_hash: newHash,
             password_changed_at: new Date().toISOString()
         }).eq('id', req.session.userId);
 
-        // save old password to history
         try {
             await supabase.from('password_history').insert({
                 user_id: req.session.userId,
                 password_hash: user.password_hash
             });
-        } catch (e) {
-            // password_history table may not exist yet
+        } catch (err) {
+            // Saving old password to history is optional
         }
 
-        // clear password expired flag
-        if (req.session.passwordExpired) {
-            req.session.passwordExpired = false;
-        }
+        if (req.session.passwordExpired) req.session.passwordExpired = false;
 
-        await logEvent(req.session.userId, 'PASSWORD_CHANGED', 'User changed their password', req.ip);
-        res.json({ success: true, message: 'Password changed successfully.' });
+        await logEvent(req.session.userId, 'CREDENTIAL_ROTATED', 'Password changed', req.ip);
+        res.json({ success: true, message: 'Password changed.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('Password change error:', err);
+        res.status(500).json({ success: false, message: 'Failed to change password.' });
     }
 });
 
-// admin: get any user profile
-router.get('/api/profile/:userId', async function (req, res) {
-    try {
-        var role = req.session.role;
-        if (role !== 'SuperAdmin') {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+router.get('/api/profile/:userId', async (req, res) => {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ error: 'Admin access required.' });
+    }
 
+    try {
+        var targetId = req.params.userId;
         var { data: user } = await supabase
             .from('users')
             .select('id, username, name, phone, email, role, department, status, password_changed_at, created_at')
-            .eq('id', req.params.userId)
+            .eq('id', targetId)
             .single();
 
-        if (!user) return res.json({ error: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
+        }
         res.json(user);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to load profile' });
+        res.status(500).json({ error: 'Failed to load user details.' });
     }
 });
 
-// admin: update any user profile
-router.post('/api/profile/:userId/update', async function (req, res) {
-    try {
-        var role = req.session.role;
-        if (role !== 'SuperAdmin') {
-            return res.status(403).json({ success: false, message: 'Access denied' });
-        }
+router.post('/api/profile/:userId/update', async (req, res) => {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
 
-        var { name, phone, email } = req.body;
+    try {
+        var { name = '', phone = '', email = '' } = req.body;
         var targetId = parseInt(req.params.userId);
 
-        await supabase.from('users').update({
-            name: name || '',
-            phone: phone || '',
-            email: email || ''
-        }).eq('id', targetId);
+        await supabase.from('users').update({ name, phone, email }).eq('id', targetId);
 
-        var { data: target } = await supabase.from('users').select('username').eq('id', targetId).single();
-        await logEvent(req.session.userId, 'ADMIN_PROFILE_UPDATE', 'Updated profile for: ' + (target ? target.username : targetId), req.ip);
-        res.json({ success: true, message: 'Profile updated.' });
+        var { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        await logEvent(req.session.userId, 'ADMIN_IDENTITY_SYNCHRONIZED', 'Updated profile for ' + (targetUser?.username || targetId), req.ip);
+        res.json({ success: true, message: 'User profile updated.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('Admin profile update error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update user.' });
     }
 });
 
-// admin: change any user password — with policy enforcement
-router.post('/api/profile/:userId/change-password', async function (req, res) {
+router.post('/api/profile/:userId/change-password', async (req, res) => {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
     try {
-        var role = req.session.role;
-        if (role !== 'SuperAdmin') {
-            return res.status(403).json({ success: false, message: 'Access denied' });
-        }
-
         var { newPassword } = req.body;
-
-        // PASSWORD POLICY
-        var policy = validatePassword(newPassword);
-        if (!policy.valid) {
-            return res.json({ success: false, message: policy.errors.join(' ') });
+        var policyCheck = validatePassword(newPassword);
+        if (!policyCheck.valid) {
+            return res.status(400).json({ success: false, message: policyCheck.errors.join(' ') });
         }
 
         var targetId = parseInt(req.params.userId);
-
-        // get current hash for history
         var { data: targetUser } = await supabase.from('users').select('username, password_hash').eq('id', targetId).single();
 
         var newHash = bcrypt.hashSync(newPassword, 10);
@@ -215,20 +193,69 @@ router.post('/api/profile/:userId/change-password', async function (req, res) {
             password_changed_at: new Date().toISOString()
         }).eq('id', targetId);
 
-        // save old password to history
         if (targetUser) {
             try {
                 await supabase.from('password_history').insert({
                     user_id: targetId,
                     password_hash: targetUser.password_hash
                 });
-            } catch (e) { }
+            } catch (err) {
+                // Password history is optional
+            }
         }
 
-        await logEvent(req.session.userId, 'ADMIN_PASSWORD_RESET', 'Reset password for: ' + (targetUser ? targetUser.username : targetId), req.ip);
-        res.json({ success: true, message: 'Password changed.' });
+        await logEvent(req.session.userId, 'ADMIN_CREDENTIAL_ROTATED', 'Admin reset password for ' + (targetUser?.username || targetId), req.ip);
+        res.json({ success: true, message: 'Password reset done.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        res.status(500).json({ success: false, message: 'Failed to reset password.' });
+    }
+});
+
+router.post('/api/profile/trusted-locations/request', async (req, res) => {
+    try {
+        var userId = req.session.userId;
+        var userIP = req.session.loginIP;
+        var userCountry = req.session.loginCountry;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Please log in first.' });
+        }
+
+        var label = req.body.label || 'Home';
+        var ip = userIP || req.ip;
+        var country = userCountry || 'Unknown';
+
+        var { data: existing } = await supabase
+            .from('trusted_locations')
+            .select('id, status')
+            .eq('user_id', userId)
+            .eq('ip_address', ip)
+            .maybeSingle();
+
+        if (existing) {
+            if (existing.status === 'approved') {
+                return res.json({ success: false, message: 'This location is already saved as trusted.' });
+            }
+            if (existing.status === 'pending') {
+                return res.json({ success: false, message: 'This location is already waiting for approval.' });
+            }
+        }
+
+        var { error } = await supabase.from('trusted_locations').insert({
+            user_id: userId,
+            label: label,
+            country: country,
+            ip_address: ip,
+            status: 'pending'
+        });
+
+        if (error) throw error;
+
+        await logEvent(userId, 'LOCATION_AUTHORIZATION_REQUESTED', 'Location saved: ' + ip, ip);
+        res.json({ success: true, message: 'Location saved. Waiting for admin approval.' });
+    } catch (err) {
+        console.error('Location save error:', err);
+        res.status(500).json({ success: false, message: 'Failed to save location.' });
     }
 });
 

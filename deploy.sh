@@ -68,7 +68,7 @@ TEMP_CONF="/tmp/zts_nginx.conf"
 cat > "$TEMP_CONF" << 'EOF'
 server {
     listen 80;
-    server_name _;
+    server_name zero-trust-security.org www.zero-trust-security.org;
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -87,16 +87,40 @@ server {
 }
 EOF
 
-if ! cmp -s "$TEMP_CONF" "$NGINX_CONF"; then
-    echo "[6/7] Updating Nginx config..."
-    cp "$TEMP_CONF" "$NGINX_CONF"
-    ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/zts
-    rm -f /etc/nginx/sites-enabled/default
-    nginx -t && systemctl restart nginx
+# Only overwrite Nginx config if we really need to (if SSL isn't configured yet)
+if [ ! -f "$NGINX_CONF" ] || ! grep -q "ssl_certificate" "$NGINX_CONF"; then
+    if ! cmp -s "$TEMP_CONF" "$NGINX_CONF"; then
+        echo "[6/7] Updating Nginx config..."
+        cp "$TEMP_CONF" "$NGINX_CONF"
+        ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/zts
+        rm -f /etc/nginx/sites-enabled/default
+        nginx -t && systemctl restart nginx
+    fi
 else
-    echo "[6/7] Nginx config unchanged. Skipping reload ✓"
+    echo "[6/7] Nginx SSL config intact. Skipping HTTP-only overwrite ✓"
 fi
 
+# ─── Step 6.5: Automated SSL with Certbot ───────────────────
+if ! command -v certbot &> /dev/null; then
+  echo "[6.5/7] Installing Certbot for Let's Encrypt..."
+  sudo apt-get update
+  sudo apt-get install -y certbot python3-certbot-nginx
+fi
+
+DOMAIN="zero-trust-security.org"
+if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+    echo "[6.6/7] Requesting Let's Encrypt SSL certificate for $DOMAIN..."
+    certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m admin@zero-trust-security.org || true
+else
+    echo "[6.6/7] SSL Certificates already exist. Ensuring Nginx is configured..."
+    # If deploy.sh overwrote the nginx file with the base HTTP config, re-inject the SSL block automatically
+    if ! grep -q "ssl_certificate" "$NGINX_CONF"; then
+        echo "  → Re-injecting missing SSL configuration blocks via Certbot..."
+        certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --redirect --reinstall || true
+    else
+        echo "  → SSL config is fully intact ✓"
+    fi
+fi
 # ─── Step 7: Final PM2 Launch with Port Safety ──────────────
 echo "[7/7] Launching application..."
 

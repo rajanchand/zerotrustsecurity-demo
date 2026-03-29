@@ -1,15 +1,16 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+// Database connection settings
+var dbUrl = process.env.SUPABASE_URL;
+var dbKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your-project')) {
-    console.error('ERROR: Supabase credentials not set in .env file.');
-    console.error('Please add your SUPABASE_URL and SUPABASE_KEY.');
+if (!dbUrl || !dbKey || dbUrl.includes('your-project')) {
+    console.error('[Error] Database settings are missing.');
+    console.error('Please set SUPABASE_URL and SUPABASE_KEY in your .env file.');
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+var supabase = createClient(dbUrl, dbKey);
 
 module.exports = { supabase };

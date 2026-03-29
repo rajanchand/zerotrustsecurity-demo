@@ -1,810 +1,856 @@
-// routes/mappingRoutes.js
-// Admin panel routes: user management, department management, device approval.
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+const { supabase } = require('../db');
+const { logEvent } = require('../services/auditService');
+const { logSecurityEvent } = require('../services/monitorService');
+const { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
+const { validatePassword } = require('../middleware/passwordPolicy');
+const { requireReAuth } = require('../middleware/stepUpAuth');
+const { requirePermission } = require('../middleware/permissions');
 
-var express = require('express');
-var bcrypt = require('bcryptjs');
-var path = require('path');
-var { supabase } = require('../db');
-var { logEvent } = require('../services/auditService');
-var { logSecurityEvent } = require('../services/monitorService');
-var { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
-var { validatePassword } = require('../middleware/passwordPolicy');
-var { requireReAuth } = require('../middleware/stepUpAuth');
-var { requirePermission } = require('../middleware/permissions');
+const router = express.Router();
 
-var router = express.Router();
-
-const ALLOWED_PERMISSIONS = [
+/**
+ * Defines the allowed permission levels for users.
+ */
+const VALID_PERMISSIONS = [
     'user_view', 'user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve',
     'device_approve', 'network_manage', 'monitor_live', 'dept_manage'
 ];
 
-function validatePermissions(perms) {
-    if (!perms || typeof perms !== 'object') return false;
-    const keys = Object.keys(perms);
-    return keys.every(k => ALLOWED_PERMISSIONS.includes(k));
-}
+/**
+ * Validates whether a provided permissions value is valid.
+ * @param {Object} permissions - The collection of permissions to validate.
+ */
+const validatePermissions = (permissions) => {
+    if (!permissions || typeof permissions !== 'object') return false;
+    const keys = Object.keys(permissions);
+    return keys.every(key => VALID_PERMISSIONS.includes(key));
+};
 
-// Page Routes 
+// --- System View Routes ---
 
-router.get('/mapping', function (req, res) {
+router.get('/mapping', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'mapping.html'));
 });
 
-router.get('/register-device', function (req, res) {
-    if (req.session.role === 'HR') return res.status(403).send('Forbidden for HR.');
+router.get('/register-device', (req, res) => {
+    if (req.session.role === 'HR') return res.status(403).send('You do not have permission.');
     res.sendFile(path.join(__dirname, '..', 'views', 'register-device.html'));
 });
 
-router.get('/admin/user-access', function (req, res) {
-    if (req.session.role !== 'SuperAdmin') return res.status(403).send('Forbidden.');
+router.get('/admin/user-access', (req, res) => {
+    if (req.session.role !== 'SuperAdmin') return res.status(403).send('SuperAdmin access required.');
     res.sendFile(path.join(__dirname, '..', 'views', 'user-access.html'));
 });
 
-// ── User Management API 
-// get all users
-router.get('/api/mapping/users', requirePermission('user_view'), async function (req, res) {
+// --- User Management API ---
+
+router.get('/api/mapping/users', requirePermission('user_view'), async (req, res) => {
     try {
-        var { data: users } = await supabase
+        const { data: users } = await supabase
             .from('users')
             .select('id, username, role, email, department, status, failed_attempts, created_at')
             .order('id', { ascending: true });
 
         res.json(users || []);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch users' });
+        console.error('[Users] Load error:', err);
+        res.status(500).json({ error: 'Failed to load users.' });
     }
 });
 
-// create new user
-router.post('/api/mapping/users/create', requirePermission('user_create'), requireReAuth, async function (req, res) {
+router.post('/api/mapping/users/create', requirePermission('user_create'), requireReAuth, async (req, res) => {
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var { username, password, role, email, department } = req.body;
+        const { username, password, role, email, department } = req.body;
 
         if (!username || !password || !role || !email) {
-            return res.json({ success: false, message: 'Username, password, role, and email are required for identity provisioning.' });
+            return res.json({ success: false, message: 'Please fill in all fields (username, password, role, email).' });
         }
 
-        // PASSWORD POLICY enforcement
-        var policy = validatePassword(password);
-        if (!policy.valid) {
-            return res.json({ success: false, message: policy.errors.join(' ') });
+        const policyCheck = validatePassword(password);
+        if (!policyCheck.valid) {
+            return res.json({ success: false, message: policyCheck.errors.join(' ') });
         }
 
-        // check if username already exists
-        var { data: existing } = await supabase
+        const { data: existingUser } = await supabase
             .from('users')
             .select('id')
             .eq('username', username)
-            .single();
+            .maybeSingle();
 
-        if (existing) {
-            return res.json({ success: false, message: 'Username already exists.' });
+        if (existingUser) {
+            return res.json({ success: false, message: 'This username already exists.' });
         }
 
-        var hash = bcrypt.hashSync(password, 10);
+        const hash = bcrypt.hashSync(password, 10);
 
-        var { error } = await supabase.from('users').insert({
-            username: username,
+        const { error: createError } = await supabase.from('users').insert({
+            username,
             password_hash: hash,
-            role: role,
+            role,
             email: email || '',
-            department: department || 'General',
+            department: department || 'General Operations',
             status: 'active'
         });
 
-        if (error) {
-            return res.json({ success: false, message: 'Failed to create user: ' + error.message });
-        }
+        if (createError) return res.json({ success: false, message: createError.message });
 
-        await logEvent(req.session.userId, 'USER_CREATED', 'Created user: ' + username + ' (' + role + ')', req.ip);
+        await logEvent(req.session.userId, 'USER_CREATED', `System identity enrolled: ${username} (Role: ${role})`, req.ip);
         await logSecurityEvent({
             event_type: 'USER_CREATED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { new_user: username, role: role, department: department || 'General' }
+            details: { target_username: username, role: role, department: department || 'General Operations' }
         });
-        res.json({ success: true, message: 'User created successfully.' });
+
+        res.json({ success: true, message: 'User created.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Create error:', err);
+        res.status(500).json({ success: false, message: 'Failed to create user.' });
     }
 });
 
-// approve device
-router.post('/api/mapping/devices/approve', requirePermission('device_approve'), requireReAuth, async function (req, res) {
-    if (req.session.role === 'HR') {
-        return res.json({ success: false, message: 'Access denied: HR cannot approve devices.' });
-    }
+router.post('/api/mapping/users/delete', requirePermission('user_delete'), requireReAuth, async (req, res) => {
     try {
-        var { deviceId, trustLevel } = req.body;
-        if (!deviceId) return res.json({ success: false });
-
-        var adminId = req.session.userId;
-        var approvedLevel = trustLevel || 'Managed';
-        await approveDevice(deviceId, adminId, approvedLevel);
-
-        var { data: target } = await supabase.from('devices').select('user_id, fingerprint').eq('id', deviceId).single();
-        var tId = target ? target.user_id : 'unknown';
-
-        await logEvent(adminId, 'DEVICE_APPROVED', 'Approved device ' + deviceId + ' (' + approvedLevel + ') for user ' + tId, req.ip);
-
-        await logSecurityEvent({
-            event_type: 'DEVICE_APPROVED',
-            user_id: adminId,
-            username: req.session.username,
-            ip: req.ip,
-            details: { action: 'device_approved', target_device: deviceId, target_user: tId, trust_level: approvedLevel }
-        });
-
-        res.json({ success: true, message: 'Device approved as ' + approvedLevel });
-    } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
-    }
-});
-
-// delete user
-router.post('/api/mapping/users/delete', requirePermission('user_delete'), requireReAuth, async function (req, res) {
-    try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var userId = req.body.userId;
+        const { userId: targetId } = req.body;
 
-        // cannot delete yourself
-        if (userId === req.session.userId) {
+        if (targetId === req.session.userId) {
             return res.json({ success: false, message: 'You cannot delete your own account.' });
         }
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        if (!user) {
-            return res.json({ success: false, message: 'User not found.' });
-        }
+        // System structural cleanup and synchronization
+        await supabase.from('departments').update({ head_user_id: null }).eq('head_user_id', targetId);
+        await supabase.from('departments').update({ created_by: null }).eq('created_by', targetId);
+        await supabase.from('security_events').update({ resolved_by: null }).eq('resolved_by', targetId);
+        await supabase.from('security_events').update({ user_id: null }).eq('user_id', targetId);
+        await supabase.from('devices').update({ approved_by: null }).eq('approved_by', targetId);
+        await supabase.from('ip_rules').update({ created_by: null }).eq('created_by', targetId);
 
-        // clear department references (head_user_id and created_by)
-        await supabase.from('departments').update({ head_user_id: null }).eq('head_user_id', userId);
-        await supabase.from('departments').update({ created_by: null }).eq('created_by', userId);
+        // Delete user-related data
+        await supabase.from('devices').delete().eq('user_id', targetId);
+        await supabase.from('otp_store').delete().eq('user_id', targetId);
+        await supabase.from('risk_logs').delete().eq('user_id', targetId);
+        await supabase.from('sessions_log').delete().eq('user_id', targetId);
+        await supabase.from('password_history').delete().eq('user_id', targetId);
+        await supabase.from('audit_log').update({ user_id: null }).eq('user_id', targetId);
 
-        // clear security_events references (resolved_by and user_id)
-        await supabase.from('security_events').update({ resolved_by: null }).eq('resolved_by', userId);
-        await supabase.from('security_events').update({ user_id: null }).eq('user_id', userId);
+        const { error: deleteError } = await supabase.from('users').delete().eq('id', targetId);
+        if (deleteError) return res.json({ success: false, message: deleteError.message });
 
-        // clear approved_by references on other users' devices (foreign key)
-        await supabase.from('devices').update({ approved_by: null }).eq('approved_by', userId);
-
-        // clear ip_rules created_by references (foreign key)
-        await supabase.from('ip_rules').update({ created_by: null }).eq('created_by', userId);
-
-        // delete related records in proper order
-        await supabase.from('devices').delete().eq('user_id', userId);
-        await supabase.from('otp_store').delete().eq('user_id', userId);
-        await supabase.from('risk_logs').delete().eq('user_id', userId);
-        await supabase.from('sessions_log').delete().eq('user_id', userId);
-        await supabase.from('password_history').delete().eq('user_id', userId);
-
-        // keep audit log but remove user_id reference (data stays in database)
-        await supabase.from('audit_log').update({ user_id: null }).eq('user_id', userId);
-
-        // now safe to delete the user
-        var { error } = await supabase.from('users').delete().eq('id', userId);
-
-        if (error) {
-            return res.json({ success: false, message: 'Delete failed: ' + error.message });
-        }
-
-        await logEvent(req.session.userId, 'USER_DELETED', 'Deleted user: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'USER_DELETED', `System identity terminated: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'USER_DELETED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { deleted_user: user.username, deleted_user_id: userId }
+            details: { deleted_user: targetUser.username, id: targetId }
         });
-        res.json({ success: true, message: 'User "' + user.username + '" deleted. Audit records preserved.' });
+        res.json({ success: true, message: 'User deleted.' });
     } catch (err) {
-        console.error('Delete user error:', err);
-        res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+        console.error('[Users] Delete error:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete.' });
     }
 });
 
-// change user role
-router.post('/api/mapping/users/change-role', requireReAuth, async function (req, res) {
+router.post('/api/mapping/users/change-role', requireReAuth, async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can change roles.' });
+        return res.json({ success: false, message: 'SuperAdmin access required to change roles.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var { userId, newRole } = req.body;
+        const { userId: targetId, newRole: newRole } = req.body;
+        const { data: targetUser } = await supabase.from('users').select('username, role').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username, role').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
+        await supabase.from('users').update({ role: newRole }).eq('id', targetId);
 
-        await supabase.from('users').update({ role: newRole }).eq('id', userId);
-
-        await logEvent(req.session.userId, 'ROLE_CHANGED', user.username + ': ' + user.role + ' -> ' + newRole, req.ip);
+        await logEvent(req.session.userId, 'ROLE_CHANGED', `Role changed: ${targetUser.username} (${targetUser.role} -> ${newRole})`, req.ip);
         await logSecurityEvent({
             event_type: 'ROLE_CHANGED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, target_user_id: userId, old_role: user.role, new_role: newRole }
+            details: { target_user: targetUser.username, old_role: targetUser.role, new_role: newRole }
         });
         res.json({ success: true, message: 'Role updated.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Role change error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update role.' });
     }
 });
 
-// edit user details (username, role, email, department)
-router.post('/api/mapping/users/edit', requirePermission('user_edit'), async function (req, res) {
+router.post('/api/mapping/users/edit', requirePermission('user_edit'), async (req, res) => {
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var { userId, username, role, email, department } = req.body;
+        const { userId: targetId, username: newUsername, role: newRole, email: newEmail, phone: newPhone, department: newDept } = req.body;
+        const { data: existingUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!existingUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
-
-        // check if new username is already taken by another user
-        if (username && username !== user.username) {
-            var { data: existing } = await supabase.from('users').select('id').eq('username', username).single();
-            if (existing && existing.id !== userId) {
-                return res.json({ success: false, message: 'Username "' + username + '" is already taken.' });
+        if (newUsername && newUsername !== existingUser.username) {
+            const { data: conflictUser } = await supabase.from('users').select('id').eq('username', newUsername).maybeSingle();
+            if (conflictUser && conflictUser.id !== targetId) {
+                return res.json({ success: false, message: 'This username is already taken.' });
             }
         }
 
-        var updates = {};
-        if (username) updates.username = username;
-        if (role) updates.role = role;
-        if (email !== undefined) updates.email = email;
-        if (department) updates.department = department;
+        const updates = {};
+        if (newUsername) updates.username = newUsername;
+        if (newRole) updates.role = newRole;
+        if (newEmail !== undefined) updates.email = newEmail;
+        if (newPhone !== undefined) updates.phone = newPhone;
+        if (newDept) updates.department = newDept;
 
-        var { error } = await supabase.from('users').update(updates).eq('id', userId);
-        if (error) return res.json({ success: false, message: 'Update failed: ' + error.message });
+        const { error: updateError } = await supabase.from('users').update(updates).eq('id', targetId);
+        if (updateError) return res.json({ success: false, message: updateError.message });
 
-        var changes = [];
-        if (username && username !== user.username) changes.push('username: ' + user.username + ' -> ' + username);
-        if (role) changes.push('role: ' + role);
-        if (email !== undefined) changes.push('email: ' + email);
-        if (department) changes.push('dept: ' + department);
-
-        await logEvent(req.session.userId, 'USER_EDITED', 'Edited user ID ' + userId + ': ' + changes.join(', '), req.ip);
-        res.json({ success: true, message: 'User updated successfully.' });
+        await logEvent(req.session.userId, 'USER_EDITED', `User updated: ID ${targetId}`, req.ip);
+        res.json({ success: true, message: 'User updated.' });
     } catch (err) {
-        console.error('Edit user error:', err);
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Edit error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update user.' });
     }
 });
 
-// suspend user
-router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), async function (req, res) {
+router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), async (req, res) => {
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var userId = req.body.userId;
+        const { userId: targetId } = req.body;
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
+        await supabase.from('users').update({ status: 'suspended', active_session_token: null }).eq('id', targetId);
 
-        await supabase.from('users').update({ status: 'suspended', active_session_token: null }).eq('id', userId);
-
-        await logEvent(req.session.userId, 'USER_SUSPENDED', 'Suspended user: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'USER_SUSPENDED', `System identity suspended: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'USER_BLOCKED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, action: 'suspended', reason: 'Admin security action' }
+            details: { target_user: targetUser.username, action: 'suspended' }
         });
         res.json({ success: true, message: 'User suspended.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Suspend error:', err);
+        res.status(500).json({ success: false, message: 'Failed to suspend user.' });
     }
 });
 
-// block user
-router.post('/api/mapping/users/block', requirePermission('user_suspend'), async function (req, res) {
+router.post('/api/mapping/users/block', requirePermission('user_suspend'), async (req, res) => {
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var userId = req.body.userId;
+        const { userId: targetId } = req.body;
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
+        await supabase.from('users').update({ status: 'blocked', active_session_token: null }).eq('id', targetId);
 
-        await supabase.from('users').update({ status: 'blocked', active_session_token: null }).eq('id', userId);
-
-        await logEvent(req.session.userId, 'USER_BLOCKED', 'Blocked user: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'USER_BLOCKED', `System identity restricted: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'USER_BLOCKED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, action: 'blocked', reason: 'Critical policy violation' }
+            details: { target_user: targetUser.username, action: 'restricted' }
         });
         res.json({ success: true, message: 'User blocked.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Block error:', err);
+        res.status(500).json({ success: false, message: 'Failed to block user.' });
     }
 });
 
-// activate user (unblock / unsuspend)
-router.post('/api/mapping/users/revoke-session', async function (req, res) {
+router.post('/api/mapping/users/revoke-session', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can revoke sessions.' });
+        return res.json({ success: false, message: 'SuperAdmin access required.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var userId = req.body.userId;
+        const { userId: targetId } = req.body;
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
+        await supabase.from('users').update({ active_session_token: null }).eq('id', targetId);
 
-        // Zero Trust Kill Switch: Erase the active session token
-        await supabase.from('users').update({ active_session_token: null }).eq('id', userId);
-
-        await logEvent(req.session.userId, 'SESSION_REVOKED', 'Revoked active sessions for user: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'SESSION_REVOKED', `System session terminated: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'SESSION_REVOKED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, action: 'session_revoked', reason: 'Admin forced kill switch' }
+            details: { target_user: targetUser.username, action: 'session_terminated' }
         });
-        res.json({ success: true, message: 'User sessions instantly revoked.' });
+        res.json({ success: true, message: 'Session ended.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Session end error:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete.' });
     }
 });
 
-// Reset user password (SuperAdmin only)
-router.post('/api/mapping/users/reset-password', requirePermission('user_edit'), requireReAuth, async function (req, res) {
+router.post('/api/mapping/users/reset-password', requirePermission('user_edit'), requireReAuth, async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can reset passwords.' });
+        return res.json({ success: false, message: 'SuperAdmin access required.' });
     }
     try {
-        var { userId, newPassword } = req.body;
-        if (!userId || !newPassword) return res.json({ success: false, message: 'Missing userId or password' });
+        const { userId: targetId, newPassword: newPassword } = req.body;
+        if (!targetId || !newPassword) return res.json({ success: false, message: 'User ID and new password are required.' });
 
-        var policy = validatePassword(newPassword);
-        if (!policy.valid) return res.json({ success: false, message: policy.errors.join(' ') });
+        const policyCheck = validatePassword(newPassword);
+        if (!policyCheck.valid) return res.json({ success: false, message: policyCheck.errors.join(' ') });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found' });
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var hash = bcrypt.hashSync(newPassword, 10);
+        const hash = bcrypt.hashSync(newPassword, 10);
         await supabase.from('users').update({
             password_hash: hash,
-            active_session_token: null, // Kill sessions on password change
+            active_session_token: null,
             password_changed_at: new Date().toISOString()
-        }).eq('id', userId);
+        }).eq('id', targetId);
 
-        await logEvent(req.session.userId, 'PASSWORD_RESET', 'Emergency password reset for: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'PASSWORD_RESET', `System credential reset: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
-            event_type: 'ROLE_CHANGED', // Using role changed as a high-sev bucket if PASSWORD_RESET not in SEVERITY
+            event_type: 'ROLE_CHANGED',
             severity: 'HIGH',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { action: 'password_reset', target_user: user.username, target_user_id: userId }
+            details: { action_taken: 'credential_reset', target_user: targetUser.username }
         });
 
-        res.json({ success: true, message: 'Password reset successful for ' + user.username });
+        res.json({ success: true, message: 'Password reset done.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Password reset error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update user.' });
     }
 });
 
-// activate user (unblock / unsuspend)
-router.post('/api/mapping/users/activate', requirePermission('user_approve'), async function (req, res) {
+router.post('/api/mapping/users/activate', requirePermission('user_approve'), async (req, res) => {
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var userId = req.body.userId;
+        const { userId: targetId } = req.body;
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
-        if (!user) return res.json({ success: false, message: 'User not found.' });
+        await supabase.from('users').update({ status: 'active', failed_attempts: 0 }).eq('id', targetId);
 
-        await supabase.from('users').update({ status: 'active', failed_attempts: 0 }).eq('id', userId);
-
-        await logEvent(req.session.userId, 'USER_ACTIVATED', 'Activated user: ' + user.username, req.ip);
+        await logEvent(req.session.userId, 'USER_ACTIVATED', `System identity activated: ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'USER_UNBLOCKED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username }
+            details: { target_user: targetUser.username }
         });
         res.json({ success: true, message: 'User activated.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Users] Activate error:', err);
+        res.status(500).json({ success: false, message: 'Failed to activate user.' });
     }
 });
 
-// department management 
+// --- Department Management API ---
 
-router.get('/api/mapping/departments', async function (req, res) {
+router.get('/api/mapping/departments', async (req, res) => {
     if (req.session.role === 'HR') return res.json([]);
     try {
-        var { data: depts } = await supabase.from('departments').select('*').order('name');
-        if (!depts) return res.json([]);
+        const { data: departments } = await supabase.from('departments').select('*').order('name');
+        if (!departments) return res.json([]);
 
-        // fetch all users for lookups
-        var { data: allUsers } = await supabase.from('users').select('id, username, department');
+        const { data: allUsers } = await supabase.from('users').select('id, username, department');
 
-        var userMap = {};
-        var deptUserCounts = {};
-        (allUsers || []).forEach(function (u) {
+        const userMap = {};
+        const deptCounts = {};
+        (allUsers || []).forEach(function(u) {
             userMap[u.id] = u.username;
-            var dName = (u.department || '').toLowerCase();
-            deptUserCounts[dName] = (deptUserCounts[dName] || 0) + 1;
+            var deptName = (u.department || '').toLowerCase();
+            deptCounts[deptName] = (deptCounts[deptName] || 0) + 1;
         });
 
-        var enriched = depts.map(function (d) {
-            return {
-                id: d.id,
-                name: d.name,
-                created_at: d.created_at,
-                created_by: d.created_by,
-                created_by_name: d.created_by ? (userMap[d.created_by] || 'Unknown') : '-',
-                head_user_id: d.head_user_id,
-                head_name: d.head_user_id ? (userMap[d.head_user_id] || 'Unknown') : '-',
-                total_users: deptUserCounts[d.name.toLowerCase()] || 0
-            };
-        });
+        const deptList = departments.map(dept => ({
+            id: dept.id,
+            name: dept.name,
+            created_at: dept.created_at,
+            created_by_name: dept.created_by ? (userMap[dept.created_by] || '-') : '-',
+            head_name: dept.head_user_id ? (userMap[dept.head_user_id] || '-') : '-',
+            total_users: deptCounts[dept.name.toLowerCase()] || 0,
+            work_hours_start: dept.work_hours_start,
+            work_hours_end: dept.work_hours_end,
+            timezone: dept.timezone || 'UTC'
+        }));
 
-        res.json(enriched);
+        res.json(deptList);
     } catch (err) {
-        console.error('Departments fetch error:', err);
+        console.error('[Departments] Error:', err);
         res.json([]);
     }
 });
 
-router.post('/api/mapping/departments/create', async function (req, res) {
+router.post('/api/mapping/departments/create', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can create departments.' });
+        return res.json({ success: false, message: 'SuperAdmin access required.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var name = (req.body.name || '').trim();
-        if (!name) return res.json({ success: false, message: 'Department name is required.' });
+        const deptName = (req.body.name || '').trim();
+        if (!deptName) return res.json({ success: false, message: 'Department name is required.' });
 
-        var insertData = { name: name, created_by: req.session.userId };
-        if (req.body.head_user_id) {
-            insertData.head_user_id = parseInt(req.body.head_user_id);
-        }
+        const deptData = { name: deptName, created_by: req.session.userId };
+        if (req.body.head_user_id) deptData.head_user_id = parseInt(req.body.head_user_id);
 
-        var { error } = await supabase.from('departments').insert(insertData);
-        if (error) return res.json({ success: false, message: 'Department already exists or error: ' + error.message });
+        const { error: updateError } = await supabase.from('departments').insert(deptData);
+        if (updateError) return res.json({ success: false, message: 'Error: ' + updateError.message });
 
-        await logEvent(req.session.userId, 'DEPT_CREATED', 'Created department: ' + name, req.ip);
-        res.json({ success: true, message: 'Department created.' });
+        await logEvent(req.session.userId, 'DEPT_CREATED', `Department created: ${deptName}`, req.ip);
+        res.json({ success: true, message: 'System department successfully established.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Department Establishment] Failure:', err);
+        res.status(500).json({ success: false, message: 'System structural engine failure.' });
     }
 });
 
-router.post('/api/mapping/departments/delete', async function (req, res) {
+router.post('/api/mapping/departments/delete', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can delete departments.' });
+        return res.json({ success: false, message: 'Access denied: SuperAdmin access required to structural termination.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var deptId = req.body.departmentId;
-
-        var { data: dept } = await supabase.from('departments').select('name').eq('id', deptId).single();
-        if (!dept) return res.json({ success: false, message: 'Department not found.' });
+        const { departmentId: deptId } = req.body;
+        const { data: targetDepartment } = await supabase.from('departments').select('name').eq('id', deptId).single();
+        if (!targetDepartment) return res.json({ success: false, message: 'Target system department not recognized within the registry.' });
 
         await supabase.from('departments').delete().eq('id', deptId);
 
-        await logEvent(req.session.userId, 'DEPT_DELETED', 'Deleted department: ' + dept.name, req.ip);
-        res.json({ success: true, message: 'Department deleted.' });
+        await logEvent(req.session.userId, 'DEPT_DELETED', `Department deleted: ${targetDepartment.name}`, req.ip);
+        res.json({ success: true, message: 'System department successfully terminated.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Department Termination] Failure:', err);
+        res.status(500).json({ success: false, message: 'System structural engine failure.' });
     }
 });
 
-router.post('/api/mapping/departments/update-head', async function (req, res) {
+router.post('/api/mapping/departments/update-head', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can update departments.' });
+        return res.json({ success: false, message: 'Access denied: SuperAdmin access required to leadership modification.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var deptId = req.body.departmentId;
-        var headUserId = req.body.head_user_id ? parseInt(req.body.head_user_id) : null;
+        const { departmentId: deptId, head_user_id: userId } = req.body;
+        const headUserId = userId ? parseInt(userId) : null;
 
-        var { data: dept } = await supabase.from('departments').select('name').eq('id', deptId).single();
-        if (!dept) return res.json({ success: false, message: 'Department not found.' });
+        const { data: targetDepartment } = await supabase.from('departments').select('name').eq('id', deptId).single();
+        if (!targetDepartment) return res.json({ success: false, message: 'Target system department not recognized within the registry.' });
 
-        var { error } = await supabase.from('departments').update({ head_user_id: headUserId }).eq('id', deptId);
-        if (error) return res.json({ success: false, message: 'Update failed: ' + error.message });
+        const { error: updateError } = await supabase.from('departments').update({ head_user_id: headUserId }).eq('id', deptId);
+        if (updateError) return res.json({ success: false, message: updateError.message });
 
-        await logEvent(req.session.userId, 'DEPT_HEAD_CHANGED', 'Changed head for ' + dept.name + ' to user ID ' + headUserId, req.ip);
-        res.json({ success: true, message: 'Department head updated.' });
+        await logEvent(req.session.userId, 'DEPT_HEAD_CHANGED', `System leadership transitioned: ${targetDepartment.name} head set to ${headUserId}`, req.ip);
+        res.json({ success: true, message: 'System department leadership successfully transitioned.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Leadership Transition] Failure:', err);
+        res.status(500).json({ success: false, message: 'System structural engine failure.' });
     }
 });
 
-// device registration / approval 
+router.post('/api/mapping/departments/update-hours', requireReAuth, async (req, res) => {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'SuperAdmin access required.' });
+    }
+    try {
+        const { deptName: deptName, startHour: startHour, endHour: endHour, timezone: tz } = req.body;
+        if (!deptName || isNaN(startHour) || isNaN(endHour)) {
+            return res.json({ success: false, message: 'Missing required fields: start time and end time needed.' });
+        }
+        
+        const { error: updateError } = await supabase
+            .from('departments')
+            .update({ 
+                work_hours_start: parseInt(startHour), 
+                work_hours_end: parseInt(endHour), 
+                timezone: tz || 'UTC' 
+            })
+            .eq('name', deptName);
+            
+        if (updateError) throw updateError;
+        
+        await logEvent(req.session.userId, 'DEPT_HOURS_UPDATED', `Working hours updated for department: ${deptName}`, req.ip);
+        res.json({ success: true, message: `Working hours updated for ${deptName}` });
+    } catch (err) {
+        console.error('[Hours Update] Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update working hours. Please try again..' });
+    }
+});
 
-router.get('/api/mapping/devices/pending', async function (req, res) {
+// --- Device Management API ---
+
+router.get('/api/mapping/devices/pending', async (req, res) => {
     if (req.session.role === 'HR') return res.json([]);
     try {
-        var devices = await getPendingDevices();
-        res.json(devices);
+        const pendingDevices = await getPendingDevices();
+        res.json(pendingDevices);
     } catch (err) {
+        console.error('[Devices] Error loading pending:', err);
         res.json([]);
     }
 });
 
-router.get('/api/mapping/devices/all', async function (req, res) {
+router.get('/api/mapping/devices/all', async (req, res) => {
     if (req.session.role === 'HR') return res.json([]);
     try {
-        var devices = await getAllDevices();
-        res.json(devices);
+        const allDevices = await getAllDevices();
+        res.json(allDevices);
     } catch (err) {
+        console.error('[Devices] Error loading devices:', err);
         res.json([]);
     }
 });
 
-
-
-router.post('/api/mapping/devices/reject', async function (req, res) {
+router.post('/api/mapping/devices/approve', requirePermission('device_approve'), requireReAuth, async (req, res) => {
     if (req.session.role === 'HR') {
-        return res.json({ success: false, message: 'Access denied: HR cannot reject devices.' });
+        return res.json({ success: false, message: 'You do not have permission.' });
     }
     try {
-        // DEVICE POSTURE ENFORCEMENT
-        var { data: currentDevice } = await supabase
+        const { deviceId: deviceId, trustLevel: roleLevel } = req.body;
+        if (!deviceId) return res.json({ success: false, message: 'Device ID is required.' });
+
+        const headUserId = req.session.userId;
+        const assignedRole = roleLevel || 'System Managed';
+        await approveDevice(deviceId, headUserId, assignedRole);
+
+        const { data: targetUser } = await supabase.from('devices').select('user_id').eq('id', deviceId).single();
+        const userId = targetUser ? targetUser.user_id : 'unidentified';
+
+        await logEvent(headUserId, 'DEVICE_APPROVED', `Device approved: ${deviceId} (Role: ${assignedRole}) ${userId}`, req.ip);
+        await logSecurityEvent({
+            event_type: 'DEVICE_APPROVED',
+            user_id: headUserId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { deviceId, targetUser: userId, role: assignedRole }
+        });
+
+        res.json({ success: true, message: `Device approved as ${assignedRole}` });
+    } catch (err) {
+        console.error('[Devices] Approve error:', err);
+        res.status(500).json({ success: false, message: 'Failed to approve device. Please try again..' });
+    }
+});
+
+router.post('/api/mapping/devices/reject', async (req, res) => {
+    if (req.session.role === 'HR') {
+        return res.json({ success: false, message: 'You do not have permission.' });
+    }
+    try {
+        const { data: deviceCheck } = await supabase
             .from('devices')
             .select('approved')
             .eq('user_id', req.session.userId)
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!currentDevice || !currentDevice.approved) {
-            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        if (!deviceCheck?.approved) {
+            return res.json({ success: false, message: 'Please register your device first.' });
         }
 
-        var deviceId = req.body.deviceId;
+        const { deviceId: deviceId } = req.body;
         await rejectDevice(deviceId);
 
-        await logEvent(req.session.userId, 'DEVICE_REJECTED', 'Rejected device ID: ' + deviceId, req.ip);
-        res.json({ success: true, message: 'Device rejected.' });
+        await logEvent(req.session.userId, 'DEVICE_REJECTED', `Device removed: ${deviceId}`, req.ip);
+        res.json({ success: true, message: 'Device has been removed.' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error.' });
+        console.error('[Devices] Remove error:', err);
+        res.status(500).json({ success: false, message: 'Failed to remove device. Please try again..' });
     }
 });
 
-//  Permission Management API (User Access Dashboard) 
+// --- Permissions API ---
 
-// GET /api/mapping/permissions — Fetch users with their permissions (SuperAdmin ONLY)
-router.get('/api/mapping/permissions', async function (req, res) {
+router.get('/api/mapping/permissions', async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.status(403).json({ success: false, message: 'Forbidden' });
+        return res.status(403).json({ success: false, message: 'SuperAdmin access required.' });
     }
 
     try {
-        var { data: users, error } = await supabase
+        const { data: updatedUsers, error: updateError } = await supabase
             .from('users')
             .select('id, username, role, permissions')
             .order('username', { ascending: true });
 
-        if (error) throw error;
-        res.json(users || []);
+        if (updateError) throw updateError;
+        res.json(updatedUsers || []);
     } catch (err) {
-        console.error('Fetch permissions error:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch user permissions.' });
+        console.error('[Permissions] Error loading:', err);
+        res.status(500).json({ success: false, message: 'Failed to load permissions..' });
     }
 });
 
-// POST /api/mapping/permissions/update — Update user granular permissions (SuperAdmin ONLY)
-router.post('/api/mapping/permissions/update', requireReAuth, async function (req, res) {
+router.post('/api/mapping/permissions/update', requireReAuth, async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.status(403).json({ success: false, message: 'Forbidden' });
+        return res.status(403).json({ success: false, message: 'SuperAdmin access required.' });
     }
 
     try {
-        var { userId, permissions } = req.body;
+        const { userId: targetId, permissions: newPerms } = req.body;
 
-        if (!userId || !permissions) {
-            return res.json({ success: false, message: 'User ID and permissions object are required.' });
+        if (!targetId || !newPerms) {
+            return res.json({ success: false, message: 'Missing required field: permissions.' });
         }
 
-        // Fetch target user to log their name
-        var { data: targetUser } = await supabase.from('users').select('username').eq('id', userId).single();
+        const { data: targetUser } = await supabase.from('users').select('username').eq('id', targetId).single();
         if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
-        if (!validatePermissions(permissions)) {
-            return res.json({ success: false, message: 'Invalid permission keys detected.' });
+        if (!validatePermissions(newPerms)) {
+            return res.json({ success: false, message: 'Cannot change SuperAdmin permissions.' });
         }
 
-        var { error } = await supabase
+        const { error: updateError } = await supabase
             .from('users')
-            .update({ permissions: permissions })
-            .eq('id', userId);
+            .update({ permissions: newPerms })
+            .eq('id', targetId);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
 
-        await logEvent(req.session.userId, 'PERMISSIONS_UPDATED', 'Updated granular permissions for user: ' + targetUser.username, req.ip);
+        await logEvent(req.session.userId, 'PERMISSIONS_UPDATED', `Updated permissions for ${targetUser.username}`, req.ip);
         await logSecurityEvent({
             event_type: 'PERMISSIONS_UPDATED',
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: targetUser.username, target_user_id: userId, permissions: permissions }
+            details: { target_user: targetUser.username, new_permissions: newPerms }
         });
 
-        res.json({ success: true, message: 'Permissions updated successfully for ' + targetUser.username });
+        res.json({ success: true, message: `Permissions updated for ${targetUser.username}` });
     } catch (err) {
-        console.error('Update permissions error:', err);
-        res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+        console.error('[Permissions] Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update permissions. Please try again..' });
     }
 });
 
-// POST /api/mapping/permissions/bulk-update — Bulk update permissions (SuperAdmin ONLY)
-router.post('/api/mapping/permissions/bulk-update', requireReAuth, async function (req, res) {
+router.post('/api/mapping/permissions/bulk-update', requireReAuth, async (req, res) => {
     if (req.session.role !== 'SuperAdmin') {
-        return res.status(403).json({ success: false, message: 'Forbidden' });
+        return res.status(403).json({ success: false, message: 'SuperAdmin access required.' });
     }
 
     try {
-        var { updates } = req.body; // Array of { userId, permissions }
+        const { updates: updates } = req.body;
 
         if (!updates || !Array.isArray(updates)) {
-            return res.json({ success: false, message: 'Invalid updates format.' });
+            return res.json({ success: false, message: 'Missing required fields for update.' });
         }
 
-        // Validate all updates first
-        for (let update of updates) {
-            if (!update.userId || !validatePermissions(update.permissions)) {
-                return res.json({ success: false, message: 'Validation failed for one or more updates.' });
+        for (const item of updates) {
+            if (!item.userId || !validatePermissions(item.permissions)) {
+                return res.json({ success: false, message: 'Invalid permission value.' });
             }
         }
 
-        // Execute updates
         const results = [];
-        for (let update of updates) {
-            const { error } = await supabase
+        for (const item of updates) {
+            const { error: updateError } = await supabase
                 .from('users')
-                .update({ permissions: update.permissions })
-                .eq('id', update.userId);
+                .update({ permissions: item.permissions })
+                .eq('id', item.userId);
 
-            if (error) {
-                console.error(`Bulk update failed for user ${update.userId}:`, error);
-                results.push({ userId: update.userId, success: false });
-            } else {
-                results.push({ userId: update.userId, success: true });
-            }
+            results.push({ userId: item.userId, success: !updateError });
         }
 
-        await logEvent(req.session.userId, 'PERMISSIONS_BULK_UPDATED', `Performed bulk permission update for ${updates.length} users`, req.ip);
+        await logEvent(req.session.userId, 'PERMISSIONS_BULK_UPDATED', `Bulk permissions update for ${updates.length}, users`, req.ip);
 
         res.json({
             success: true,
-            message: `Processed ${updates.length} updates.`,
+            message: `Processed ${updates.length} permission updates.`,
             results: results
         });
     } catch (err) {
-        console.error('Bulk update permissions error:', err);
+        console.error('[Bulk Update] Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update permissions. Please try again..' });
+    }
+});
+
+// --- Trusted Locations API ---
+
+router.get('/api/mapping/trusted-locations/pending', async (req, res) => {
+    if (req.session.role !== 'SuperAdmin' && req.session.role !== 'IT') {
+        return res.status(403).json({ error: 'Access denied: Administrative credentials required.' });
+    }
+    try {
+        const { data: pendingLocations, error: updateError } = await supabase
+            .from('trusted_locations')
+            .select(`
+                id, label, country, ip_address, status, created_at,
+                users!trusted_locations_user_id_fkey ( id, username, department )
+            `)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
+            
+        if (updateError) throw updateError;
+        res.json(pendingLocations || []);
+    } catch (err) {
+        console.error('[Locations] Error loading:', err);
+        res.status(500).json([]);
+    }
+});
+
+router.post('/api/mapping/trusted-locations/approve', requireReAuth, async (req, res) => {
+    if (req.session.role !== 'SuperAdmin' && req.session.role !== 'IT') {
+        return res.status(403).json({ success: false, message: 'Access denied: Administrative credentials required.' });
+    }
+    try {
+        const { id: locationId } = req.body;
+        if (!locationId) return res.json({ success: false, message: 'Missing required field: location ID.' });
+        
+        const { error: updateError } = await supabase
+            .from('trusted_locations')
+            .update({ status: 'approved', approved_by: req.session.userId })
+            .eq('id', locationId);
+            
+        if (updateError) throw updateError;
+        
+        await logEvent(req.session.userId, 'LOCATION_APPROVED', `Trusted location approved: ID ${locationId}`, req.ip);
+        res.json({ success: true, message: 'Location approved..' });
+    } catch (err) {
+        console.error('[Locations] Approve error:', err);
+        res.status(500).json({ success: false, message: 'Failed to approve location. Please try again..' });
+    }
+});
+
+router.post('/api/mapping/trusted-locations/reject', requireReAuth, async (req, res) => {
+    if (req.session.role !== 'SuperAdmin' && req.session.role !== 'IT') {
+        return res.status(403).json({ success: false, message: 'Access denied: Administrative credentials required.' });
+    }
+    try {
+        const { id: locationId } = req.body;
+        if (!locationId) return res.json({ success: false, message: 'Missing required field: location ID.' });
+        
+        const { error: updateError } = await supabase
+            .from('trusted_locations')
+            .update({ status: 'rejected', approved_by: req.session.userId })
+            .eq('id', locationId);
+            
+        if (updateError) throw updateError;
+        
+        await logEvent(req.session.userId, 'LOCATION_REJECTED', `Location removed: ID ${locationId}`, req.ip);
+        res.json({ success: true, message: 'Location has been removed.' });
+    } catch (err) {
+        console.error('[Locations] Remove error:', err);
+        res.status(500).json({ success: false, message: 'Failed to remove location. Please try again..' });
     }
 });
 
