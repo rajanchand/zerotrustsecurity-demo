@@ -1,5 +1,16 @@
+// services/auditService.js
+// Records security events and user actions to the audit_log table.
+// Used throughout the app to maintain a tamper-evident trail for compliance.
+
 const { supabase } = require('../db');
 
+/**
+ * Writes a single security event to audit_log.
+ * @param {number|null} userId  - ID of the affected user (null for system events)
+ * @param {string}      action  - Event type in SCREAMING_SNAKE_CASE (e.g. LOGIN_FAILED)
+ * @param {string}      detail  - Human-readable description
+ * @param {string}      ip      - Originating IP address
+ */
 async function logEvent(userId, action, detail, ip) {
   await supabase.from('audit_log').insert({
     user_id: userId,

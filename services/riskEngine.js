@@ -1,13 +1,22 @@
+// services/riskEngine.js
+// Calculates a contextual risk score for each login attempt using a
+// weighted factor model (NIST SP 800-207 Continuous Verification principle).
+// Higher scores indicate more anomalous access patterns.
+
 const { supabase } = require('../db');
 const { logSecurityEvent } = require('./monitorService');
 
+// Risk factor weights — total score determines trust level:
+//   0-30   => Low    (trusted, may skip MFA on repeat devices)
+//   31-60  => Medium (requires OTP verification)
+//   61+    => High   (triggers alert + admin notification)
 const RISK_WEIGHTS = {
-    NEW_DEVICE: 25,
-    NEW_COUNTRY: 30,
-    MULTIPLE_FAILURES: 20, // frequent wrong passwords (formerly FAILED_LOGINS)
-    VPN_ANONYMIZER: 30,    // using a VPN/Proxy (formerly VPN_DETECTED)
-    UNUSUAL_HOURS: 15,     // login outside business hours (remote work remote)
-    ADMIN_UNKNOWN_IP: 40   // admin role from non-whitelisted IP (value changed from 35)
+    NEW_DEVICE:       25,  // first time logging in from this device fingerprint
+    NEW_COUNTRY:      30,  // login from a country not seen before for this user
+    MULTIPLE_FAILURES: 20, // repeated wrong password attempts in this session
+    VPN_ANONYMIZER:   30,  // connection originates from a known VPN/proxy range
+    UNUSUAL_HOURS:    15,  // login outside standard business hours (6am-10pm)
+    ADMIN_UNKNOWN_IP: 40   // admin or IT role logging in from a non-whitelisted IP
 };
 
 function getRiskLevel(score) {

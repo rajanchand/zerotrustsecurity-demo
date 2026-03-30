@@ -26,7 +26,9 @@ app.use(helmet({
     hsts: false
 }));
 
-// 2. Force HTTPS in production (behind a proxy like nginx)
+// 2. Force HTTPS in production — this app sits behind NGINX which sets
+//    X-Forwarded-Proto to "https". Without this check, the browser would
+//    allow plain HTTP requests to reach the app directly on port 3000.
 if (isProduction) {
     app.use(function (req, res, next) {
         if (req.headers['x-forwarded-proto'] !== 'https') {
@@ -133,5 +135,3 @@ app.listen(PORT, function () {
     console.log('  Environment: ' + (isProduction ? 'PRODUCTION' : 'DEVELOPMENT'));
     console.log('  Running on http://localhost:' + PORT + '\n');
 });
-
-

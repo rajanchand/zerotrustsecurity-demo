@@ -1,21 +1,20 @@
 // routes/mappingRoutes.js
-// user management, department management, device registration
-// only accessible by SuperAdmin and Admin roles
-// includes: password policy, step-up re-authentication
+// Admin panel routes: user management, department management, device approval.
+// All endpoints in this file require SuperAdmin or IT role (enforced in server.js).
 
-var express = require('express');
-var bcrypt = require('bcryptjs');
-var path = require('path');
-var { supabase } = require('../db');
-var { logEvent } = require('../services/auditService');
-var { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
-var { validatePassword } = require('../middleware/passwordPolicy');
-var { requireReAuth } = require('../middleware/stepUpAuth');
+var express  = require('express');
+var bcrypt   = require('bcryptjs');
+var path     = require('path');
+var { supabase }                                                           = require('../db');
+var { logEvent }                                                           = require('../services/auditService');
+var { logSecurityEvent }                                                   = require('../services/monitorService');
+var { getPendingDevices, approveDevice, rejectDevice, getAllDevices }      = require('../services/deviceService');
+var { validatePassword }                                                   = require('../middleware/passwordPolicy');
+var { requireReAuth }                                                      = require('../middleware/stepUpAuth');
 
 var router = express.Router();
-var { logSecurityEvent } = require('../services/monitorService');
 
-// --- pages ---
+// ── Page Routes ─────────────────────────────────────────────
 
 router.get('/mapping', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'mapping.html'));
@@ -25,7 +24,7 @@ router.get('/register-device', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'register-device.html'));
 });
 
-// --- user management API ---
+// ── User Management API ──────────────────────────────────────
 
 // get all users
 router.get('/api/mapping/users', async function (req, res) {
@@ -122,7 +121,7 @@ router.post('/api/mapping/devices/approve', requireReAuth, async function (req, 
         var tId = target ? target.user_id : 'unknown';
 
         await logEvent(adminId, 'DEVICE_APPROVED', 'Approved device ' + deviceId + ' (' + approvedLevel + ') for user ' + tId, req.ip);
-        
+
         await logSecurityEvent({
             event_type: 'DEVICE_APPROVED',
             user_id: adminId,
