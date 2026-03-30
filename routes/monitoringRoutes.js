@@ -76,10 +76,10 @@ router.get('/api/admin/users/:userId/details', async function (req, res) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // 2. Devices
+        // 2. Devices — include unapproved/pending ones
         var { data: devices } = await require('../db').supabase
             .from('devices')
-            .select('*')
+            .select('id, fingerprint, browser, os, ip_address, approved, last_login, created_at')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 

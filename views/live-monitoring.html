@@ -777,6 +777,32 @@
                     var data = JSON.parse(msg.data);
                     if (data.type === 'connected' || data.type === 'ping') return;
                     if (!paused) addEvent(data);
+
+                    // Update stats immediately on relevant events (no need to wait 30s)
+                    var t = data.event_type || '';
+                    var statTotal = document.getElementById('statTotal');
+                    if (statTotal) statTotal.textContent = parseInt(statTotal.textContent || 0) + 1;
+
+                    if (t === 'VPN_DETECTED') {
+                        var el = document.getElementById('statVpn');
+                        if (el) el.textContent = parseInt(el.textContent || 0) + 1;
+                    }
+                    if (t === 'LOGIN_FAILED') {
+                        var el2 = document.getElementById('statLoginFailed');
+                        if (el2) el2.textContent = parseInt(el2.textContent || 0) + 1;
+                    }
+                    if (t === 'USER_BLOCKED' || t === 'LOGIN_BLOCKED') {
+                        var el3 = document.getElementById('statBlocked');
+                        if (el3) el3.textContent = parseInt(el3.textContent || 0) + 1;
+                    }
+                    if (data.severity === 'HIGH' || data.severity === 'CRITICAL') {
+                        var el4 = document.getElementById('statHigh');
+                        if (el4) el4.textContent = parseInt(el4.textContent || 0) + 1;
+                    }
+                    if (data.severity === 'CRITICAL') {
+                        var el5 = document.getElementById('statCritical');
+                        if (el5) el5.textContent = parseInt(el5.textContent || 0) + 1;
+                    }
                 } catch(e) {}
             };
             es.onerror = function() { setStatus('disconnected'); };
@@ -812,7 +838,7 @@
             } catch(e) {}
 
             connect();
-            setInterval(loadStats, 30000); // 30s stat heartbeat
+            setInterval(loadStats, 15000); // 15s stat refresh
         }
 
         init();

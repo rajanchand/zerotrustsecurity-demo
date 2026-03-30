@@ -34,16 +34,21 @@ function flagHighRisk(req, res, next) {
     var twoMinAgo = now - 2 * 60 * 1000;
     tracker.requests = tracker.requests.filter(function (t) { return t > twoMinAgo; });
 
-    // Check: request velocity anomaly (>50 requests in 2 minutes)
-    if (tracker.requests.length > 50) {
-        tracker.riskDelta = Math.min(tracker.riskDelta + 10, 40);
-        logSecurityEvent({
-            event_type: 'BEHAVIORAL_ANOMALY',
-            user_id: userId,
-            username: req.session.username || 'unknown',
-            ip: req.ip,
-            details: { reason: 'High request velocity', count: tracker.requests.length, window: '2min' }
-        }).catch(function () { });
+    // Check: request velocity anomaly (>200 requests in 2 minutes = genuine automation/attack)
+    if (tracker.requests.length > 200) {
+        var now2 = Date.now();
+        // only log once per 60 seconds per user to prevent flooding
+        if (!tracker.lastAnomalyLog || (now2 - tracker.lastAnomalyLog) > 60000) {
+            tracker.lastAnomalyLog = now2;
+            tracker.riskDelta = Math.min(tracker.riskDelta + 10, 40);
+            logSecurityEvent({
+                event_type: 'BEHAVIORAL_ANOMALY',
+                user_id: userId,
+                username: req.session.username || 'unknown',
+                ip: req.ip,
+                details: { reason: 'High request velocity', count: tracker.requests.length, window: '2min' }
+            }).catch(function () { });
+        }
     }
 
     // Check: IP changed mid-session
