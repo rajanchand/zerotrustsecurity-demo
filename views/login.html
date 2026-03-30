@@ -11,6 +11,7 @@
 <body>
     <div class="auth-container">
         <div class="auth-card">
+            <div style="font-size: 2.5rem; margin-bottom: 8px; line-height: 1;">🛡️</div>
             <h1>ZTS</h1>
             <h2>Zero Trust Security</h2>
 
@@ -27,7 +28,7 @@
                     <input type="password" id="password" name="password" placeholder="Enter password" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Sign In</button>
+                <button type="submit" id="signInBtn" class="btn btn-primary">Sign In</button>
             </form>
 
             <p id="errorMsg" class="error-msg" style="display:none;"></p>
@@ -59,8 +60,8 @@
             e.preventDefault();
 
             var btn = this.querySelector('button[type="submit"]');
+            btn.classList.add('btn-loading');
             btn.disabled = true;
-            btn.textContent = 'Signing in...';
 
             var errorEl = document.getElementById('errorMsg');
             errorEl.style.display = 'none';
@@ -84,14 +85,14 @@
                 } else {
                     errorEl.textContent = result.message || 'Login failed.';
                     errorEl.style.display = 'block';
+                    btn.classList.remove('btn-loading');
                     btn.disabled = false;
-                    btn.textContent = 'Sign In';
                 }
             } catch (err) {
                 errorEl.textContent = 'A network error occurred. Please try again.';
                 errorEl.style.display = 'block';
+                btn.classList.remove('btn-loading');
                 btn.disabled = false;
-                btn.textContent = 'Sign In';
             }
         });
     </script>
