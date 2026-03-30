@@ -106,6 +106,11 @@ function buildNavbar(role, activePage, username) {
     html += '<a href="/dashboard" class="nav-link' + (activePage === 'dashboard' ? ' active' : '') + '">Dashboard</a>';
     html += '</div>';
 
+    // Portal - role access overview (all users)
+    html += '<div class="nav-item' + (activePage === 'portal' ? ' active' : '') + '">';
+    html += '<a href="/portal" class="nav-link' + (activePage === 'portal' ? ' active' : '') + '">Portal</a>';
+    html += '</div>';
+
     // Network dropdown
     var networkActive = (activePage === 'network') ? ' active' : '';
     html += '<div class="nav-item' + networkActive + '">';

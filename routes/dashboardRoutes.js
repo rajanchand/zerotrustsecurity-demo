@@ -61,6 +61,10 @@ router.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'dashboard.html'));
 });
 
+router.get('/portal', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'views', 'portal.html'));
+});
+
 router.get('/api/dashboard-data', async (req, res) => {
     try {
         const role = req.session.role;
