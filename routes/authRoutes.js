@@ -8,7 +8,7 @@ var crypto   = require('crypto');
 var UAParser = require('ua-parser-js');
 
 var { supabase }                                          = require('../db');
-var { generateOTP, verifyOTP }                            = require('../services/otpService');
+var { generateOTP, verifyOTP, getActiveOTP }                            = require('../services/otpService');
 var { sendLoginAlertEmail, sendAnomalyAlertEmail }        = require('../services/emailService');
 var { calculateRisk }                                     = require('../services/riskEngine');
 var { registerDevice, approveDevice }                     = require('../services/deviceService');
@@ -546,4 +546,29 @@ router.get('/logout', async function (req, res) {
     }
 });
 
+// ────────────────────────────────────────────────────────────────
+// GET /api/dev/otp  — return current OTP for the logged-in user
+// ONLY works in development mode — disabled in production
+// ────────────────────────────────────────────────────────────────
+router.get('/api/dev/otp', async function (req, res) {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    try {
+        var otp = await getActiveOTP(req.session.userId);
+        if (!otp) {
+            return res.json({ code: null, expired: false });
+        }
+        return res.json(otp);
+    } catch (err) {
+        return res.status(500).json({ error: 'Could not fetch OTP' });
+    }
+});
+
 module.exports = router;
+

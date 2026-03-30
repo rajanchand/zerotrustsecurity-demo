@@ -19,8 +19,14 @@
             </p>
 
             <div class="otp-display">
-                <p style="font-size:0.85rem; color:#475569; margin:0 0 4px;">📧 OTP sent to your registered email</p>
-                <p class="note">Check your inbox. Code expires in 5 minutes.</p>
+                <p style="font-size:0.85rem; color:#475569; margin:0 0 4px;">🔐 A one-time code has been generated</p>
+                <p class="note">Check your email inbox — code expires in 5 minutes.</p>
+            </div>
+
+            <!-- dev mode OTP hint — only visible in development -->
+            <div id="devOtpHint" style="display:none; background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:12px; margin-bottom:16px; text-align:center;">
+                <p style="margin:0 0 4px; font-size:0.75rem; color:#92400e; font-weight:600;">⚠️ DEV MODE — Email unavailable</p>
+                <p style="margin:0; font-size:0.8rem; color:#78350f;">Your OTP code: <strong id="devOtpCode" style="font-size:1.4rem; letter-spacing:4px; color:#b45309;"></strong></p>
             </div>
 
             <p id="riskInfo" style="font-size:0.82rem; margin-bottom:16px;"></p>
@@ -44,6 +50,25 @@
     </div>
 
     <script src="/js/app.js"></script>
+    <script>
+        // in dev mode, try to fetch and display the OTP if email is unavailable
+        (async function () {
+            try {
+                var resp = await fetch('/api/dev/otp');
+                if (!resp.ok) return;
+                var data = await resp.json();
+                if (data && data.code && !data.expired) {
+                    document.getElementById('devOtpCode').textContent = data.code;
+                    document.getElementById('devOtpHint').style.display = 'block';
+                    // also auto-fill the input to make testing easier
+                    var input = document.getElementById('otpInput');
+                    if (input) input.value = data.code;
+                }
+            } catch (e) {
+                // not in dev mode or endpoint not available — silently ignore
+            }
+        })();
+    </script>
     <script>
         var riskScore = sessionStorage.getItem('riskScore') || '0';
         var riskLevel = sessionStorage.getItem('riskLevel') || 'Low';
