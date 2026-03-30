@@ -1,22 +1,22 @@
 // services/otpService.js
-// OTP generation, verification, and email delivery
+// OTP generation and verification
 
-var { supabase }                  = require('../db');
-var { sendOTPEmail }              = require('./emailService');
-var { encrypt, decrypt }          = require('./encryptionService');
+var { supabase }       = require('../db');
+var { sendOTPEmail }   = require('./emailService');
+var { encrypt, decrypt } = require('./encryptionService');
 
 async function generateOTP(userId) {
     var code      = String(Math.floor(100000 + Math.random() * 900000));
     var expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-    // invalidate any old unused OTPs for this user
+    // invalidate any unused OTPs still open for this user
     await supabase
         .from('otp_store')
         .update({ used: true })
         .eq('user_id', userId)
         .eq('used', false);
 
-    // encrypt before storing
+    // encrypt the code before writing to database
     var encryptedCode = encrypt(code);
 
     await supabase.from('otp_store').insert({
@@ -25,11 +25,7 @@ async function generateOTP(userId) {
         expires_at: expiresAt
     });
 
-    // always print to console so dev can see it regardless of email status
-    console.log('\n  ╔══════════════════════════════╗');
-    console.log('  ║  OTP for user ID ' + userId + ': ' + code + '  ║');
-    console.log('  ╚══════════════════════════════╝\n');
-
+    // look up the user's registered email and send the code
     var { data: user } = await supabase
         .from('users')
         .select('email, username')
@@ -38,7 +34,7 @@ async function generateOTP(userId) {
 
     if (user && user.email) {
         sendOTPEmail(user.email, user.username, code).catch(function () {
-            console.log('  [email] Could not send OTP email — use the code printed above');
+            console.error('  [otp] Failed to send OTP email for user ' + userId);
         });
     }
 
@@ -46,7 +42,6 @@ async function generateOTP(userId) {
 }
 
 async function verifyOTP(userId, code) {
-    // fetch recent unused OTPs for this user
     var { data: rows } = await supabase
         .from('otp_store')
         .select('*')
@@ -59,12 +54,10 @@ async function verifyOTP(userId, code) {
         return { valid: false, reason: 'Invalid OTP code.' };
     }
 
-    // try to match against encrypted and plain-text codes
     var matchedRow = null;
     for (var i = 0; i < rows.length; i++) {
-        var storedCode   = rows[i].code;
-        var decryptedCode = decrypt(storedCode);
-        if (decryptedCode === code || storedCode === code) {
+        var decryptedCode = decrypt(rows[i].code);
+        if (decryptedCode === code || rows[i].code === code) {
             matchedRow = rows[i];
             break;
         }
@@ -74,9 +67,7 @@ async function verifyOTP(userId, code) {
         return { valid: false, reason: 'Invalid OTP code.' };
     }
 
-    var now    = new Date();
-    var expiry = new Date(matchedRow.expires_at);
-    if (now > expiry) {
+    if (new Date() > new Date(matchedRow.expires_at)) {
         return { valid: false, reason: 'OTP has expired. Please log in again to get a new code.' };
     }
 
@@ -85,23 +76,4 @@ async function verifyOTP(userId, code) {
     return { valid: true };
 }
 
-// get the current active OTP for a user (dev helper — only used in development mode)
-async function getActiveOTP(userId) {
-    var { data: rows } = await supabase
-        .from('otp_store')
-        .select('code, expires_at')
-        .eq('user_id', userId)
-        .eq('used', false)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-    if (!rows || rows.length === 0) return null;
-
-    var row       = rows[0];
-    var decrypted = decrypt(row.code);
-    var expired   = new Date() > new Date(row.expires_at);
-
-    return { code: decrypted, expired: expired, expires_at: row.expires_at };
-}
-
-module.exports = { generateOTP, verifyOTP, getActiveOTP };
+module.exports = { generateOTP, verifyOTP };

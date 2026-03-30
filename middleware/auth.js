@@ -6,7 +6,7 @@ var { logSecurityEvent } = require('../services/monitorService');
 var { supabase }         = require('../db');
 
 // paths that don't need authentication
-var PUBLIC_PATHS = ['/login', '/logout', '/otp', '/verify-otp', '/css', '/js', '/api/csrf-token', '/api/dev'];
+var PUBLIC_PATHS = ['/login', '/logout', '/otp', '/verify-otp', '/css', '/js', '/api/csrf-token'];
 
 // how often to re-validate the session token against the database (ms)
 // this drives the real-time account kill-switch and concurrent session revocation
