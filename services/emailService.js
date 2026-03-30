@@ -40,10 +40,10 @@ async function sendOTPEmail(toEmail, username, otpCode) {
         '  <div style="background:#f4f5f7;border-radius:8px;padding:20px;text-align:center;margin:20px 0;">',
         '    <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#0984e3;">' + otpCode + '</span>',
         '  </div>',
-        '  <p style="font-size:13px;color:#636e72;">This code expires in <strong>5 minutes</strong>. Do not share it with anyone.</p>',
-        '  <p style="font-size:13px;color:#636e72;">If you did not try to log in, contact your administrator immediately.</p>',
+        '  <p style="font-size:13px;color:#636e72;">This code will expires in <strong>5 minutes</strong>. Please Do not share it with anyone.</p>',
+        '  <p style="font-size:13px;color:#636e72;">If you do not initate this request, contact your administrator immediately.</p>',
         '  <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">',
-        '  <p style="font-size:11px;color:#b2bec3;">ZTS — Zero Trust Security Demo | NIST SP 800-207</p>',
+        '  <p style="font-size:11px;color:#b2bec3;">ZTS — Zero Trust Security Project Team | NIST SP 800-207</p>',
         '</div>'
     ].join('\n');
 
