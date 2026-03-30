@@ -302,6 +302,7 @@
                 if (u.status === 'active') {
                     actions += '<button class="btn btn-sm btn-warning" onclick="suspendUser(' + u.id + ')">Suspend</button> ';
                     actions += '<button class="btn btn-sm btn-danger" onclick="blockUser(' + u.id + ')">Block</button> ';
+                    actions += '<button class="btn btn-sm" style="background:#000; color:#fff;" onclick="revokeSession(' + u.id + ')">Revoke</button> ';
                 } else {
                     actions += '<button class="btn btn-sm btn-success" onclick="activateUser(' + u.id + ')">Activate</button> ';
                 }
@@ -411,6 +412,13 @@
         async function blockUser(id) {
             if (!confirm('Block this user?')) return;
             var result = await postJSON('/api/mapping/users/block', { userId: id });
+            showToast(result.message, result.success ? 'success' : 'error');
+            if (result.success) loadUsers();
+        }
+
+        async function revokeSession(id) {
+            if (!confirm('Instantly zero-trust kill all active sessions for this user?')) return;
+            var result = await postJSON('/api/mapping/users/revoke-session', { userId: id });
             showToast(result.message, result.success ? 'success' : 'error');
             if (result.success) loadUsers();
         }

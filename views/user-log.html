@@ -151,6 +151,11 @@
                         <span id="u_username">-</span>
                     </h2>
                     <p class="user-subtitle" id="u_email">-</p>
+                    <div style="margin-top: 12px;">
+                        <button class="btn btn-sm" id="btnRevokeSession" style="background:#d63031; color:white; font-size:0.75rem; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="revokeUserSession()">
+                            ⚠ Revoke Active Sessions (Kill Switch)
+                        </button>
+                    </div>
                 </div>
                 <div style="text-align:right;">
                     <span id="u_role" class="role-badge" style="font-size:0.9rem;">-</span>
@@ -339,6 +344,20 @@
                 alert('An error occurred fetching user data.');
                 document.getElementById('loadingView').style.display = 'none';
                 document.getElementById('noUserView').style.display = 'block';
+            }
+        }
+
+        async function revokeUserSession() {
+            var userId = document.getElementById('userSelect').value;
+            if (!userId) return;
+            if (!confirm('Are you sure you want to instantly kill all active sessions for this user? They will be immediately disconnected.')) return;
+
+            var result = await postJSON('/api/mapping/users/revoke-session', { userId: userId });
+            if (result.success) {
+                showToast('Kill Switch Activated: Sessions revoked.', 'success');
+                loadUserLogs(userId); // refresh
+            } else {
+                showToast(result.message || 'Action failed', 'error');
             }
         }
 

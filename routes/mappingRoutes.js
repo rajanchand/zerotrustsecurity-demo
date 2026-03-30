@@ -362,6 +362,43 @@ router.post('/api/mapping/users/block', async function (req, res) {
 });
 
 // activate user (unblock / unsuspend)
+router.post('/api/mapping/users/revoke-session', async function (req, res) {
+    try {
+        // DEVICE POSTURE ENFORCEMENT
+        var { data: currentDevice } = await supabase
+            .from('devices')
+            .select('approved')
+            .eq('user_id', req.session.userId)
+            .eq('fingerprint', req.session.deviceFingerprint)
+            .single();
+
+        if (!currentDevice || !currentDevice.approved) {
+            return res.json({ success: false, message: 'Access denied: Active Admin actions require an approved company device.' });
+        }
+
+        var userId = req.body.userId;
+
+        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
+        if (!user) return res.json({ success: false, message: 'User not found.' });
+
+        // Zero Trust Kill Switch: Erase the active session token
+        await supabase.from('users').update({ active_session_token: null }).eq('id', userId);
+
+        await logEvent(req.session.userId, 'SESSION_REVOKED', 'Revoked active sessions for user: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'SESSION_REVOKED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: user.username, action: 'session_revoked', reason: 'Admin forced kill switch' }
+        });
+        res.json({ success: true, message: 'User sessions instantly revoked.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+});
+
+// activate user (unblock / unsuspend)
 router.post('/api/mapping/users/activate', async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT

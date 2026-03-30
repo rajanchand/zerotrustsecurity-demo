@@ -2,23 +2,23 @@ require('dotenv').config();
 
 const express = require('express');
 const session = require('express-session');
-const helmet  = require('helmet');
-const path    = require('path');
+const helmet = require('helmet');
+const path = require('path');
 
-const app          = express();
+const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 
 // 1. HELMET — set security headers (CSP, X-Frame-Options, etc.)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
-            defaultSrc:             ["'self'"],
-            scriptSrc:              ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            scriptSrcAttr:          ["'unsafe-inline'"],
-            styleSrc:               ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc:                ["'self'", "https://fonts.gstatic.com"],
-            imgSrc:                 ["'self'", "data:", "https:"],
-            connectSrc:             ["'self'"],
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
             upgradeInsecureRequests: null
         }
     },
@@ -44,13 +44,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 3. SESSION — secure, HttpOnly, SameSite=Strict cookies
 app.use(session({
-    secret:            process.env.SESSION_SECRET || 'zts-default-secret',
-    resave:            false,
+    secret: process.env.SESSION_SECRET || 'zts-default-secret',
+    resave: false,
     saveUninitialized: false,
     cookie: {
-        secure:   isProduction,
+        secure: isProduction,
         httpOnly: true,
-        maxAge:   30 * 60 * 1000, // 30 minutes rolling window
+        maxAge: 30 * 60 * 1000, // 30 minutes rolling window
         sameSite: 'strict'
     },
     rolling: true
@@ -66,17 +66,17 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const { verifyHMAC } = require('./middleware/hmacVerify');
 
 // Route files
-const authRoutes           = require('./routes/authRoutes');
-const dashboardRoutes      = require('./routes/dashboardRoutes');
-const profileRoutes        = require('./routes/profileRoutes');
-const mappingRoutes        = require('./routes/mappingRoutes');
-const networkRoutes        = require('./routes/networkRoutes');
-const monitoringRoutes     = require('./routes/monitoringRoutes');
+const authRoutes = require('./routes/authRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const mappingRoutes = require('./routes/mappingRoutes');
+const networkRoutes = require('./routes/networkRoutes');
+const monitoringRoutes = require('./routes/monitoringRoutes');
 const securityPostureRoutes = require('./routes/securityPostureRoutes');
 
 // Middleware imports
 const { requireLogin } = require('./middleware/auth');
-const { requireRole }  = require('./middleware/rbac');
+const { requireRole } = require('./middleware/rbac');
 const { flagHighRisk } = require('./middleware/riskCheck');
 const { handleReAuth } = require('./middleware/stepUpAuth');
 
@@ -133,3 +133,5 @@ app.listen(PORT, function () {
     console.log('  Environment: ' + (isProduction ? 'PRODUCTION' : 'DEVELOPMENT'));
     console.log('  Running on http://localhost:' + PORT + '\n');
 });
+
+
