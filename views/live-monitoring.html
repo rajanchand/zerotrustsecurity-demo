@@ -516,11 +516,11 @@
 
         // Visual mappings
         function getEventIcon(type) {
-            if (type.includes('SUCCESS') || type.includes('UNBLOCKED')) return '<span class="evt-icon type-success">✓</span>';
-            if (type.includes('FAILED') || type.includes('BLOCKED') || type.includes('DENIED') || type.includes('DELETED')) return '<span class="evt-icon type-error">⚠</span>';
-            if (type.includes('VPN') || type.includes('TRAVEL') || type.includes('LOGOUT')) return '<span class="evt-icon type-warn">⚑</span>';
-            if (type.includes('OTP') || type.includes('NEW')) return '<span class="evt-icon type-info">🛡</span>';
-            return '<span class="evt-icon type-secure">⚙</span>';
+            if (type.includes('SUCCESS') || type.includes('UNBLOCKED')) return '<span class="evt-icon type-success">&#10003;</span>';
+            if (type.includes('FAILED') || type.includes('BLOCKED') || type.includes('DENIED') || type.includes('DELETED')) return '<span class="evt-icon type-error">!</span>';
+            if (type.includes('VPN') || type.includes('TRAVEL') || type.includes('LOGOUT')) return '<span class="evt-icon type-warn">~</span>';
+            if (type.includes('OTP') || type.includes('NEW')) return '<span class="evt-icon type-info">*</span>';
+            return '<span class="evt-icon type-secure">&#8226;</span>';
         }
 
         // Toggle row expansion
