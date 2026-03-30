@@ -4,3 +4,11 @@ node_modules/
 *.db-shm
 *.db-wal
 .DS_Store
+*.log
+npm-debug.log*
+
+# SQL migration files — already applied to Supabase, not needed in repo
+*.sql
+
+# Deployment script — contains VPS-specific paths
+deploy.sh
