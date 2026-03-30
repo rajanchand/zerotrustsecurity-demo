@@ -136,11 +136,14 @@ function buildNavbar(role, activePage, username) {
     }
 
     // Security dropdown
-    var securityActive = (activePage === 'risk') ? ' active' : '';
+    var securityActive = (activePage === 'risk' || activePage === 'user-log') ? ' active' : '';
     html += '<div class="nav-item' + securityActive + '">';
     html += '<button class="nav-link' + securityActive + '" onclick="toggleDropdown(this)">Security <span class="arrow">▾</span></button>';
     html += '<div class="dropdown-menu">';
     html += '<a href="/risk"' + (activePage === 'risk' ? ' class="active"' : '') + '>Risk Score</a>';
+    if (role === 'SuperAdmin') {
+        html += '<a href="/admin/user-log"' + (activePage === 'user-log' ? ' class="active"' : '') + '>User Log</a>';
+    }
     html += '</div>';
     html += '</div>';
 

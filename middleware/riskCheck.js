@@ -47,7 +47,7 @@ function flagHighRisk(req, res, next) {
     }
 
     // Check: IP changed mid-session
-    var rawIp = req.headers['x-forwarded-for'] || req.ip;
+    var rawIp = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
     var currentIP = rawIp.split(',')[0].trim().replace('::ffff:', '');
 
     if (tracker.lastIP && tracker.lastIP !== currentIP && tracker.lastIP !== req.ip) {
