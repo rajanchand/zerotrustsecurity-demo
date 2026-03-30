@@ -37,11 +37,7 @@ async function generateOTP(userId) {
         .single();
 
     if (user && user.email) {
-        // When using Resend sandbox (onboarding@resend.dev), emails can only
-        // be delivered to the account owner. RESEND_TO_EMAIL overrides the
-        // recipient so you still receive the OTP during dev/testing.
-        var toAddress = process.env.RESEND_TO_EMAIL || user.email;
-        sendOTPEmail(toAddress, user.username, code).catch(function () {
+        sendOTPEmail(user.email, user.username, code).catch(function () {
             console.log('  [email] Could not send OTP email — use the code printed above');
         });
     }
