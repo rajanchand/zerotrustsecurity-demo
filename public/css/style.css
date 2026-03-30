@@ -242,9 +242,9 @@ body {
 
 /* Layout & Cards */
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 20px 24px;
 }
 
 .card {
@@ -836,7 +836,7 @@ td .btn {
   }
 
   .container {
-    padding: 10px;
+    padding: 14px 12px;
   }
 
   /* cards */

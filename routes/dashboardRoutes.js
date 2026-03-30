@@ -113,7 +113,8 @@ router.get('/api/dashboard-data', async (req, res) => {
                 riskLevel: req.session.riskLevel || 'Low',
                 sessionCount: sessionCount || 0,
                 loginContext: {
-                    country: lastSession ? lastSession.country : req.session.loginCountry || 'Unknown',
+                    country:     lastSession ? lastSession.country : req.session.loginCountry || 'Unknown',
+                    ip:          lastSession ? lastSession.ip     : req.session.loginIP       || 'Unknown',
                     isNewDevice: isNewDevice
                 }
             }

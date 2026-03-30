@@ -448,7 +448,7 @@
 
                 // greeting
                 document.getElementById('greetingText').textContent =
-                    getGreeting() + ', ' + d.user.username + ' · SuperAdmin';
+                    getGreeting() + ', ' + d.user.username + ' · ' + d.user.role;
 
                 // personal risk badge
                 var risk = d.security;
@@ -456,13 +456,25 @@
                 riskEl.textContent = risk.riskScore + ' / 100 · ' + risk.riskLevel;
                 riskEl.className = risk.riskLevel === 'Low' ? 'score-low' : risk.riskLevel === 'Medium' ? 'score-medium' : 'score-high';
 
-                // session info sidebar
+                // session info sidebar — with IP and role-based access note
+                var ctx = d.security.loginContext;
+                var roleAccess = {
+                    'SuperAdmin':      'You have full access to all pages, users, devices, and security controls.',
+                    'HR':              'You can access the HR portal — manage users, approvals, and HR records.',
+                    'IT':              'You can access IT infrastructure, device registry, and network rules.',
+                    'Finance':         'You can view the Finance portal and your personal risk profile.',
+                    'CustomerSupport': 'You can view the dashboard and your personal risk profile.'
+                };
+                var accessMsg = roleAccess[d.user.role] || 'Access is restricted to your assigned department.';
+
                 document.getElementById('sessionInfo').innerHTML =
                     '<div><strong>Role:</strong> ' + d.user.role + '</div>' +
-                    '<div><strong>Department:</strong> ' + (d.user.department || '-') + '</div>' +
-                    '<div><strong>Login Country:</strong> ' + (d.security.loginContext.country || '-') + '</div>' +
-                    '<div><strong>Device:</strong> ' + (d.security.loginContext.isNewDevice ? 'New (unrecognised)' : 'Known') + '</div>' +
-                    '<div><strong>Sessions:</strong> ' + d.security.sessionCount + '</div>';
+                    '<div><strong>Department:</strong> ' + (d.user.department || '—') + '</div>' +
+                    '<div><strong>Login IP:</strong> <span style="font-family:monospace;font-size:0.8rem;">' + (ctx.ip || 'Unknown') + '</span></div>' +
+                    '<div><strong>Location:</strong> ' + (ctx.country || '—') + '</div>' +
+                    '<div><strong>Device:</strong> ' + (ctx.isNewDevice ? 'New (unrecognised)' : 'Known') + '</div>' +
+                    '<div><strong>Sessions:</strong> ' + d.security.sessionCount + '</div>' +
+                    '<div style="margin-top:10px; padding:8px 10px; background:#f8fafc; border-left:3px solid #cbd5e1; border-radius:4px; font-size:0.78rem; color:#475569; line-height:1.5;">' + accessMsg + '</div>';
 
                 // load admin stats (SuperAdmin only)
                 if (d.user.role === 'SuperAdmin') {
