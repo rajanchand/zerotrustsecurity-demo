@@ -3,7 +3,7 @@
 // password expiry check, and continuous risk assessment
 
 var { logSecurityEvent } = require('../services/monitorService');
-var { supabase }         = require('../db');
+var { supabase } = require('../db');
 
 // paths that don't need authentication
 var PUBLIC_PATHS = ['/login', '/logout', '/otp', '/verify-otp', '/css', '/js', '/api/csrf-token'];
@@ -29,7 +29,7 @@ async function requireLogin(req, res, next) {
     // ── TIME-BASED CONTINUOUS ACCESS CONTROL (UTC) ──
     var currentHour = new Date().getUTCHours();
     var ALLOW_START = 0;
-    var ALLOW_END   = 24; // allow all hours — change to e.g. 6/22 for restricted window
+    var ALLOW_END = 24; // allow all hours — change to e.g. 6/22 for restricted window
 
     if (currentHour < ALLOW_START || currentHour >= ALLOW_END) {
         if (req.session) {
@@ -48,21 +48,21 @@ async function requireLogin(req, res, next) {
     }
 
     // ── SESSION INACTIVITY TIMEOUT (15 minutes) ──
-    var now        = Date.now();
+    var now = Date.now();
     var lastActive = req.session.lastActive || now;
-    var timeout    = 15 * 60 * 1000;
+    var timeout = 15 * 60 * 1000;
 
     if (now - lastActive > timeout) {
-        var uid   = req.session.userId;
+        var uid = req.session.userId;
         var uname = req.session.username || 'unknown';
         req.session.destroy(function () {
             logSecurityEvent({
                 event_type: 'FORCE_LOGOUT',
-                user_id:    uid,
-                username:   uname,
-                ip:         req.ip,
-                details:    { reason: 'Session timeout — 15 min inactivity', path: req.path }
-            }).catch(function () {});
+                user_id: uid,
+                username: uname,
+                ip: req.ip,
+                details: { reason: 'Session timeout — 15 min inactivity', path: req.path }
+            }).catch(function () { });
             res.redirect('/login?msg=session_expired');
         });
         return;
@@ -73,19 +73,19 @@ async function requireLogin(req, res, next) {
     // ── SESSION-DEVICE BINDING (detect potential session hijacking) ──
     var clientFingerprint = req.headers['x-device-fingerprint'];
     if (clientFingerprint && req.session.deviceFingerprint && clientFingerprint !== req.session.deviceFingerprint) {
-        var hijackUid   = req.session.userId;
+        var hijackUid = req.session.userId;
         var hijackUname = req.session.username || 'unknown';
         logSecurityEvent({
             event_type: 'SESSION_HIJACK_ATTEMPT',
-            user_id:    hijackUid,
-            username:   hijackUname,
-            ip:         req.ip,
-            details:    {
-                reason:   'Device fingerprint mismatch mid-session',
+            user_id: hijackUid,
+            username: hijackUname,
+            ip: req.ip,
+            details: {
+                reason: 'Device fingerprint mismatch mid-session',
                 expected: req.session.deviceFingerprint,
                 received: clientFingerprint
             }
-        }).catch(function () {});
+        }).catch(function () { });
         req.session.destroy(function () {
             res.redirect('/login?msg=session_invalid');
         });
@@ -108,11 +108,11 @@ async function requireLogin(req, res, next) {
                 if (result.status !== 'active') {
                     await logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
-                        user_id:    req.session.userId,
-                        username:   req.session.username || 'unknown',
-                        ip:         req.ip,
-                        details:    { reason: 'Kill switch triggered — account status changed to: ' + result.status }
-                    }).catch(function () {});
+                        user_id: req.session.userId,
+                        username: req.session.username || 'unknown',
+                        ip: req.ip,
+                        details: { reason: 'Kill switch triggered — account status changed to: ' + result.status }
+                    }).catch(function () { });
                     return req.session.destroy(function () {
                         res.redirect('/login?msg=account_blocked');
                     });
@@ -128,12 +128,12 @@ async function requireLogin(req, res, next) {
                 ) {
                     await logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
-                        user_id:    req.session.userId,
-                        username:   req.session.username || 'unknown',
-                        ip:         req.ip,
-                        details:    { reason: 'Concurrent login detected — session invalidated by newer login' }
-                    }).catch(function () {});
-                    
+                        user_id: req.session.userId,
+                        username: req.session.username || 'unknown',
+                        ip: req.ip,
+                        details: { reason: 'Concurrent login detected — session invalidated by newer login' }
+                    }).catch(function () { });
+
                     console.log('[DEBUG] Auth middleware: Concurrent login detected. DB token:', result.active_session_token, 'Session token:', req.session.sessionToken);
 
                     return req.session.destroy(function () {
@@ -143,7 +143,7 @@ async function requireLogin(req, res, next) {
 
                 // 3. PASSWORD EXPIRY — flag if password older than 90 days
                 if (result.password_changed_at) {
-                    var changedAt  = new Date(result.password_changed_at).getTime();
+                    var changedAt = new Date(result.password_changed_at).getTime();
                     var ninetyDays = 90 * 24 * 60 * 60 * 1000;
                     if (Date.now() - changedAt > ninetyDays) {
                         req.session.passwordExpired = true;
@@ -164,9 +164,9 @@ async function requireLogin(req, res, next) {
     ) {
         if (req.path.startsWith('/api/')) {
             return res.status(403).json({
-                success:         false,
+                success: false,
                 passwordExpired: true,
-                message:         'Your password has expired. Please change it in your profile.'
+                message: 'Your password has expired. Please change it in your profile.'
             });
         }
         return res.redirect('/profile?msg=password_expired');
