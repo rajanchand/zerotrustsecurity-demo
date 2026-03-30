@@ -565,17 +565,19 @@
             html += '<div class="details-section">';
             html += '<h4>Session Context</h4>';
             html += '<div class="details-kv"><div class="details-k">IP Address</div><div class="details-v">' + (evt.ip || '—') + '</div></div>';
-            html += '<div class="details-kv"><div class="details-k">Geo-IP Map</div><div class="details-v">' + locationGeo + '</div></div>';
-            if (d.role) html += '<div class="details-kv"><div class="details-k">RBAC Role</div><div class="details-v">' + d.role + '</div></div>';
-            if (d.vpn) html += '<div class="details-kv"><div class="details-k">Anonymizer</div><div class="details-v" style="color:#ef4444">VPN / Proxy Active</div></div>';
+            html += '<div class="details-kv"><div class="details-k">Location</div><div class="details-v">' + locationGeo + '</div></div>';
+            if (d.role) html += '<div class="details-kv"><div class="details-k">Role</div><div class="details-v">' + d.role + '</div></div>';
+            if (d.department) html += '<div class="details-kv"><div class="details-k">Department</div><div class="details-v">' + d.department + '</div></div>';
+            if (d.vpn) html += '<div class="details-kv"><div class="details-k">Network Risk</div><div class="details-v" style="color:#ef4444; font-weight:600;">VPN / Proxy Detected</div></div>';
+            if (d.off_hours) html += '<div class="details-kv"><div class="details-k">Time Risk</div><div class="details-v" style="color:#ef4444; font-weight:600;">Off-Hours Access</div></div>';
             html += '</div>';
 
             // Threat Analysis
             html += '<div class="details-section">';
-            html += '<h4>Threat Intelligence Analysis</h4>';
-            html += '<div class="details-kv"><div class="details-k">Telemetry ID</div><div class="details-v">' + (evt.id || 'EVT-'+Math.floor(Math.random()*10000)) + '</div></div>';
+            html += '<h4>Analysis</h4>';
+            html += '<div class="details-kv"><div class="details-k">Event ID</div><div class="details-v">' + (evt.id || 'N/A') + '</div></div>';
             if (d.risk_level) html += '<div class="details-kv"><div class="details-k">Risk Tier</div><div class="details-v">' + d.risk_level + '</div></div>';
-            if (d.reason) html += '<div class="details-kv"><div class="details-k">Trigger Detail</div><div class="details-v">' + d.reason + '</div></div>';
+            if (d.reason) html += '<div class="details-kv"><div class="details-k">Details</div><div class="details-v">' + d.reason + '</div></div>';
             
             // Risk Factors breakdown
             if (d.risk_factors && Array.isArray(d.risk_factors) && d.risk_factors.length > 0) {
@@ -613,7 +615,7 @@
 
             mainRow.innerHTML = `
                 <td style="text-align:center"><span class="expand-icon">▶</span></td>
-                <td class="ts-cell">${formatTime(evt.timestamp)}</td>
+                <td class="ts-cell">${formatDate(evt.timestamp)}</td>
                 <td><span class="sev sev-${evt.severity || 'INFO'}">${evt.severity || 'INFO'}</span></td>
                 <td><span class="evt-type">${getEventIcon(evt.event_type || '')} ${evt.event_type || '—'}</span></td>
                 <td class="user-cell">${evt.username || 'System'}</td>
