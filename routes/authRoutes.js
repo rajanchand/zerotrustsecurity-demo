@@ -316,7 +316,10 @@ router.post('/login', loginLimiter, async function (req, res) {
 
         // write the token to DB *before* setting it on the session so the
         // auth middleware will always find a matching token when it checks
-        await supabase.from('users').update({ active_session_token: sessionToken }).eq('id', user.id);
+        var tokenUpdateRes = await supabase.from('users').update({ active_session_token: sessionToken }).eq('id', user.id);
+        if (tokenUpdateRes.error) {
+            console.error('Failed to update active_session_token in DB:', tokenUpdateRes.error);
+        }
 
         req.session.userId          = user.id;
         req.session.username        = user.username;
@@ -498,8 +501,11 @@ router.post('/verify-otp', otpLimiter, async function (req, res) {
             console.error('Failed to send login alert email:', err);
         });
 
+        console.log('[DEBUG] OTP Verified successfully. Session state before save:', Object.keys(req.session), req.session.userId);
+        
         req.session.save(function (err) {
             if (err) console.error('Session save error (otp verify):', err);
+            console.log('[DEBUG] OTP Verification Session saved.');
             return res.json({ success: true, redirect: '/dashboard', csrfToken: csrfToken });
         });
 

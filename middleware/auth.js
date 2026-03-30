@@ -22,6 +22,7 @@ async function requireLogin(req, res, next) {
     }
 
     if (!req.session || !req.session.userId) {
+        console.log('[DEBUG] Auth middleware: missing session or userId. Path:', req.path, 'Session:', req.session ? Object.keys(req.session) : 'null');
         return res.redirect('/login');
     }
 
@@ -132,6 +133,9 @@ async function requireLogin(req, res, next) {
                         ip:         req.ip,
                         details:    { reason: 'Concurrent login detected — session invalidated by newer login' }
                     }).catch(function () {});
+                    
+                    console.log('[DEBUG] Auth middleware: Concurrent login detected. DB token:', result.active_session_token, 'Session token:', req.session.sessionToken);
+
                     return req.session.destroy(function () {
                         res.redirect('/login?msg=session_invalid');
                     });

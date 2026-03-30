@@ -95,11 +95,19 @@
         document.getElementById('otpForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            var btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
             var errorEl = document.getElementById('errorMsg');
             errorEl.style.display = 'none';
 
             var code = document.getElementById('otpInput').value.trim();
-            if (!code) return;
+            if (!code) {
+                btn.disabled = false;
+                btn.textContent = 'Verify & Sign In';
+                return;
+            }
 
             try {
                 var result = await postJSON('/verify-otp', { code: code });
@@ -117,10 +125,14 @@
                     errorEl.style.display = 'block';
                     document.getElementById('otpInput').value = '';
                     document.getElementById('otpInput').focus();
+                    btn.disabled = false;
+                    btn.textContent = 'Verify & Sign In';
                 }
             } catch (err) {
                 errorEl.textContent = 'Connection error. Please try again.';
                 errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Verify & Sign In';
             }
         });
     </script>

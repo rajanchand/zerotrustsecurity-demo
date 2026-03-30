@@ -58,6 +58,10 @@
         document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            var btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
             var errorEl = document.getElementById('errorMsg');
             errorEl.style.display = 'none';
 
@@ -78,12 +82,16 @@
                     sessionStorage.setItem('vpnDetected', result.vpn     ? '1' : '0');
                     window.location.href = result.redirect;
                 } else {
-                    errorEl.textContent = result.message;
+                    errorEl.textContent = result.message || 'Login failed.';
                     errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
                 }
             } catch (err) {
-                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.textContent = 'A network error occurred. Please try again.';
                 errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
             }
         });
     </script>
