@@ -71,8 +71,11 @@
                 var result = await postJSON('/login', data);
 
                 if (result.success) {
-                    sessionStorage.setItem('riskScore', result.risk.score);
-                    sessionStorage.setItem('riskLevel', result.risk.level);
+                    sessionStorage.setItem('riskScore',   result.risk.score);
+                    sessionStorage.setItem('riskLevel',   result.risk.level);
+                    sessionStorage.setItem('riskFactors', JSON.stringify(result.risk.factors || []));
+                    sessionStorage.setItem('offHours',    result.offHours ? '1' : '0');
+                    sessionStorage.setItem('vpnDetected', result.vpn     ? '1' : '0');
                     window.location.href = result.redirect;
                 } else {
                     errorEl.textContent = result.message;

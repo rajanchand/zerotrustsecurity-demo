@@ -375,7 +375,8 @@ router.post('/login', loginLimiter, async function (req, res) {
         }
 
         // risk > 0 — require OTP before granting access
-        req.session.otpVerified = false;
+        req.session.otpVerified    = false;
+        req.session.offHoursLogin  = isUnusualHours;   // tell OTP page to show the warning
         await generateOTP(user.id);
 
         await logEvent(user.id, 'LOGIN_PASSWORD_OK', 'Password verified, OTP required. Risk: ' + risk.level + ' (' + risk.score + ')', ip);
@@ -386,16 +387,31 @@ router.post('/login', loginLimiter, async function (req, res) {
             ip:         ip,
             location:   country,
             risk_score: risk.score,
-            details:    { risk_level: risk.level, risk_factors: risk.factors, role: user.role }
+            details:    { risk_level: risk.level, risk_factors: risk.factors, role: user.role, vpn: vpn, off_hours: isUnusualHours }
         });
+
+        // if off-hours, log it as a separate event so monitoring shows it
+        if (isUnusualHours) {
+            await logSecurityEvent({
+                event_type: 'RISK_SCORE_CHANGED',
+                user_id:    user.id,
+                username:   user.username,
+                ip:         ip,
+                location:   country,
+                risk_score: risk.score,
+                details:    { reason: 'Off-hours login', time_utc: new Date().toUTCString(), role: user.role }
+            });
+        }
 
         // save session so the session token is committed before the OTP page loads
         return req.session.save(function (saveErr) {
             if (saveErr) console.error('Session save error (otp redirect):', saveErr);
             return res.json({
-                success:  true,
-                risk:     { score: risk.score, level: risk.level },
-                redirect: '/otp'
+                success:   true,
+                risk:      { score: risk.score, level: risk.level, factors: risk.factors },
+                offHours:  isUnusualHours,
+                vpn:       vpn,
+                redirect:  '/otp'
             });
         });
 
