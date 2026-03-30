@@ -7,7 +7,7 @@
     <title>User Log - ZTS Security</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        /* ── Page layout ──────────────────────── */
+        /* Page layout */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -18,22 +18,22 @@
         }
 
         .page-header h2 {
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
             color: #1e293b;
             margin: 0;
         }
 
         .page-header p {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #94a3b8;
-            margin: 2px 0 0;
+            margin: 3px 0 0;
         }
 
         .user-select-wrap {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .user-select-wrap label {
@@ -43,255 +43,247 @@
         }
 
         .user-select-wrap select {
-            padding: 7px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 0.84rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            font-size: 0.83rem;
             color: #1e293b;
             background: #fff;
             cursor: pointer;
         }
 
-        /* ── User header card ─────────────────── */
+        /* User header */
         .user-header {
             background: #fff;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            padding: 20px 24px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            padding: 18px 22px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 16px;
             flex-wrap: wrap;
+            margin-bottom: 14px;
         }
 
         .user-name-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 2px;
         }
 
         .user-name-row h3 {
-            font-size: 1.15rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: #1e293b;
             margin: 0;
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             flex-shrink: 0;
+            margin-top: 2px;
         }
 
-        .dot-online  { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
-        .dot-offline { background: #94a3b8; }
+        .dot-online  { background: #22c55e; }
+        .dot-offline { background: #d1d5db; }
 
         .user-email {
-            font-size: 0.82rem;
-            color: #64748b;
-            margin: 0 0 12px;
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin: 0 0 10px;
         }
 
         .kill-btn {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 6px 14px;
-            border-radius: 8px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            padding: 5px 12px;
+            border-radius: 6px;
             font-size: 0.78rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: border-color 0.15s;
         }
 
-        .kill-btn:hover { background: #fee2e2; }
+        .kill-btn:hover {
+            border-color: #9ca3af;
+        }
 
         .role-pill {
-            padding: 4px 14px;
+            padding: 3px 12px;
             border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            background: #1e293b;
-            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
             display: inline-block;
             margin-bottom: 4px;
         }
 
         .dept-label {
-            font-size: 0.78rem;
-            color: #94a3b8;
+            font-size: 0.75rem;
+            color: #9ca3af;
             text-align: right;
         }
 
-        /* ── Stat boxes ───────────────────────── */
+        /* Summary stat boxes */
         .stat-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
         }
 
         .stat-box {
             background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 16px 18px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 16px;
         }
 
-        .stat-box .s-label {
-            font-size: 0.72rem;
+        .s-label {
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #94a3b8;
-            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 5px;
         }
 
-        .stat-box .s-value {
-            font-size: 1.3rem;
+        .s-value {
+            font-size: 1.2rem;
             font-weight: 700;
             color: #1e293b;
         }
 
-        .s-value.danger { color: #dc2626; }
-        .s-value.warn   { color: #d97706; }
-        .s-value.ok     { color: #16a34a; }
-
-        /* ── Section cards ────────────────────── */
+        /* Section cards */
         .section-card {
             background: #fff;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
             overflow: hidden;
+            margin-bottom: 14px;
         }
 
         .section-title {
-            padding: 14px 20px;
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: #1e293b;
-            border-bottom: 1px solid #f1f5f9;
-            background: #fafbff;
+            padding: 12px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+            background: #fafafa;
         }
 
-        /* ── Session log table ────────────────── */
+        /* Tables */
         .tbl-wrap { overflow-x: auto; }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.83rem;
+            font-size: 0.82rem;
         }
 
         thead th {
             text-align: left;
-            padding: 10px 16px;
-            font-size: 0.72rem;
+            padding: 9px 16px;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #94a3b8;
-            border-bottom: 1px solid #f1f5f9;
+            color: #9ca3af;
+            border-bottom: 1px solid #f3f4f6;
+            background: #fafafa;
         }
 
         tbody td {
-            padding: 10px 16px;
-            color: #334155;
+            padding: 9px 16px;
+            color: #374151;
             vertical-align: top;
-            border-bottom: 1px solid #f8fafc;
+            border-bottom: 1px solid #f9fafb;
         }
 
         tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: #fafafa; }
 
-        tbody tr:hover td { background: #f8faff; }
+        .mono { font-family: 'SF Mono', Consolas, monospace; font-size: 0.76rem; }
 
-        .risk-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 700;
+        /* Risk score indicator — plain */
+        .risk-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
         }
 
-        .risk-low    { background: #dcfce7; color: #16a34a; }
-        .risk-med    { background: #fef3c7; color: #d97706; }
-        .risk-high   { background: #fee2e2; color: #dc2626; }
+        /* Trust column */
+        .trust-ok   { color: #16a34a; font-weight: 500; }
+        .trust-pend { color: #9ca3af; }
 
-        .mono        { font-family: 'SF Mono', Consolas, monospace; font-size: 0.78rem; }
-
-        /* ── Audit event rows ─────────────────── */
+        /* Audit log */
         .audit-row {
-            padding: 12px 20px;
-            border-bottom: 1px solid #f8fafc;
+            padding: 11px 18px;
+            border-bottom: 1px solid #f9fafb;
             display: grid;
-            grid-template-columns: 140px 180px 1fr;
+            grid-template-columns: 130px 170px 1fr;
             gap: 12px;
-            font-size: 0.83rem;
+            font-size: 0.82rem;
             align-items: start;
         }
 
         .audit-row:last-child { border-bottom: none; }
-        .audit-row:hover { background: #f8faff; }
+        .audit-row:hover { background: #fafafa; }
 
         .audit-time {
-            color: #94a3b8;
+            font-size: 0.76rem;
+            color: #9ca3af;
+            padding-top: 1px;
+        }
+
+        /* Plain action label — no colour */
+        .action-label {
             font-size: 0.78rem;
+            font-weight: 600;
+            color: #374151;
         }
 
-        .audit-action-badge {
-            display: inline-block;
-            padding: 3px 9px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-        }
-
-        /* action colour mapping */
-        .action-success  { background: #dcfce7; color: #15803d; }
-        .action-warning  { background: #fef3c7; color: #b45309; }
-        .action-danger   { background: #fee2e2; color: #dc2626; }
-        .action-info     { background: #dbeafe; color: #1d4ed8; }
-        .action-neutral  { background: #f1f5f9; color: #475569; }
-
-        /* ── Detail list (parsed JSON) ────────── */
+        /* Detail chips — neutral grey only */
         .detail-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 4px;
+            gap: 5px;
         }
 
-        .detail-chip {
-            background: #f1f5f9;
-            border-radius: 6px;
-            padding: 2px 8px;
-            font-size: 0.75rem;
-            color: #475569;
+        .chip {
+            background: #f3f4f6;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 0.74rem;
+            color: #4b5563;
         }
 
-        .detail-chip strong {
+        .chip strong {
             color: #1e293b;
             margin-right: 3px;
         }
 
         .detail-plain {
-            font-size: 0.82rem;
-            color: #64748b;
-            line-height: 1.5;
+            font-size: 0.8rem;
+            color: #6b7280;
         }
 
-        /* ── Empty / Loading states ───────────── */
+        /* States */
         .empty-state {
             text-align: center;
-            padding: 32px;
-            color: #94a3b8;
-            font-size: 0.85rem;
+            padding: 28px;
+            color: #9ca3af;
+            font-size: 0.83rem;
         }
 
         @media (max-width: 768px) {
-            .audit-row { grid-template-columns: 1fr; gap: 6px; }
+            .audit-row { grid-template-columns: 1fr; gap: 4px; }
             .page-header { flex-direction: column; align-items: flex-start; }
         }
     </style>
@@ -299,7 +291,7 @@
 
 <body>
     <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
@@ -307,32 +299,32 @@
 
     <div class="container">
 
-        <!-- Page Header -->
+        <!-- Header -->
         <div class="page-header">
             <div>
                 <h2>User Logs &amp; Telemetry</h2>
-                <p>Zero Trust Security · SuperAdmin telemetry view</p>
+                <p>Zero Trust Security &middot; SuperAdmin view</p>
             </div>
             <div class="user-select-wrap">
                 <label for="userSelect">Select user:</label>
                 <select id="userSelect" onchange="loadUserLogs(this.value)">
-                    <option value="">— Choose user —</option>
+                    <option value="">-- Choose user --</option>
                 </select>
             </div>
         </div>
 
-        <!-- States -->
-        <div id="noUserView" class="empty-state">Select a user above to view their telemetry.</div>
-        <div id="loadingView" class="empty-state" style="display:none;">Loading telemetry…</div>
+        <!-- Placeholder states -->
+        <div id="noUserView" class="empty-state">Select a user to view their telemetry data.</div>
+        <div id="loadingView" class="empty-state" style="display:none;">Loading...</div>
 
-        <!-- Main content (hidden until user selected) -->
+        <!-- Main content -->
         <div id="userDataView" style="display:none;">
 
             <!-- User header -->
-            <div class="user-header" style="margin-bottom:16px;">
+            <div class="user-header">
                 <div>
                     <div class="user-name-row">
-                        <div id="u_status_dot" class="status-dot dot-offline" title="Offline"></div>
+                        <div id="u_status_dot" class="status-dot dot-offline"></div>
                         <h3 id="u_username">—</h3>
                     </div>
                     <p class="user-email" id="u_email">—</p>
@@ -344,8 +336,8 @@
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="stat-row" style="margin-bottom:16px;">
+            <!-- Stats summary -->
+            <div class="stat-row">
                 <div class="stat-box">
                     <div class="s-label">Account Status</div>
                     <div class="s-value" id="u_acc_status">—</div>
@@ -359,7 +351,7 @@
                     <div class="s-value" id="u_risk_score">—</div>
                 </div>
                 <div class="stat-box">
-                    <div class="s-label">Registered Devices</div>
+                    <div class="s-label">Devices Registered</div>
                     <div class="s-value" id="u_device_count">—</div>
                 </div>
                 <div class="stat-box">
@@ -368,54 +360,56 @@
                 </div>
             </div>
 
-            <!-- Recent Login Sessions -->
-            <div class="section-card" style="margin-bottom:16px;">
+            <!-- Login sessions -->
+            <div class="section-card">
                 <div class="section-title">Recent Login Sessions</div>
                 <div class="tbl-wrap">
                     <table>
                         <thead>
                             <tr>
-                                <th>Date / Time</th>
+                                <th>Date &amp; Time</th>
                                 <th>IP Address</th>
                                 <th>Location</th>
-                                <th>Risk</th>
-                                <th>Device / Browser</th>
+                                <th>Risk Score</th>
+                                <th>Browser</th>
+                                <th>OS</th>
                                 <th>VPN</th>
                             </tr>
                         </thead>
                         <tbody id="sessionLogsList">
-                            <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+                            <tr><td colspan="7" class="empty-state">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Registered Devices -->
-            <div class="section-card" style="margin-bottom:16px;">
+            <!-- Registered devices -->
+            <div class="section-card">
                 <div class="section-title">Registered Devices</div>
                 <div class="tbl-wrap">
                     <table>
                         <thead>
                             <tr>
                                 <th>Fingerprint</th>
-                                <th>OS &amp; Browser</th>
-                                <th>IP</th>
+                                <th>Browser</th>
+                                <th>OS</th>
+                                <th>IP Address</th>
                                 <th>Trust</th>
                                 <th>Last Seen</th>
                             </tr>
                         </thead>
                         <tbody id="devicesList">
-                            <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+                            <tr><td colspan="6" class="empty-state">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Security Audit Log -->
+            <!-- Security audit log -->
             <div class="section-card">
                 <div class="section-title">Security Audit Log</div>
                 <div id="auditList">
-                    <div class="empty-state">Loading…</div>
+                    <div class="empty-state">Loading...</div>
                 </div>
             </div>
 
@@ -426,132 +420,113 @@
     <script src="/js/app.js"></script>
     <script>
 
-        // ── Helpers ────────────────────────────────────────
-
-        function riskClass(score) {
-            if (score >= 61) return 'risk-high';
-            if (score >= 31) return 'risk-med';
-            return 'risk-low';
+        // Escape HTML to prevent XSS
+        function esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
         }
 
-        function actionClass(action) {
-            if (!action) return 'action-neutral';
-            action = action.toUpperCase();
-            if (action.includes('SUCCESS') || action.includes('APPROVED') || action.includes('OK'))   return 'action-success';
-            if (action.includes('FAIL') || action.includes('BLOCK') || action.includes('LOCKED') || action.includes('REVOKE')) return 'action-danger';
-            if (action.includes('ANOMALY') || action.includes('WARN') || action.includes('RISK_SCORE') || action.includes('CHANGE')) return 'action-warning';
-            if (action.includes('OTP') || action.includes('SENT') || action.includes('DEVICE')) return 'action-info';
-            return 'action-neutral';
-        }
-
-        // Convert SCREAMING_SNAKE_CASE to human label
-        function prettyAction(action) {
+        // Convert action_name to human readable
+        function humanAction(action) {
             if (!action) return '—';
-            return action.replace(/_/g, ' ').toLowerCase().replace(/\b(\w)/g, function(c) { return c.toUpperCase(); });
+            return action
+                .toLowerCase()
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
         }
 
-        // Parse the detail field — could be JSON, plain text, or already parsed
+        // Parse audit detail — may be JSON string, object, or plain text
         function parseDetail(raw) {
-            if (!raw || raw === '') return null;
-
-            // Try to parse as JSON
-            var parsed = null;
-            try {
-                parsed = (typeof raw === 'string') ? JSON.parse(raw) : raw;
-            } catch (e) {
-                // plain string
-                return { _plain: raw };
-            }
-            return parsed;
+            if (!raw) return null;
+            if (typeof raw === 'object') return raw;
+            try { return JSON.parse(raw); } catch (e) { return { _text: raw }; }
         }
 
-        // Render parsed detail as readable chips
+        // Render audit detail as neutral chips
         function renderDetail(raw) {
             var d = parseDetail(raw);
-            if (!d) return '<span style="color:#94a3b8;">—</span>';
+            if (!d) return '<span style="color:#9ca3af;">—</span>';
 
-            // Plain text
-            if (d._plain) {
-                return '<span class="detail-plain">' + escHtml(d._plain) + '</span>';
+            if (d._text) {
+                return '<span class="detail-plain">' + esc(d._text) + '</span>';
             }
 
-            // JSON object — render key: value chips, with friendly labels
-            var labelMap = {
-                reason:         'Reason',
-                previous_ip:    'Previous IP',
-                new_ip:         'New IP',
-                risk_level:     'Risk Level',
-                role:           'Role',
-                department:     'Department',
-                country:        'Country',
-                vpn:            'VPN',
-                off_hours:      'Off-Hours',
-                time_utc:       'Time (UTC)',
-                level:          'Level',
-                user_id:        'User',
-                action:         'Action',
-                required_departments: 'Allowed Depts',
-                user_department:'User Dept',
-                path:           'Path',
-                new_role:       'New Role',
-                old_role:       'Old Role',
-                factors:        'Risk Factors',
+            // Friendly label map
+            var labels = {
+                reason: 'Reason', previous_ip: 'Previous IP', new_ip: 'New IP',
+                risk_level: 'Risk Level', role: 'Role', department: 'Department',
+                country: 'Country', vpn: 'VPN', off_hours: 'Off-Hours',
+                time_utc: 'Time (UTC)', level: 'Level', factors: 'Risk Factors',
+                path: 'Path', user_department: 'User Dept',
+                required_departments: 'Allowed Depts', new_role: 'New Role',
+                old_role: 'Old Role'
             };
 
             var chips = '';
-
             Object.keys(d).forEach(function(key) {
                 var val = d[key];
-                if (val === undefined || val === null) return;
+                if (val === null || val === undefined) return;
 
-                var label = labelMap[key] || key.replace(/_/g, ' ');
+                var label = labels[key] || key.replace(/_/g, ' ');
 
-                // Special rendering
                 if (key === 'factors' && Array.isArray(val)) {
                     val = val.map(function(f) {
                         return f.factor ? f.factor + ' (+' + f.points + ')' : JSON.stringify(f);
-                    }).join(' · ');
+                    }).join(', ');
                 } else if (typeof val === 'boolean') {
                     val = val ? 'Yes' : 'No';
                 } else if (typeof val === 'object') {
                     val = JSON.stringify(val);
                 }
 
-                chips += '<span class="detail-chip"><strong>' + escHtml(label) + ':</strong>' + escHtml(String(val)) + '</span>';
+                chips += '<span class="chip"><strong>' + esc(label) + ':</strong>' + esc(String(val)) + '</span>';
             });
 
-            return '<div class="detail-list">' + chips + '</div>';
+            return chips ? '<div class="detail-list">' + chips + '</div>' : '<span style="color:#9ca3af;">—</span>';
         }
 
-        function escHtml(str) {
-            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
-
-        // ── Init ───────────────────────────────────────────
+        // ── Initialise page ─────────────────────────────
 
         async function init() {
-            var s = await (await fetch('/api/session')).json();
-            if (!s.loggedIn) return location.href = '/login';
-            if (s.user.role !== 'SuperAdmin') return location.href = '/dashboard';
+            try {
+                var s = await (await fetch('/api/session')).json();
+                if (!s.loggedIn) { location.href = '/login'; return; }
+                if (s.user.role !== 'SuperAdmin') { location.href = '/dashboard'; return; }
 
-            buildNavbar(s.user.role, 'user-log', s.user.username);
+                buildNavbar(s.user.role, 'user-log', s.user.username);
 
-            var users = await (await fetch('/api/mapping/users')).json();
-            var select = document.getElementById('userSelect');
-            users.forEach(function(u) {
-                var opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = u.username + ' (' + u.role + ')';
-                select.appendChild(opt);
-            });
+                var users = await (await fetch('/api/mapping/users')).json();
+                var select = document.getElementById('userSelect');
+
+                if (!Array.isArray(users) || !users.length) {
+                    var opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = 'No users found';
+                    select.appendChild(opt);
+                    return;
+                }
+
+                users.forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.username + ' (' + u.role + ')';
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Init error:', err);
+            }
         }
 
-        // ── Load telemetry for selected user ───────────────
+        // ── Load selected user data ──────────────────────
 
         async function loadUserLogs(userId) {
             if (!userId) {
                 document.getElementById('userDataView').style.display = 'none';
-                document.getElementById('noUserView').style.display = 'block';
+                document.getElementById('noUserView').style.display  = 'block';
                 return;
             }
 
@@ -563,96 +538,92 @@
                 var res  = await fetch('/api/admin/users/' + userId + '/details');
                 var data = await res.json();
 
-                if (data.error) {
-                    showToast(data.error, 'error');
+                if (!res.ok || data.error) {
+                    showToast(data.error || 'Failed to load user data.', 'error');
                     document.getElementById('loadingView').style.display = 'none';
+                    document.getElementById('noUserView').style.display  = 'block';
                     return;
                 }
 
-                // ── Header ──────────────────────────────────
-                document.getElementById('u_username').textContent   = data.user.username;
-                document.getElementById('u_email').textContent      = data.user.email || 'No email on record';
-                document.getElementById('u_role').textContent       = data.user.role;
-                document.getElementById('u_department').textContent = data.user.department || 'General';
+                var u = data.user || {};
+
+                // Header
+                document.getElementById('u_username').textContent   = u.username  || '—';
+                document.getElementById('u_email').textContent      = u.email     || 'No email on record';
+                document.getElementById('u_role').textContent       = u.role      || '—';
+                document.getElementById('u_department').textContent = u.department || 'General';
 
                 var dot = document.getElementById('u_status_dot');
                 dot.className = 'status-dot ' + (data.isOnline ? 'dot-online' : 'dot-offline');
                 dot.title     = data.isOnline ? 'Online' : 'Offline';
 
-                // ── Stats ───────────────────────────────────
-                var status = (data.user.status || 'active').toUpperCase();
-                var statusEl = document.getElementById('u_acc_status');
-                statusEl.textContent = status;
-                statusEl.className   = 's-value ' + (status === 'ACTIVE' ? 'ok' : 'danger');
-
-                var fails = data.user.failed_attempts || 0;
-                var failEl = document.getElementById('u_failed_attempts');
-                failEl.textContent = fails;
-                failEl.className   = 's-value ' + (fails > 3 ? 'danger' : fails > 0 ? 'warn' : 'ok');
+                // Stats
+                document.getElementById('u_acc_status').textContent    = (u.status || 'active').toUpperCase();
+                document.getElementById('u_failed_attempts').textContent = u.failed_attempts || '0';
+                document.getElementById('u_device_count').textContent   = (data.devices || []).length;
+                document.getElementById('u_session_count').textContent  = (data.sessions || []).length;
 
                 var latestRisk = (data.sessions && data.sessions.length) ? (data.sessions[0].risk_score || 0) : 0;
-                var riskEl = document.getElementById('u_risk_score');
-                riskEl.textContent = latestRisk + ' / 100';
-                riskEl.className   = 's-value ' + (latestRisk > 60 ? 'danger' : latestRisk > 30 ? 'warn' : 'ok');
+                document.getElementById('u_risk_score').textContent = latestRisk + ' / 100';
 
-                document.getElementById('u_device_count').textContent  = data.devices.length;
-                document.getElementById('u_session_count').textContent = data.sessions.length;
-
-                // ── Sessions table ──────────────────────────
+                // Sessions table
+                var sessions = data.sessions || [];
                 var sessHtml = '';
-                if (!data.sessions.length) {
-                    sessHtml = '<tr><td colspan="6" class="empty-state">No session records found.</td></tr>';
+                if (!sessions.length) {
+                    sessHtml = '<tr><td colspan="7" class="empty-state">No sessions found.</td></tr>';
                 } else {
-                    data.sessions.forEach(function(s) {
-                        var rc = riskClass(s.risk_score || 0);
-                        var vpn = s.vpn ? '<span style="color:#dc2626; font-size:0.75rem;">VPN</span>' : '<span style="color:#94a3b8; font-size:0.75rem;">No</span>';
+                    sessions.forEach(function(s) {
+                        var vpn = s.vpn ? 'Yes' : 'No';
                         sessHtml +=
                             '<tr>' +
-                            '<td>' + formatDate(s.login_at) + '</td>' +
-                            '<td class="mono">' + escHtml(s.ip || '—') + '</td>' +
-                            '<td>' + escHtml(s.country || 'Unknown') + '</td>' +
-                            '<td><span class="risk-badge ' + rc + '">' + (s.risk_score || 0) + '</span></td>' +
-                            '<td style="font-size:0.78rem;">' + escHtml(s.browser || '—') + '<br><span style="color:#94a3b8;">' + escHtml(s.os || '—') + '</span></td>' +
-                            '<td>' + vpn + '</td>' +
+                            '<td>' + esc(formatDate(s.login_at)) + '</td>' +
+                            '<td class="mono">' + esc(s.ip || '—') + '</td>' +
+                            '<td>' + esc(s.country || 'Unknown') + '</td>' +
+                            '<td class="risk-label">' + esc(String(s.risk_score || 0)) + '</td>' +
+                            '<td>' + esc(s.browser || '—') + '</td>' +
+                            '<td>' + esc(s.os || '—') + '</td>' +
+                            '<td>' + esc(vpn) + '</td>' +
                             '</tr>';
                     });
                 }
                 document.getElementById('sessionLogsList').innerHTML = sessHtml;
 
-                // ── Devices table ───────────────────────────
+                // Devices table
+                var devices = data.devices || [];
                 var devHtml = '';
-                if (!data.devices.length) {
-                    devHtml = '<tr><td colspan="5" class="empty-state">No devices registered.</td></tr>';
+                if (!devices.length) {
+                    devHtml = '<tr><td colspan="6" class="empty-state">No devices registered.</td></tr>';
                 } else {
-                    data.devices.forEach(function(d) {
+                    devices.forEach(function(d) {
+                        var fp    = d.fingerprint ? d.fingerprint.substring(0, 20) + '...' : '—';
                         var trust = d.approved
-                            ? '<span class="risk-badge risk-low">Trusted</span>'
-                            : '<span class="risk-badge risk-high">Pending</span>';
+                            ? '<span class="trust-ok">Trusted</span>'
+                            : '<span class="trust-pend">Pending</span>';
                         devHtml +=
                             '<tr>' +
-                            '<td class="mono">' + escHtml((d.fingerprint || '').substring(0, 16)) + '…</td>' +
-                            '<td>' + escHtml(d.browser || '—') + ' · <span style="color:#94a3b8;">' + escHtml(d.os || '—') + '</span></td>' +
-                            '<td class="mono">' + escHtml(d.ip_address || '—') + '</td>' +
+                            '<td class="mono">' + esc(fp) + '</td>' +
+                            '<td>' + esc(d.browser || '—') + '</td>' +
+                            '<td>' + esc(d.os || '—') + '</td>' +
+                            '<td class="mono">' + esc(d.ip_address || '—') + '</td>' +
                             '<td>' + trust + '</td>' +
-                            '<td>' + formatDate(d.last_login) + '</td>' +
+                            '<td>' + esc(formatDate(d.last_login)) + '</td>' +
                             '</tr>';
                     });
                 }
                 document.getElementById('devicesList').innerHTML = devHtml;
 
-                // ── Audit log ───────────────────────────────
+                // Audit log
+                var audit = data.audit || [];
                 var audHtml = '';
-                if (!data.audit.length) {
+                if (!audit.length) {
                     audHtml = '<div class="empty-state">No audit events found.</div>';
                 } else {
-                    data.audit.forEach(function(a) {
-                        var ac  = actionClass(a.action);
-                        var det = renderDetail(a.detail);
+                    audit.forEach(function(a) {
                         audHtml +=
                             '<div class="audit-row">' +
-                            '<div class="audit-time">' + formatDate(a.created_at) + '</div>' +
-                            '<div><span class="audit-action-badge ' + ac + '">' + escHtml(prettyAction(a.action)) + '</span></div>' +
-                            '<div>' + det + '</div>' +
+                            '<div class="audit-time">' + esc(formatDate(a.created_at)) + '</div>' +
+                            '<div class="action-label">' + esc(humanAction(a.action)) + '</div>' +
+                            '<div>' + renderDetail(a.detail) + '</div>' +
                             '</div>';
                     });
                 }
@@ -661,27 +632,31 @@
                 document.getElementById('loadingView').style.display  = 'none';
                 document.getElementById('userDataView').style.display = 'block';
 
-            } catch (e) {
-                console.error(e);
-                showToast('Failed to load user data.', 'error');
-                document.getElementById('loadingView').style.display  = 'none';
-                document.getElementById('noUserView').style.display   = 'block';
+            } catch (err) {
+                console.error('Load error:', err);
+                showToast('An error occurred loading user data.', 'error');
+                document.getElementById('loadingView').style.display = 'none';
+                document.getElementById('noUserView').style.display  = 'block';
             }
         }
 
-        // ── Kill switch ────────────────────────────────────
+        // ── Session kill switch ──────────────────────────
 
         async function revokeUserSession() {
             var userId = document.getElementById('userSelect').value;
             if (!userId) return;
-            if (!confirm('Revoke ALL active sessions for this user? They will be disconnected immediately.')) return;
+            if (!confirm('This will immediately disconnect all active sessions for this user. Continue?')) return;
 
-            var result = await postJSON('/api/mapping/users/revoke-session', { userId: userId });
-            if (result.success) {
-                showToast('Kill Switch activated — sessions revoked.', 'success');
-                loadUserLogs(userId);
-            } else {
-                showToast(result.message || 'Action failed.', 'error');
+            try {
+                var result = await postJSON('/api/mapping/users/revoke-session', { userId: userId });
+                if (result.success) {
+                    showToast('Sessions revoked successfully.', 'success');
+                    loadUserLogs(userId);
+                } else {
+                    showToast(result.message || 'Action failed.', 'error');
+                }
+            } catch (err) {
+                showToast('Request failed. Please try again.', 'error');
             }
         }
 
