@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Center - Live Monitoring</title>
+    <title>Live Monitoring - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         /* Modernized Minimalist Security Dashboard */
@@ -232,7 +232,7 @@
 
         .event-row.expanded {
             background: #f1f5f9;
-            border-bottom:-color: transparent;
+            border-bottom-color: transparent;
         }
 
         .details-row {
@@ -398,13 +398,13 @@
         
         <div class="live-header">
             <div>
-                <h2>Security Center — Live Telemetry</h2>
-                <p>NIST SP 800-207 Adaptive Authentication Monitor</p>
+                <h2>Live Monitoring</h2>
+                <p>Real-time security events and alerts</p>
             </div>
             <div class="live-controls">
                 <div id="liveBadge" class="live-badge">
                     <div class="dot"></div>
-                    <span id="liveStatus">Connecting Stream...</span>
+                    <span id="liveStatus">Connecting...</span>
                 </div>
                 <button class="btn btn-outline btn-sm" id="pauseBtn" onclick="togglePause()">
                     <span id="pauseIcon">⏸</span> Pause
@@ -417,7 +417,7 @@
         <div class="stats-row">
             <div class="stat-card sc-blue">
                 <div class="stat-value" id="statTotal">—</div>
-                <div class="stat-label">Total Logs (24h)</div>
+                <div class="stat-label">Total Events</div>
             </div>
             <div class="stat-card sc-red">
                 <div class="stat-value" id="statCritical">—</div>
@@ -425,7 +425,7 @@
             </div>
             <div class="stat-card sc-orange">
                 <div class="stat-value" id="statHigh">—</div>
-                <div class="stat-label">High Risk Events</div>
+                <div class="stat-label">High Risk</div>
             </div>
             <div class="stat-card sc-red">
                 <div class="stat-value" id="statLoginFailed">—</div>
@@ -433,15 +433,15 @@
             </div>
             <div class="stat-card sc-purple">
                 <div class="stat-value" id="statBlocked">—</div>
-                <div class="stat-label">Threat Blocks</div>
+                <div class="stat-label">Blocks</div>
             </div>
             <div class="stat-card sc-orange">
                 <div class="stat-value" id="statVpn">—</div>
-                <div class="stat-label">VPN / Proxies</div>
+                <div class="stat-label">VPN Usage</div>
             </div>
             <div class="stat-card sc-green">
                 <div class="stat-value" id="statAvgRisk">—</div>
-                <div class="stat-label">System Risk Index</div>
+                <div class="stat-label">Avg Risk Score</div>
             </div>
         </div>
 
@@ -489,12 +489,12 @@
                     <thead>
                         <tr>
                             <th style="width: 40px;"></th>
-                            <th>Timestamp (UTC)</th>
-                            <th>Severity Analysis</th>
-                            <th>Operation</th>
-                            <th>Target Identity</th>
-                            <th>Network Source</th>
-                            <th>Trust Score</th>
+                            <th>Date & Time</th>
+                            <th>Severity</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Location & IP</th>
+                            <th>Risk Score</th>
                         </tr>
                     </thead>
                     <tbody id="eventBody">
@@ -663,21 +663,24 @@
             // Since we are appending multiple tbodys, we will append to the table directly.
             var table = document.querySelector('.event-table');
             
-            // Remove old dynamic tbodys
+            // Remove old dynamic tbodys (safely without arrow functions/NodeList forEach for max compatibility)
             var oldBodies = table.querySelectorAll('tbody:not(#eventBody)');
-            oldBodies.forEach(b => b.remove());
+            for (var i = 0; i < oldBodies.length; i++) {
+                var b = oldBodies[i];
+                b.parentNode.removeChild(b);
+            }
             container.innerHTML = ''; 
 
             if (shown.length === 0) {
-                container.innerHTML = '<tr><td colspan="7" class="empty-msg">No telemetry matches this threat query.</td></tr>';
+                container.innerHTML = '<tr><td colspan="7" class="empty-msg">No events match these filters.</td></tr>';
             } else {
                 container.style.display = 'none'; // hide the placeholder tbody
-                shown.forEach(function(e) {
-                    table.appendChild(createRowGroup(e, false));
-                });
+                for (var j = 0; j < shown.length; j++) {
+                    table.appendChild(createRowGroup(shown[j], false));
+                }
             }
 
-            document.getElementById('evtCount').textContent = shown.length + ' / ' + events.length + ' matched logs';
+            document.getElementById('evtCount').textContent = shown.length + ' / ' + events.length + ' events';
         }
 
         function addEvent(evt) {
