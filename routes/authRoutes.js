@@ -17,6 +17,7 @@ var { logEvent }                                          = require('../services
 var { logSecurityEvent }                                  = require('../services/monitorService');
 var { generateCSRFToken }                                 = require('../middleware/csrf');
 var { loginLimiter, otpLimiter }                          = require('../middleware/rateLimiter');
+var metrics                                               = require('../services/metricservice');
 
 var router = express.Router();
 
@@ -125,6 +126,7 @@ router.post('/login', loginLimiter, async function (req, res) {
             }).eq('id', user.id);
 
             await logEvent(user.id, 'LOGIN_FAILED', 'Wrong password (attempt ' + newAttempts + ')', req.ip);
+            metrics.loginTotal.inc({ result: 'failed' });
             await logSecurityEvent({
                 event_type: 'LOGIN_FAILED',
                 user_id:    user.id,
@@ -307,6 +309,7 @@ router.post('/login', loginLimiter, async function (req, res) {
                 risk_score: risk.score,
                 details:    { role: user.role, risk_level: risk.level }
             });
+            metrics.vpnDetected.inc();
         }
 
         // reset failed-login counter on success
@@ -363,6 +366,8 @@ router.post('/login', loginLimiter, async function (req, res) {
             var csrfToken = generateCSRFToken(req);
 
             await logEvent(user.id, 'LOGIN_SUCCESS', 'Logged in (Adaptive MFA: OTP bypassed). Risk: Low (0)', ip);
+            metrics.loginTotal.inc({ result: 'success' });
+            metrics.riskScore.set({ username: user.username }, 0);
             await logSecurityEvent({
                 event_type: 'LOGIN_SUCCESS',
                 user_id:    user.id,
@@ -391,6 +396,7 @@ router.post('/login', loginLimiter, async function (req, res) {
         req.session.otpVerified    = false;
         req.session.offHoursLogin  = isUnusualHours;   // tell OTP page to show the warning
         await generateOTP(user.id);
+        metrics.otpSent.inc();
 
         await logEvent(user.id, 'LOGIN_PASSWORD_OK', 'Password verified, OTP required. Risk: ' + risk.level + ' (' + risk.score + ')', ip);
         await logSecurityEvent({
@@ -488,6 +494,8 @@ router.post('/verify-otp', otpLimiter, async function (req, res) {
         var csrfToken = generateCSRFToken(req);
 
         await logEvent(userId, 'LOGIN_SUCCESS', 'Logged in. Risk: ' + riskLevel + ' (' + riskScore + ')', req.ip);
+        metrics.loginTotal.inc({ result: 'success' });
+        metrics.riskScore.set({ username: req.session.username || 'unknown' }, riskScore || 0);
         await logSecurityEvent({
             event_type: 'LOGIN_SUCCESS',
             user_id:    userId,
