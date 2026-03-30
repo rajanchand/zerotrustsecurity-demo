@@ -84,6 +84,20 @@ const { requireRole } = require('./middleware/rbac');
 const { flagHighRisk } = require('./middleware/riskCheck');
 const { handleReAuth } = require('./middleware/stepUpAuth');
 
+// ── Prometheus metrics endpoint ──
+// Registered BEFORE requireLogin — Prometheus scrapes with no session.
+// Blocked to external IPs in production (localhost only).
+const { register } = require('./services/metricservice');
+app.get('/metrics', async function (req, res) {
+    var clientIP = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+    var isLocal  = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1' || clientIP === '';
+    if (!isLocal && process.env.NODE_ENV === 'production') {
+        return res.status(403).send('Forbidden');
+    }
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+});
+
 // ── Global middleware chain ──
 app.use(requireLogin);   // must be logged in
 app.use(flagHighRisk);   // continuous behavioural risk check
@@ -94,21 +108,6 @@ app.use(verifyHMAC);     // HMAC request integrity check
 app.get('/api/csrf-token', function (req, res) {
     var token = generateCSRFToken(req);
     res.json({ csrfToken: token });
-});
-
-// ── Prometheus metrics endpoint ──
-// Must be placed BEFORE requireLogin so Prometheus can scrape without a session.
-// Only accessible from localhost (Prometheus runs on the same server).
-const { register } = require('./services/metricservice');
-app.get('/metrics', async function (req, res) {
-    // Block external access — only allow localhost/loopback
-    var clientIP = req.headers['x-forwarded-for'] || req.ip || '';
-    var isLocal = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1';
-    if (isLocal === false && process.env.NODE_ENV === 'production') {
-        return res.status(403).send('Forbidden');
-    }
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
 });
 
 // Step-up re-authentication endpoint
