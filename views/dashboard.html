@@ -296,40 +296,35 @@
             <!-- filled by JS -->
         </div>
 
-        <!-- Main Content -->
-        <div class="dashboard-grid">
+        <!-- Main Content: Quick Actions + Users by Role (equal columns, no gap) -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
             <!-- Quick Actions -->
-            <div>
-                <div class="card">
-                    <h3>Quick Actions</h3>
-                    <div class="actions-grid">
-                        <a href="/mapping" class="action-btn">User Management</a>
-                        <a href="/admin/live-monitoring" class="action-btn">Live Monitor</a>
-                        <a href="/register-device" class="action-btn">Device Registry</a>
-                        <a href="/network" class="action-btn">IP Rules</a>
-                        <a href="/risk" class="action-btn">Risk Score</a>
-                        <a href="/profile" class="action-btn">My Profile</a>
-                    </div>
+            <div class="card" style="margin-bottom:0;">
+                <h3>Quick Actions</h3>
+                <div class="actions-grid">
+                    <a href="/mapping" class="action-btn">User Management</a>
+                    <a href="/admin/live-monitoring" class="action-btn">Live Monitor</a>
+                    <a href="/register-device" class="action-btn">Device Registry</a>
+                    <a href="/network" class="action-btn">IP Rules</a>
+                    <a href="/risk" class="action-btn">Risk Score</a>
+                    <a href="/profile" class="action-btn">My Profile</a>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div>
-                <!-- Role Breakdown -->
-                <div class="card">
-                    <h3>Users by Role</h3>
-                    <div id="roleBreakdown">
-                        <p style="color:#aaa; font-size:0.82rem;">Loading...</p>
-                    </div>
+            <!-- Users by Role -->
+            <div class="card" style="margin-bottom:0;">
+                <h3>Users by Role</h3>
+                <div id="roleBreakdown">
+                    <p style="color:#aaa; font-size:0.82rem;">Loading...</p>
                 </div>
+            </div>
+        </div>
 
-                <!-- Session Info -->
-                <div class="card">
-                    <h3>Your Session</h3>
-                    <div id="sessionInfo" style="font-size:0.83rem; line-height:1.9;">
-                        <p style="color:#aaa;">Loading...</p>
-                    </div>
-                </div>
+        <!-- Your Session — full width horizontal card -->
+        <div class="card" style="margin-bottom:12px;">
+            <h3 style="margin-bottom:12px;">Your Session</h3>
+            <div id="sessionInfo" style="font-size:0.83rem;">
+                <p style="color:#aaa;">Loading...</p>
             </div>
         </div>
 
@@ -460,21 +455,31 @@
                 var ctx = d.security.loginContext;
                 var roleAccess = {
                     'SuperAdmin':      'You have full access to all pages, users, devices, and security controls.',
-                    'HR':              'You can access the HR portal — manage users, approvals, and HR records.',
+                    'HR':              'You can access the HR portal \u2014 manage users, approvals, and HR records.',
                     'IT':              'You can access IT infrastructure, device registry, and network rules.',
                     'Finance':         'You can view the Finance portal and your personal risk profile.',
                     'CustomerSupport': 'You can view the dashboard and your personal risk profile.'
                 };
                 var accessMsg = roleAccess[d.user.role] || 'Access is restricted to your assigned department.';
 
+                // Horizontal layout: fields in a flex row
+                function sessionField(label, value, mono) {
+                    return '<div style="flex:1; min-width:140px;">' +
+                        '<div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:#94a3b8; margin-bottom:2px;">' + label + '</div>' +
+                        '<div style="font-size:0.85rem; font-weight:600; color:#1e293b;' + (mono ? 'font-family:monospace;' : '') + '">' + value + '</div>' +
+                        '</div>';
+                }
+
                 document.getElementById('sessionInfo').innerHTML =
-                    '<div><strong>Role:</strong> ' + d.user.role + '</div>' +
-                    '<div><strong>Department:</strong> ' + (d.user.department || '—') + '</div>' +
-                    '<div><strong>Login IP:</strong> <span style="font-family:monospace;font-size:0.8rem;">' + (ctx.ip || 'Unknown') + '</span></div>' +
-                    '<div><strong>Location:</strong> ' + (ctx.country || '—') + '</div>' +
-                    '<div><strong>Device:</strong> ' + (ctx.isNewDevice ? 'New (unrecognised)' : 'Known') + '</div>' +
-                    '<div><strong>Sessions:</strong> ' + d.security.sessionCount + '</div>' +
-                    '<div style="margin-top:10px; padding:8px 10px; background:#f8fafc; border-left:3px solid #cbd5e1; border-radius:4px; font-size:0.78rem; color:#475569; line-height:1.5;">' + accessMsg + '</div>';
+                    '<div style="display:flex; flex-wrap:wrap; gap:16px 24px; align-items:flex-start;">' +
+                        sessionField('Role',       d.user.role) +
+                        sessionField('Department', d.user.department || '\u2014') +
+                        sessionField('Login IP',   ctx.ip || 'Unknown', true) +
+                        sessionField('Location',   ctx.country || '\u2014') +
+                        sessionField('Device',     ctx.isNewDevice ? 'New (unrecognised)' : 'Known') +
+                        sessionField('Sessions',   d.security.sessionCount) +
+                    '</div>' +
+                    '<div style="margin-top:12px; padding:8px 12px; background:#f8fafc; border-left:3px solid #cbd5e1; border-radius:4px; font-size:0.79rem; color:#475569; line-height:1.5;">' + accessMsg + '</div>';
 
                 // load admin stats (SuperAdmin only)
                 if (d.user.role === 'SuperAdmin') {
