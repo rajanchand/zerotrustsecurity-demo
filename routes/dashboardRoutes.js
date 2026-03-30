@@ -81,7 +81,7 @@ router.get('/api/dashboard-data', async (req, res) => {
 
         const { data: lastSession } = await supabase
             .from('sessions_log')
-            .select('country, device_fingerprint')
+            .select('country, device_fingerprint, ip')
             .eq('user_id', req.session.userId)
             .order('login_at', { ascending: false })
             .limit(1)
