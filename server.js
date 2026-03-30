@@ -31,6 +31,8 @@ app.use(helmet({
 //    allow plain HTTP requests to reach the app directly on port 3000.
 if (isProduction) {
     app.use(function (req, res, next) {
+        // Allow /metrics over plain HTTP — Prometheus scrapes from localhost
+        if (req.path === '/metrics') return next();
         if (req.headers['x-forwarded-proto'] !== 'https') {
             return res.redirect('https://' + req.headers.host + req.url);
         }
