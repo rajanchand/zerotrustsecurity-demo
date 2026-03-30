@@ -91,13 +91,13 @@ router.get('/api/admin/users/:userId/details', async function (req, res) {
             .order('login_at', { ascending: false })
             .limit(20);
 
-        // 4. Audit events
+        // 4. Audit events (fetch more to include VPN detection events)
         var { data: audit } = await require('../db').supabase
             .from('audit_log')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(50);
 
         // Compute online status
         var isOnline = false;

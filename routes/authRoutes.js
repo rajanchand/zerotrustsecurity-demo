@@ -285,14 +285,16 @@ router.post('/login', loginLimiter, async function (req, res) {
 
         // ── RISK SCORE CALCULATION ──
         var risk = await calculateRisk({
-            userId:            user.id,
-            isNewDevice:       deviceResult.isNew,
-            isNewCountry:      isNewCountry,
-            failedAttempts:    user.failed_attempts || 0,
-            isVPN:             vpn,
-            isAdminUnknownIP:  false,
-            role:              user.role,
-            isUnusualHours:    isUnusualHours
+            userId:           user.id,
+            username:         user.username,
+            ip:               ip,
+            isNewDevice:      deviceResult.isNew,
+            isNewCountry:     isNewCountry,
+            failedAttempts:   user.failed_attempts || 0,
+            isVPN:            vpn,
+            isAdminUnknownIP: false,
+            role:             user.role,
+            isUnusualHours:   isUnusualHours
         });
 
         if (vpn) {
@@ -334,17 +336,25 @@ router.post('/login', loginLimiter, async function (req, res) {
         req.session.deviceFingerprint = fingerprint;
         req.session.sessionToken    = sessionToken;
 
-        // log the session to sessions_log
-        await supabase.from('sessions_log').insert({
-            user_id:           user.id,
-            ip:                ip,
-            user_agent:        req.headers['user-agent'],
-            browser:           browserInfo.name  || 'Unknown',
-            os:                osInfo.name        || 'Unknown',
+        // log the session to sessions_log (vpn field added if column exists)
+        var sessionRecord = {
+            user_id:            user.id,
+            ip:                 ip,
+            user_agent:         req.headers['user-agent'],
+            browser:            browserInfo.name  || 'Unknown',
+            os:                 osInfo.name        || 'Unknown',
             device_fingerprint: fingerprint,
-            country:           country,
-            risk_score:        risk.score
-        });
+            country:            country,
+            risk_score:         risk.score,
+            vpn:                vpn ? true : false
+        };
+
+        var sessionInsert = await supabase.from('sessions_log').insert(sessionRecord);
+        if (sessionInsert.error && sessionInsert.error.code === '42703') {
+            // vpn column doesn't exist yet — insert without it
+            delete sessionRecord.vpn;
+            await supabase.from('sessions_log').insert(sessionRecord);
+        }
 
         // ── ADAPTIVE MFA (risk-based) ──
         if (risk.score === 0) {

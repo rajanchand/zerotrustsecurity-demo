@@ -568,12 +568,32 @@
 
                 // Sessions table
                 var sessions = data.sessions || [];
+                var audit    = data.audit    || [];
+
+                // Build a set of login times where VPN was detected
+                // (derived from audit log since sessions_log.vpn column may not exist yet)
+                var vpnTimes = {};
+                audit.forEach(function(a) {
+                    if (a.action === 'VPN_DETECTED') {
+                        // mark the minute of this event as a VPN session
+                        vpnTimes[a.created_at ? a.created_at.substring(0, 16) : ''] = true;
+                    }
+                });
+
+                function wasVPN(session) {
+                    // check the vpn field if it exists in DB
+                    if (session.vpn === true) return true;
+                    // otherwise check audit log for concurrent VPN event
+                    var loginMinute = session.login_at ? session.login_at.substring(0, 16) : '';
+                    return !!vpnTimes[loginMinute];
+                }
+
                 var sessHtml = '';
                 if (!sessions.length) {
                     sessHtml = '<tr><td colspan="7" class="empty-state">No sessions found.</td></tr>';
                 } else {
                     sessions.forEach(function(s) {
-                        var vpn = s.vpn ? 'Yes' : 'No';
+                        var vpn = wasVPN(s) ? 'Yes' : 'No';
                         sessHtml +=
                             '<tr>' +
                             '<td>' + esc(formatDate(s.login_at)) + '</td>' +

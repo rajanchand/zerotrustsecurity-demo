@@ -26,6 +26,10 @@ async function sendOTPEmail(toEmail, username, otpCode) {
         return { sent: false, reason: 'No Resend API key configured' };
     }
 
+    // Resend free tier only allows sending to the verified account email.
+    // If RESEND_TO_OVERRIDE is set, route all emails there (demo mode).
+    var deliverTo = process.env.RESEND_TO_OVERRIDE || toEmail;
+
     var html = [
         '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">',
         '  <h2 style="color:#0984e3;margin-bottom:4px;">ZTS Zero Trust Security</h2>',
@@ -46,20 +50,20 @@ async function sendOTPEmail(toEmail, username, otpCode) {
     try {
         var { data, error } = await resend.emails.send({
             from:    FROM_ADDRESS,
-            to:      [toEmail],
-            subject: 'Your ZTS Login Code: ' + otpCode,
+            to:      [deliverTo],
+            subject: 'Your ZTS Login Code (' + username + '): ' + otpCode,
             html:    html
         });
 
         if (error) {
-            console.error('  [email] Resend error sending OTP to ' + toEmail + ':', error.message);
+            console.error('  [email] Resend error sending OTP to ' + deliverTo + ':', error.message);
             return { sent: false, reason: error.message };
         }
 
-        console.log('  [email] OTP sent to ' + toEmail + ' (id: ' + (data && data.id) + ')');
+        console.log('  [email] OTP sent to ' + deliverTo + ' for user ' + username + ' (id: ' + (data && data.id) + ')');
         return { sent: true };
     } catch (err) {
-        console.error('  [email] Failed to send OTP to ' + toEmail + ':', err.message);
+        console.error('  [email] Failed to send OTP to ' + deliverTo + ':', err.message);
         return { sent: false, reason: err.message };
     }
 }
