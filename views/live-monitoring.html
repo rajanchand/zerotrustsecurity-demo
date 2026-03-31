@@ -255,14 +255,17 @@
                 <td>
                     <div class="usr-tag">
                         <div class="icon">${(evt.username || 'S')[0].toUpperCase()}</div>
-                        <span>${evt.username || 'System'}</span>
+                        <div style="display:flex; flex-direction:column;">
+                            <span>${evt.username || 'System'}</span>
+                            ${evt.details && evt.details.role ? `<span style="font-size:0.55rem; color:var(--text-soc-muted); font-weight:800; letter-spacing:0.05em; text-transform:uppercase; margin-top:2px;">${evt.details.role}</span>` : ''}
+                        </div>
                     </div>
                 </td>
                 <td>
                     <div class="meta-cell">
                         ${evt.ip || '0.0.0.0'}
                         <div style="font-size:0.65rem; color:var(--accent-soc); font-weight:700; margin-top:2px;">
-                            ${evt.location || 'Sentinel Node'}
+                            ${evt.location || 'Local Network / Unknown'}
                             ${isVPN ? ' &middot; <span style="color:var(--danger-soc)">VPN</span>' : ''}
                         </div>
                     </div>
