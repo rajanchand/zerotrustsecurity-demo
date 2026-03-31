@@ -169,6 +169,9 @@ async function postJSON(url, data) {
         // Handle Forbidden / Session Expired
         if (response.status === 403) {
             var err = await response.json().catch(() => ({ message: 'Access Denied' }));
+            if (err.requireReAuth) {
+                return { requireReAuth: true, success: false, message: err.message };
+            }
             return { success: false, message: err.message || 'Forbidden' };
         }
 
