@@ -32,9 +32,9 @@ router.get('/login', function (req, res) {
 });
 
 // ────────────────────────────────────────────────────────────────
-// POST /login  — authenticate user (rate-limited)
+// POST /api/login  — authenticate user (rate-limited)
 // ────────────────────────────────────────────────────────────────
-router.post('/login', loginLimiter, async function (req, res) {
+router.post('/api/login', loginLimiter, async function (req, res) {
     try {
         var username    = (req.body.username || '').trim();
         var password    = req.body.password  || '';
@@ -290,6 +290,8 @@ router.post('/login', loginLimiter, async function (req, res) {
             userId:           user.id,
             username:         user.username,
             ip:               ip,
+            country:          country,
+            location:         country,
             isNewDevice:      deviceResult.isNew,
             isNewCountry:     isNewCountry,
             failedAttempts:   user.failed_attempts || 0,
@@ -339,6 +341,8 @@ router.post('/login', loginLimiter, async function (req, res) {
         req.session.lastActive      = Date.now();
         req.session.deviceFingerprint = fingerprint;
         req.session.sessionToken    = sessionToken;
+        req.session.vpn             = vpn;
+        req.session.isUnusualHours  = isUnusualHours;
 
         // log the session to sessions_log (vpn field added if column exists)
         var sessionRecord = {
@@ -450,9 +454,9 @@ router.get('/otp', function (req, res) {
 });
 
 // ────────────────────────────────────────────────────────────────
-// POST /verify-otp  — check the one-time password (rate-limited)
+// POST /api/verify-otp  — check the one-time password (rate-limited)
 // ────────────────────────────────────────────────────────────────
-router.post('/verify-otp', otpLimiter, async function (req, res) {
+router.post('/api/verify-otp', otpLimiter, async function (req, res) {
     try {
         var code = (req.body.code || '').trim();
 
@@ -520,11 +524,8 @@ router.post('/verify-otp', otpLimiter, async function (req, res) {
             console.error('Failed to send login alert email:', err);
         });
 
-        console.log('[DEBUG] OTP Verified successfully. Session state before save:', Object.keys(req.session), req.session.userId);
-        
         req.session.save(function (err) {
             if (err) console.error('Session save error (otp verify):', err);
-            console.log('[DEBUG] OTP Verification Session saved.');
             return res.json({ success: true, redirect: '/dashboard', csrfToken: csrfToken });
         });
 
@@ -545,14 +546,24 @@ router.get('/api/session', function (req, res) {
         loggedIn: true,
         user: {
             id:         req.session.userId,
+            userId:     req.session.userId,
             username:   req.session.username,
+            email:      req.session.email || '',
             role:       req.session.role,
-            department: req.session.department
+            department: req.session.department,
+            riskScore:  req.session.riskScore  || 0,
+            riskLevel:  req.session.riskLevel  || 'Low'
         },
         risk: {
-            score: req.session.riskScore,
-            level: req.session.riskLevel
+            score:   req.session.riskScore  || 0,
+            level:   req.session.riskLevel  || 'Low',
+            factors: req.session.riskFactors || []
         },
+        offHoursLogin:  !!req.session.offHoursLogin,
+        vpn:            !!req.session.vpn,
+        loginIP:        req.session.loginIP      || '',
+        loginCountry:   req.session.loginCountry || '',
+        isUnusualHours: !!req.session.isUnusualHours,
         security: {
             sessionToken:    req.session.sessionToken ? 'active' : 'none',
             deviceBound:     !!req.session.deviceFingerprint,
@@ -568,8 +579,33 @@ router.get('/logout', async function (req, res) {
     try {
         if (req.session && req.session.userId) {
             var userId = req.session.userId;
+            var ip     = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
+            
+            // 1. Clear session token in DB
             try { await supabase.from('users').update({ active_session_token: null }).eq('id', userId); } catch (e) {}
-            try { await logEvent(userId, 'LOGOUT', 'User logged out', req.ip); } catch (e) {}
+            
+            // 2. Audit logout event
+            try { await logEvent(userId, 'LOGOUT', 'User logged out', ip); } catch (e) {}
+            
+            // 3. Update sessions_log with logout_at
+            try {
+                // Find the most recent active session for this user to mark as ended
+                var { data: lastSession } = await supabase
+                    .from('sessions_log')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .order('login_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (lastSession) {
+                    await supabase.from('sessions_log')
+                        .update({ logout_at: new Date().toISOString() })
+                        .eq('id', lastSession.id);
+                }
+            } catch (e) {
+                // logout_at column might not exist yet
+            }
         }
 
         res.clearCookie('connect.sid');

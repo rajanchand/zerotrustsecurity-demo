@@ -71,7 +71,23 @@
 
         <div id="offHoursAlert" class="risk-warning">
             <i class="fas fa-clock"></i>
-            <span>Policy Alert: Identity challenge triggered by Off-Hours access request.</span>
+            <span>Policy Alert: Identity challenge triggered by Off-Hours access request. Your risk score will be elevated.</span>
+        </div>
+
+        <div id="vpnAlert" class="risk-warning" style="display:none; background:#fef2f2; border-color:#fee2e2; color:#991b1b;">
+            <i class="fas fa-shield-alt"></i>
+            <span>VPN Connection Detected: Your connection is routed through a virtual tunnel. This elevates your risk profile.</span>
+        </div>
+
+        <div id="riskContextBox" style="display:none; margin-top:16px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left; font-size:0.8rem;">
+            <div style="font-weight:800; font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.05em; margin-bottom:10px;">
+                <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> Why verification is required
+            </div>
+            <div id="riskFactorsList"></div>
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
+                <span>IP: <strong id="ctxIP" style="color:#0f172a;">—</strong></span>
+                <span>Location: <strong id="ctxCountry" style="color:#0f172a;">—</strong></span>
+            </div>
         </div>
 
         <div id="errorArea"></div>
@@ -88,13 +104,40 @@
         </p>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         async function checkRisk() {
             const res = await fetch('/api/session');
             const s = await res.json();
-            if (s.offHoursLogin) {
+
+            // Off-hours warning
+            if (s.offHoursLogin || s.isUnusualHours) {
                 document.getElementById('offHoursAlert').style.display = 'flex';
+            }
+
+            // VPN warning
+            if (s.vpn) {
+                document.getElementById('vpnAlert').style.display = 'flex';
+            }
+
+            // Show IP & Country context
+            if (s.loginIP || s.loginCountry) {
+                document.getElementById('ctxIP').textContent = s.loginIP || '—';
+                document.getElementById('ctxCountry').textContent = s.loginCountry || '—';
+            }
+
+            // Show risk factors
+            const factors = s.risk && s.risk.factors ? s.risk.factors : [];
+            if (factors.length > 0) {
+                const box = document.getElementById('riskContextBox');
+                box.style.display = 'block';
+                const list = document.getElementById('riskFactorsList');
+                list.innerHTML = factors.map(f =>
+                    `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-weight:600; color:#334155;"><i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:6px; font-size:0.7rem;"></i>${f.factor}</span>
+                        <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:#ef4444; background:#fee2e2; padding:2px 8px; border-radius:4px; font-size:0.7rem;">+${f.points} PTS</span>
+                    </div>`
+                ).join('');
             }
         }
         checkRisk();
@@ -117,12 +160,26 @@
         });
 
         let timeLeft = 300;
-        setInterval(() => {
+        var timerInterval = setInterval(function() {
             if (timeLeft > 0) {
                 timeLeft--;
-                const m = Math.floor(timeLeft / 60);
-                const s = timeLeft % 60;
-                document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                var m = Math.floor(timeLeft / 60);
+                var sec = timeLeft % 60;
+                document.getElementById('timer').textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
+                if (timeLeft <= 30) {
+                    document.getElementById('timer').style.color = '#ef4444';
+                    document.getElementById('timer').style.fontWeight = '700';
+                }
+            } else {
+                clearInterval(timerInterval);
+                document.getElementById('timer').textContent = 'EXPIRED';
+                document.getElementById('timer').style.color = '#ef4444';
+                document.querySelector('.verify-btn').disabled = true;
+                document.querySelector('.verify-btn').style.opacity = '0.5';
+                document.querySelector('.verify-btn').style.cursor = 'not-allowed';
+                var err = document.getElementById('errorArea');
+                err.textContent = 'Verification code has expired. Please log in again to receive a new code.';
+                err.style.display = 'block';
             }
         }, 1000);
     </script>
