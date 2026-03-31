@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Identity Governance & Mapping - ZTS</title>
@@ -261,6 +262,7 @@
                             }
                             <button class="tool-btn" title="Emergency Pass Reset" onclick="showResetModal(${u.id}, '${u.username}')"><i class="fas fa-key"></i></button>
                             <button class="tool-btn" title="Change Role / Org Unit" onclick="showUpdateModal(${u.id}, '${u.username}', '${u.role}', '${u.department}')" style="color:var(--zts-primary)"><i class="fas fa-id-badge"></i></button>
+                            ${currentUserRole === 'SuperAdmin' ? `<button class="tool-btn" title="Access Permissions" onclick="location.href='/admin/user-access'" style="color:var(--primary)"><i class="fas fa-shield-key"></i></button>` : ''}
                             <button class="tool-btn danger" title="Instant Session Kill" onclick="revokeSessions(${u.id})"><i class="fas fa-bolt"></i></button>
                             <button class="tool-btn danger" title="Purge Identity" onclick="deleteUser(${u.id}, '${u.username}')"><i class="fas fa-trash-alt"></i></button>
                         </div>

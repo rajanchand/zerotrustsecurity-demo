@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Analytics & Threat Intel - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #3730a3;
@@ -91,6 +93,13 @@
                 <div id="factorsList">
                     <p style="text-align: center; color: var(--text-soft); padding: 40px;">Initializing Risk Factor Analysis...</p>
                 </div>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <div class="card-top">AI Identity Pulse: 7-Day Risk Velocity Trend</div>
+            <div style="padding: 24px; height: 300px; position:relative;">
+                <canvas id="riskChart"></canvas>
             </div>
         </div>
 
@@ -199,10 +208,57 @@
                     `;
                     tb.appendChild(tr);
                 });
+                renderRiskChart(d.history);
             } else {
                 tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No historical telemetry found.</td></tr>';
             }
         }
+        function renderRiskChart(history) {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            const data = [...history].reverse(); // Oldest first for chart
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(r => formatDate(r.created_at)),
+                    datasets: [{
+                        label: 'Risk Score Index',
+                        data: data.map(r => r.score),
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#4f46e5'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            grid: { color: 'rgba(0,0,0,0.05)' } 
+                        },
+                        x: { 
+                            display: false 
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatDate(str) {
+            try {
+                const d = new Date(str);
+                return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+            } catch(e) { return str; }
+        }
+
         init();
     </script>
 </body>

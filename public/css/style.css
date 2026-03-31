@@ -1,10 +1,8 @@
-/* ======================== */
-/* DESIGN TOKENS            */
-/* ======================== */
 :root {
   --zts-primary: #3730a3;
   --zts-primary-light: #4f46e5;
   --zts-bg: #f8fafc;
+  --zts-panel: #ffffff;
   --zts-text: #0f172a;
   --zts-text-soft: #64748b;
   --zts-border: #e2e8f0;
@@ -29,12 +27,13 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Navigation Bar */
 .navbar {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--zts-panel);
+  border-bottom: 1px solid var(--zts-border);
   padding: 0 24px;
   height: 60px;
   display: flex;
@@ -48,7 +47,7 @@ body {
 .navbar-brand {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--zts-text);
   white-space: nowrap;
   margin-right: 32px;
   text-decoration: none;
@@ -89,8 +88,8 @@ body {
 }
 
 .nav-link:hover {
-  background: #f0f4f8;
-  color: #1e293b;
+  background: var(--zts-bg);
+  color: var(--zts-text);
 }
 
 .nav-link.active,

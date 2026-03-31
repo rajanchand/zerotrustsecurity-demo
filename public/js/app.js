@@ -265,6 +265,7 @@ function buildNavbar(role, activePage, username) {
     if (userMenu) {
         var initial = username ? username.charAt(0).toUpperCase() : '?';
         var userHtml = '';
+
         userHtml += '<button class="user-menu-btn" onclick="toggleUserMenu(this)">';
         userHtml += '<div class="user-avatar">' + initial + '</div>';
         userHtml += '<span>' + username + '</span>';

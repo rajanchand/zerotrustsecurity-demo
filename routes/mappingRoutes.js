@@ -807,7 +807,6 @@ router.post('/api/mapping/permissions/bulk-update', requireReAuth, async functio
         });
     } catch (err) {
         console.error('Bulk update permissions error:', err);
-        res.status(500).json({ success: false, message: 'Server error during bulk operation.' });
     }
 });
 

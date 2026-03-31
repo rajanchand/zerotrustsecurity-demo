@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Executive SOC Overview - ZTS</title>
@@ -99,9 +100,14 @@
                 <h1 id="greetTitle">Secure Enclave Initialized</h1>
                 <p id="greetSub">Synchronizing with NIST SP 800-207 Policy Engine...</p>
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; opacity: 0.6;">Local Time</div>
-                <div id="clockArea" style="font-size: 1.25rem; font-weight: 700;">--:--:--</div>
+            <div style="display:flex; align-items:center; gap:20px;">
+                <button class="btn btn-danger" onclick="showKillModal()" style="background:#dc2626; border:2px solid #ef4444; font-weight:800; font-size:0.75rem; color:#fff; box-shadow: 0 0 15px rgba(220,38,38,0.4);">
+                    <i class="fas fa-bolt"></i> GLASS BREAK
+                </button>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 800; opacity: 0.6;">Local Time</div>
+                    <div id="clockArea" style="font-size: 1.25rem; font-weight: 700;">--:--:--</div>
+                </div>
             </div>
         </div>
 
@@ -162,7 +168,26 @@
         </div>
     </div>
 
-    <!-- Global Footer -->
+    </div>
+
+    <!-- Emergency Kill Modal -->
+    <div id="killModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); display:none; justify-content:center; align-items:center; z-index:3000;">
+        <div style="background:var(--zts-panel); width:100%; max-width:500px; border-radius:24px; padding:40px; border:2px solid var(--zts-danger); text-align:center;">
+            <div style="width:80px; height:80px; background:rgba(220,38,38,0.1); color:var(--zts-danger); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin:0 auto 24px;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 style="margin:0 0 16px; font-weight:900;">EMERGENCY LOCKDOWN</h2>
+            <p style="color:var(--zts-text-soft); font-size:0.95rem; line-height:1.6; margin-bottom:32px;">
+                Executing the <strong>Glass Break</strong> protocol will instantly revoke all active session tokens for the entire enterprise (excluding SuperAdmins).<br/><br/>
+                <span style="color:var(--zts-danger); font-weight:700;">This action cannot be undone.</span>
+            </p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn btn-danger" onclick="executeLockdown()" style="width:100%; height:50px; font-weight:800;">CONFIRM INSTANT LOCKDOWN</button>
+                <button class="btn btn-outline" onclick="hideKillModal()" style="width:100%; height:50px;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <div class="zts-footer">
         <div class="footer-brand">ZTS Enterprise Suite</div>
         <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
@@ -263,6 +288,25 @@
         }
 
         loadDashboard();
+
+        function showKillModal() { document.getElementById('killModal').style.display = 'flex'; }
+        function hideKillModal() { document.getElementById('killModal').style.display = 'none'; }
+        async function executeLockdown() {
+            const btn = document.querySelector('#killModal .btn-danger');
+            btn.textContent = 'EXECUTING PROTOCOL...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/system/emergency-lockdown', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    alert('Protocol Executed: All user sessions have been terminated.');
+                    location.reload();
+                } else {
+                    alert(d.message || 'Protocol Failure.');
+                }
+            } catch(e) { alert('Network Error during lockdown.'); }
+            hideKillModal();
+        }
     </script>
 </body>
 </html>

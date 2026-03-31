@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Access Authority & Entitlements - ZTS</title>
@@ -189,7 +190,10 @@
         async function saveBulkChanges() {
             const ups = Object.keys(pendingUpdates).map(id => ({ userId: parseInt(id), permissions: pendingUpdates[id] }));
             const res = await postJSON('/api/mapping/permissions/bulk-update', { updates: ups });
-            if(res.success) { showToast('Access Policies Deployed', 'success'); loadPermissions(); }
+            if(res.success) { 
+                showToast('Access Policies Deployed', 'success'); 
+                setTimeout(() => { location.href = '/mapping'; }, 1000); 
+            }
             else if(res.requireReAuth) handleReAuth(saveBulkChanges);
             else showToast(res.message, 'error');
         }

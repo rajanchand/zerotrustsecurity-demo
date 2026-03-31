@@ -4,6 +4,7 @@ const { supabase } = require('../db');
 const { getRiskHistory } = require('../services/riskEngine');
 const { getUserAuditLog } = require('../services/auditService');
 const { getDeviceHealth } = require('../services/deviceService');
+const { logSecurityEvent } = require('../services/monitorService');
 
 const router = express.Router();
 
@@ -243,6 +244,34 @@ router.get('/api/admin-stats', async (req, res) => {
     } catch (err) {
         console.error('Admin stats error:', err);
         res.status(500).json({ error: 'Failed to load stats' });
+    }
+});
+
+router.post('/api/system/emergency-lockdown', async (req, res) => {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Access denied: Admin only.' });
+    }
+    try {
+        // Revoke all non-admin sessions instantly
+        const { error } = await supabase
+            .from('users')
+            .update({ active_session_token: null })
+            .neq('role', 'SuperAdmin');
+
+        if (error) throw error;
+
+        await logSecurityEvent({
+            event_type: 'FORCE_LOGOUT', // FORCE_LOGOUT or SESSION_REVOKED
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { action: 'EMERGENCY_LOCKDOWN', scope: 'ALL_NON_ADMIN_SESSIONS' }
+        });
+
+        res.json({ success: true, message: 'Emergency lockdown protocol executed. All non-admin sessions revoked.' });
+    } catch (err) {
+        console.error('Lockdown error:', err);
+        res.status(500).json({ success: false, message: 'Failed to execute lockdown.' });
     }
 });
 

@@ -45,13 +45,13 @@ async function calculateRisk(params) {
 
     // 3. Authentication Behavior
     if (params.failedAttempts >= 3) {
-        score += RISK_WEIGHTS.MULTIPLE_FAILURES; // Changed from FAILED_LOGINS
+        score += RISK_WEIGHTS.MULTIPLE_FAILURES; 
         factors.push({ factor: `Multiple Failed Logins (${params.failedAttempts})`, points: RISK_WEIGHTS.MULTIPLE_FAILURES });
     }
 
     // 4. Network Context
     if (params.isVPN) {
-        score += RISK_WEIGHTS.VPN_ANONYMIZER; // Changed from VPN_DETECTED
+        score += RISK_WEIGHTS.VPN_ANONYMIZER; 
         factors.push({ factor: 'VPN Connection Detected', points: RISK_WEIGHTS.VPN_ANONYMIZER });
     }
 
