@@ -33,6 +33,13 @@ if (isProduction) {
     app.use(function (req, res, next) {
         // Allow /metrics over plain HTTP — Prometheus scrapes from localhost
         if (req.path === '/metrics') return next();
+
+        // ⚡ FIX: Allow local requests (diagnostics) to stay on HTTP
+        var clientIP = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+        var isLocal = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1' || clientIP === '';
+        if (isLocal) return next();
+
+        // Standard HTTPS redirect for external traffic
         if (req.headers['x-forwarded-proto'] !== 'https') {
             return res.redirect('https://' + req.headers.host + req.url);
         }
