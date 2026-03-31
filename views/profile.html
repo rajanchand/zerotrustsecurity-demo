@@ -1,146 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - ZTS</title>
+    <title>Identity Center - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f1f5f9;
+            --panel: #ffffff;
+            --text-main: #0f172a;
+            --text-soft: #64748b;
+            --border: #e2e8f0;
+        }
 
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 100px 24px 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .profile-hero { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 24px; padding: 40px; color: #fff;
+            display: flex; align-items: center; gap: 32px; margin-bottom: 32px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+        .hero-avatar { 
+            width: 100px; height: 100px; background: #3b82f6; border-radius: 20px; 
+            display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        .hero-details h1 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+        .hero-details p { margin: 4px 0 0; opacity: 0.7; font-weight: 500; }
+
+        .id-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+
+        .id-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .id-card-head { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); }
+        
+        .id-field { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .id-field:last-child { border-bottom: none; }
+        .id-field .lab { font-weight: 600; font-size: 0.9rem; color: var(--text-soft); }
+        .id-field .val { font-weight: 700; color: var(--text-main); }
+
+        .session-item { padding: 12px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .session-info { font-size: 0.85rem; font-weight: 600; }
+        .session-ip { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+
+        .stat-pill { background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+        .stat-pill.active { background: #dcfce7; color: #166534; }
+    </style>
+</head>
 <body>
-    <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
+        <button class="menu-toggle">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="card">
-            <div class="card-header-row" style="display:flex; justify-content:space-between; margin-bottom: 20px;">
-                <h3 style="margin:0;">My Profile</h3>
-                <span class="role-badge" id="profileRole"></span>
-            </div>
-
-            <div class="profile-fields-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="profileUsername" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Department</label>
-                    <input type="text" id="profileDepartment" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="profileName" placeholder="Your full name">
-                </div>
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="text" id="profilePhone" placeholder="Your phone number">
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Email Address</label>
-                    <input type="email" id="profileEmail" placeholder="Your email address">
+        <div class="profile-hero">
+            <div class="hero-avatar" id="avatarArea">?</div>
+            <div class="hero-details">
+                <h1 id="hero-name">Loading...</h1>
+                <p id="hero-role">--</p>
+                <div style="margin-top: 16px; display:flex; gap:12px;">
+                    <span class="stat-pill active"><i class="fas fa-check-circle"></i> Identity Verified</span>
+                    <span class="stat-pill"><i class="fas fa-shield-alt"></i> Adaptive MFA Active</span>
                 </div>
             </div>
-
-            <div class="form-actions">
-                <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
-                <span id="profileMsg" class="form-status-msg"></span>
-            </div>
-
-            <p class="meta-text">
-                Status: <span id="profileStatus"></span> &nbsp;|&nbsp; Member since: <span id="profileCreated"></span>
-            </p>
         </div>
 
-        <div class="card">
-            <h3 style="margin-bottom:16px;">Change Password</h3>
-            <div style="max-width:400px;">
-                <div class="form-group">
-                    <label>Current Password</label>
-                    <input type="password" id="currentPassword" placeholder="Enter current password">
+        <div class="id-grid">
+            <div class="id-main">
+                <div class="id-card" style="margin-bottom: 24px;">
+                    <div class="id-card-head">Internal Directory Attributes</div>
+                    <div class="id-field"><span class="lab">Organization ID</span><span class="val" id="f-id">--</span></div>
+                    <div class="id-field"><span class="lab">Principal Name</span><span class="val" id="f-user">--</span></div>
+                    <div class="id-field"><span class="lab">Primary Endpoint</span><span class="val" id="f-email">--</span></div>
+                    <div class="id-field"><span class="lab">Org Unit</span><span class="val" id="f-dept">--</span></div>
+                    <div class="id-field"><span class="lab">Risk Governance</span><span class="val" id="f-role">--</span></div>
                 </div>
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" id="newPassword" placeholder="Enter new password (min 6 characters)">
+
+                <div class="id-card">
+                    <div class="id-card-head">Active Access Tokens</div>
+                    <div id="sessionList">
+                        <div style="padding: 30px; text-align: center; color: var(--text-soft);">Polling active state...</div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" id="confirmPassword" placeholder="Confirm new password">
+            </div>
+
+            <div class="id-side">
+                <div class="id-card" style="margin-bottom: 24px;">
+                    <div class="id-card-head">Security Posture</div>
+                    <div style="padding: 24px; text-align: center;">
+                        <div id="riskScore" style="font-size: 3rem; font-weight: 800; color: var(--primary);">--</div>
+                        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase;" id="riskLabel">LOW RISK</div>
+                        <p style="font-size: 0.7rem; color: var(--text-soft); margin-top: 10px;">Calculated based on your most recent authentication context.</p>
+                        <a href="/risk" class="btn btn-outline btn-sm" style="margin-top: 12px; width: 100%;">Audit Profile</a>
+                    </div>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
-                    <span id="passwordMsg" style="font-size:0.82rem; line-height:30px;"></span>
+
+                <div class="id-card">
+                    <div class="id-card-head">Credential Management</div>
+                    <div style="padding: 20px;">
+                        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="alert('In a real environment, this would start the Password Reset workflow.')"><i class="fas fa-key"></i> Update Credentials</button>
+                        <p style="font-size: 0.65rem; color: var(--text-soft); margin-top: 8px;">Managed by Organization Identity Policy.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.5"></script>
+    <script src="/js/app.js?v=1.0.7"></script>
     <script>
-        async function init() {
-            var s = await (await fetch('/api/session')).json();
-            if (!s.loggedIn) return location.href = '/login';
-            buildNavbar(s.user.role, 'profile', s.user.username);
+        async function loadProfile() {
+            try {
+                const s = await(await fetch('/api/session')).json();
+                if(!s.loggedIn) return location.href='/login';
+                
+                buildNavbar(s.user.role, 'profile', s.user.username);
+                
+                document.getElementById('avatarArea').textContent = s.user.username[0].toUpperCase();
+                document.getElementById('hero-name').textContent = s.user.username;
+                document.getElementById('hero-role').textContent = s.user.role;
+                
+                document.getElementById('f-id').textContent = 'ZTS-' + String(s.user.userId).padStart(5, '0');
+                document.getElementById('f-user').textContent = s.user.username;
+                document.getElementById('f-email').textContent = s.user.email || 'No email on record';
+                document.getElementById('f-dept').textContent = s.user.department || 'Enterprise General';
+                document.getElementById('f-role').textContent = s.user.role;
 
-            var profile = await (await fetch('/api/profile')).json();
-            document.getElementById('profileUsername').value = profile.username || '';
-            document.getElementById('profileDepartment').value = profile.department || '';
-            document.getElementById('profileName').value = profile.name || '';
-            document.getElementById('profilePhone').value = profile.phone || '';
-            document.getElementById('profileEmail').value = profile.email || '';
-            document.getElementById('profileRole').textContent = profile.role;
-            document.getElementById('profileStatus').textContent = profile.status;
-            document.getElementById('profileCreated').textContent = formatDate(profile.created_at);
+                document.getElementById('riskScore').textContent = s.user.riskScore;
+                document.getElementById('riskLabel').textContent = s.user.riskLevel.toUpperCase() + ' RISK';
+
+                // Sessions
+                const d = await(await fetch('/api/admin/users/' + s.user.userId + '/details')).json();
+                const sl = document.getElementById('sessionList');
+                sl.innerHTML = '';
+                if(d.sessions && d.sessions.length) {
+                    d.sessions.slice(0, 5).forEach(sess => {
+                        const div = document.createElement('div');
+                        div.className = 'session-item';
+                        div.innerHTML = `
+                            <div>
+                                <div class="session-info">${sess.browser} on ${sess.os}</div>
+                                <div class="session-ip">${sess.ip} &middot; ${sess.country}</div>
+                            </div>
+                            <div class="evt-time">${formatDate(sess.login_at)}</div>
+                        `;
+                        sl.appendChild(div);
+                    });
+                } else {
+                    sl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-soft);">No active tokens identified.</div>';
+                }
+
+            } catch(e) {}
         }
-
-        async function saveProfile() {
-            var msg = document.getElementById('profileMsg');
-            msg.textContent = '';
-
-            var result = await postJSON('/api/profile/update', {
-                name: document.getElementById('profileName').value,
-                phone: document.getElementById('profilePhone').value,
-                email: document.getElementById('profileEmail').value
-            });
-
-            msg.textContent = result.message;
-            msg.style.color = result.success ? '#27ae60' : '#e74c3c';
-        }
-
-        async function changePassword() {
-            var msg = document.getElementById('passwordMsg');
-            msg.textContent = '';
-
-            var newPwd = document.getElementById('newPassword').value;
-            var confirmPwd = document.getElementById('confirmPassword').value;
-
-            if (newPwd !== confirmPwd) {
-                msg.textContent = 'Passwords do not match.';
-                msg.style.color = '#e74c3c';
-                return;
-            }
-
-            var result = await postJSON('/api/profile/change-password', {
-                currentPassword: document.getElementById('currentPassword').value,
-                newPassword: newPwd
-            });
-
-            msg.textContent = result.message;
-            msg.style.color = result.success ? '#27ae60' : '#e74c3c';
-
-            if (result.success) {
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
-            }
-        }
-
-        init();
+        loadProfile();
     </script>
 </body>
-
 </html>

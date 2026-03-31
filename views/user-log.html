@@ -1,687 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Log - ZTS Security</title>
+    <title>Identity Audit Trails - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Page layout */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 12px;
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --border: #e2e8f0;
+            --text-bold: #0f172a;
+            --text-soft: #64748b;
         }
 
-        .page-header h2 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
+        .container { max-width: 1400px; margin: 0 auto; }
 
-        .page-header p {
-            font-size: 0.78rem;
-            color: #94a3b8;
-            margin: 3px 0 0;
-        }
+        .audit-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .audit-header h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .audit-header p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
 
-        .user-select-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* Search & Filter Bar */
+        .filter-bar { background: #fff; padding: 20px 32px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 24px; display: flex; gap: 16px; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .filter-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.9rem; font-weight: 500; }
+        .filter-select { padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.85rem; font-weight: 600; background: #fff; }
 
-        .user-select-wrap label {
-            font-size: 0.82rem;
-            color: #64748b;
-            white-space: nowrap;
-        }
+        /* Audit Table */
+        .audit-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 16px 24px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); text-align: left; }
+        td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
+        tr:hover td { background: #fbfcfd; cursor: pointer; }
 
-        .user-select-wrap select {
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-            font-size: 0.83rem;
-            color: #1e293b;
-            background: #fff;
-            cursor: pointer;
-        }
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+        .action-pill { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .pill-log { background: #e0e7ff; color: #4338ca; }
+        .pill-sec { background: #fee2e2; color: #991b1b; }
+        
+        .row-expanded { background: #f8fafc !important; }
+        .detail-pane { padding: 24px; background: #fdfdfd; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: none; }
+        .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .detail-box { font-size: 0.8rem; }
+        .detail-box .lab { font-weight: 700; color: var(--text-soft); text-transform: uppercase; font-size: 0.65rem; margin-bottom: 4px; }
+        .detail-box .val { font-weight: 600; color: var(--text-bold); }
 
-        /* User header */
-        .user-header {
-            background: #fff;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-            padding: 18px 22px;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
-        }
-
-        .user-name-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 2px;
-        }
-
-        .user-name-row h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .dot-online  { background: #22c55e; }
-        .dot-offline { background: #d1d5db; }
-
-        .user-email {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin: 0 0 10px;
-        }
-
-        .kill-btn {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            color: #374151;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: border-color 0.15s;
-        }
-
-        .kill-btn:hover {
-            border-color: #9ca3af;
-        }
-
-        .role-pill {
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            display: inline-block;
-            margin-bottom: 4px;
-        }
-
-        .dept-label {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            text-align: right;
-        }
-
-        /* Summary stat boxes */
-        .stat-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-
-        .stat-box {
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 14px 16px;
-        }
-
-        .s-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            margin-bottom: 5px;
-        }
-
-        .s-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        /* Section cards */
-        .section-card {
-            background: #fff;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
-            margin-bottom: 14px;
-        }
-
-        .section-title {
-            padding: 12px 18px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #f3f4f6;
-            background: #fafafa;
-        }
-
-        /* Tables */
-        .tbl-wrap { overflow-x: auto; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-        }
-
-        thead th {
-            text-align: left;
-            padding: 9px 16px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            border-bottom: 1px solid #f3f4f6;
-            background: #fafafa;
-        }
-
-        tbody td {
-            padding: 9px 16px;
-            color: #374151;
-            vertical-align: top;
-            border-bottom: 1px solid #f9fafb;
-        }
-
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover td { background: #fafafa; }
-
-        .mono { font-family: 'SF Mono', Consolas, monospace; font-size: 0.76rem; }
-
-        /* Risk score indicator — plain */
-        .risk-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        /* Trust column */
-        .trust-ok   { color: #16a34a; font-weight: 500; }
-        .trust-pend { color: #9ca3af; }
-
-        /* Audit log */
-        .audit-row {
-            padding: 11px 18px;
-            border-bottom: 1px solid #f9fafb;
-            display: grid;
-            grid-template-columns: 130px 170px 1fr;
-            gap: 12px;
-            font-size: 0.82rem;
-            align-items: start;
-        }
-
-        .audit-row:last-child { border-bottom: none; }
-        .audit-row:hover { background: #fafafa; }
-
-        .audit-time {
-            font-size: 0.76rem;
-            color: #9ca3af;
-            padding-top: 1px;
-        }
-
-        /* Plain action label — no colour */
-        .action-label {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        /* Detail chips — neutral grey only */
-        .detail-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-
-        .chip {
-            background: #f3f4f6;
-            border-radius: 4px;
-            padding: 2px 7px;
-            font-size: 0.74rem;
-            color: #4b5563;
-        }
-
-        .chip strong {
-            color: #1e293b;
-            margin-right: 3px;
-        }
-
-        .detail-plain {
-            font-size: 0.8rem;
-            color: #6b7280;
-        }
-
-        /* States */
-        .empty-state {
-            text-align: center;
-            padding: 28px;
-            color: #9ca3af;
-            font-size: 0.83rem;
-        }
-
-        @media (max-width: 768px) {
-            .audit-row { grid-template-columns: 1fr; gap: 4px; }
-            .page-header { flex-direction: column; align-items: flex-start; }
-        }
+        pre { background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 0.75rem; margin: 0; color: #334155; overflow-x: auto; }
     </style>
 </head>
-
 <body>
-    <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
+        <button class="menu-toggle">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-
-        <!-- Header -->
-        <div class="page-header">
+        <div class="audit-header">
             <div>
-                <h2>User Logs &amp; Telemetry</h2>
-                <p>Zero Trust Security &middot; SuperAdmin view</p>
+                <h1>Identity Audit Trails</h1>
+                <p>NIST SP 800-207 Immutable Event Ledger & Forensic Logs</p>
             </div>
-            <div class="user-select-wrap">
-                <label for="userSelect">Select user:</label>
-                <select id="userSelect" onchange="loadUserLogs(this.value)">
-                    <option value="">-- Choose user --</option>
-                </select>
-            </div>
+            <button class="btn btn-primary" onclick="loadLogs()"><i class="fas fa-sync"></i> Refresh Ledger</button>
         </div>
 
-        <!-- Placeholder states -->
-        <div id="noUserView" class="empty-state">Select a user to view their telemetry data.</div>
-        <div id="loadingView" class="empty-state" style="display:none;">Loading...</div>
+        <div class="filter-bar">
+            <i class="fas fa-search" style="color: var(--text-soft);"></i>
+            <input type="text" id="searchTerm" class="filter-input" placeholder="Search by Principal, Action, IP, or CIDR..." onkeyup="filterLogs()">
+            <select id="filterType" class="filter-select" onchange="filterLogs()">
+                <option value="all">All Event Types</option>
+                <option value="LOGIN">Login Activities</option>
+                <option value="MFA">MFA / OTP</option>
+                <option value="ADMIN">Administrative</option>
+                <option value="NETWORK">Network Changes</option>
+            </select>
+        </div>
 
-        <!-- Main content -->
-        <div id="userDataView" style="display:none;">
+        <div class="audit-card">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th>Access Timestamp</th>
+                        <th>Principal Identity</th>
+                        <th>Event Action</th>
+                        <th>Source Node</th>
+                        <th style="text-align: right;">Context Flags</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody">
+                    <tr><td colspan="5" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Synchronizing with Security Ledger...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-            <!-- User header -->
-            <div class="user-header">
-                <div>
-                    <div class="user-name-row">
-                        <div id="u_status_dot" class="status-dot dot-offline"></div>
-                        <h3 id="u_username">—</h3>
-                    </div>
-                    <p class="user-email" id="u_email">—</p>
-                    <button class="kill-btn" onclick="revokeUserSession()">Revoke Active Sessions</button>
-                </div>
-                <div style="text-align:right;">
-                    <div class="role-pill" id="u_role">—</div>
-                    <div class="dept-label" id="u_department">—</div>
-                </div>
-            </div>
-
-            <!-- Stats summary -->
-            <div class="stat-row">
-                <div class="stat-box">
-                    <div class="s-label">Account Status</div>
-                    <div class="s-value" id="u_acc_status">—</div>
-                </div>
-                <div class="stat-box">
-                    <div class="s-label">Failed Logins</div>
-                    <div class="s-value" id="u_failed_attempts">—</div>
-                </div>
-                <div class="stat-box">
-                    <div class="s-label">Last Risk Score</div>
-                    <div class="s-value" id="u_risk_score">—</div>
-                </div>
-                <div class="stat-box">
-                    <div class="s-label">Devices Registered</div>
-                    <div class="s-value" id="u_device_count">—</div>
-                </div>
-                <div class="stat-box">
-                    <div class="s-label">Total Sessions</div>
-                    <div class="s-value" id="u_session_count">—</div>
-                </div>
-            </div>
-
-            <!-- Login sessions -->
-            <div class="section-card">
-                <div class="section-title">Recent Login Sessions</div>
-                <div class="tbl-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date &amp; Time</th>
-                                <th>IP Address</th>
-                                <th>Location</th>
-                                <th>Risk Score</th>
-                                <th>Browser</th>
-                                <th>OS</th>
-                                <th>VPN</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sessionLogsList">
-                            <tr><td colspan="7" class="empty-state">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Registered devices -->
-            <div class="section-card">
-                <div class="section-title">Registered Devices</div>
-                <div class="tbl-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fingerprint</th>
-                                <th>Browser</th>
-                                <th>OS</th>
-                                <th>IP Address</th>
-                                <th>Trust</th>
-                                <th>Last Seen</th>
-                            </tr>
-                        </thead>
-                        <tbody id="devicesList">
-                            <tr><td colspan="6" class="empty-state">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Security audit log -->
-            <div class="section-card">
-                <div class="section-title">Security Audit Log</div>
-                <div id="auditList">
-                    <div class="empty-state">Loading...</div>
-                </div>
-            </div>
-
-        </div><!-- end userDataView -->
-
-    </div><!-- end container -->
-
-    <script src="/js/app.js?v=1.0.5"></script>
+    <script src="/js/app.js?v=1.0.7"></script>
     <script>
+        let allLogs = [];
 
-        // Escape HTML to prevent XSS
-        function esc(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        // Convert action_name to human readable
-        function humanAction(action) {
-            if (!action) return '—';
-            return action
-                .toLowerCase()
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-        }
-
-        // Parse audit detail — may be JSON string, object, or plain text
-        function parseDetail(raw) {
-            if (!raw) return null;
-            if (typeof raw === 'object') return raw;
-            try { return JSON.parse(raw); } catch (e) { return { _text: raw }; }
-        }
-
-        // Render audit detail as neutral chips
-        function renderDetail(raw) {
-            var d = parseDetail(raw);
-            if (!d) return '<span style="color:#9ca3af;">—</span>';
-
-            if (d._text) {
-                return '<span class="detail-plain">' + esc(d._text) + '</span>';
-            }
-
-            // Friendly label map
-            var labels = {
-                reason: 'Reason', previous_ip: 'Previous IP', new_ip: 'New IP',
-                risk_level: 'Risk Level', role: 'Role', department: 'Department',
-                country: 'Country', vpn: 'VPN', off_hours: 'Off-Hours',
-                time_utc: 'Time (UTC)', level: 'Level', factors: 'Risk Factors',
-                path: 'Path', user_department: 'User Dept',
-                required_departments: 'Allowed Depts', new_role: 'New Role',
-                old_role: 'Old Role'
-            };
-
-            var chips = '';
-            Object.keys(d).forEach(function(key) {
-                var val = d[key];
-                if (val === null || val === undefined) return;
-
-                var label = labels[key] || key.replace(/_/g, ' ');
-
-                if (key === 'factors' && Array.isArray(val)) {
-                    val = val.map(function(f) {
-                        return f.factor ? f.factor + ' (+' + f.points + ')' : JSON.stringify(f);
-                    }).join(', ');
-                } else if (typeof val === 'boolean') {
-                    val = val ? 'Yes' : 'No';
-                } else if (typeof val === 'object') {
-                    val = JSON.stringify(val);
-                }
-
-                chips += '<span class="chip"><strong>' + esc(label) + ':</strong>' + esc(String(val)) + '</span>';
-            });
-
-            return chips ? '<div class="detail-list">' + chips + '</div>' : '<span style="color:#9ca3af;">—</span>';
-        }
-
-        // ── Initialise page ─────────────────────────────
-
-        async function init() {
+        async function loadLogs() {
             try {
-                var s = await (await fetch('/api/session')).json();
-                if (!s.loggedIn) { location.href = '/login'; return; }
-                if (s.user.role !== 'SuperAdmin') { location.href = '/dashboard'; return; }
-
+                const s = await (await fetch('/api/session')).json();
+                if (!s.loggedIn || s.user.role !== 'SuperAdmin') return location.href = '/dashboard';
                 buildNavbar(s.user.role, 'user-log', s.user.username);
 
-                var users = await (await fetch('/api/mapping/users')).json();
-                var select = document.getElementById('userSelect');
-
-                if (!Array.isArray(users) || !users.length) {
-                    var opt = document.createElement('option');
-                    opt.disabled = true;
-                    opt.textContent = 'No users found';
-                    select.appendChild(opt);
-                    return;
-                }
-
-                users.forEach(function(u) {
-                    var opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.textContent = u.username + ' (' + u.role + ')';
-                    select.appendChild(opt);
-                });
-            } catch (err) {
-                console.error('Init error:', err);
+                const res = await fetch('/api/admin/logs/all');
+                allLogs = await res.json();
+                renderLogs(allLogs);
+            } catch (e) {
+                console.error('Ledger sync failed:', e);
             }
         }
 
-        // ── Load selected user data ──────────────────────
+        function renderLogs(logs) {
+            const body = document.getElementById('logBody');
+            body.innerHTML = '';
+            
+            logs.forEach((log, index) => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => toggleDetail(index);
+                
+                const isSec = log.event_type && !log.action; // determine if it's from security_events table
+                const action = log.action || log.event_type || 'GENERAL_LOG';
+                const pillCls = isSec ? 'pill-sec' : 'pill-log';
 
-        async function loadUserLogs(userId) {
-            if (!userId) {
-                document.getElementById('userDataView').style.display = 'none';
-                document.getElementById('noUserView').style.display  = 'block';
-                return;
-            }
+                tr.innerHTML = `
+                    <td class="mono">${formatDate(log.created_at)}</td>
+                    <td style="font-weight:700;">${log.username || log.user_id || 'SYSTEM'}</td>
+                    <td><span class="action-pill ${pillCls}">${action.replace(/_/g, ' ')}</span></td>
+                    <td class="mono">${log.ip || '--'}</td>
+                    <td style="text-align: right; color: var(--text-soft); font-size: 0.75rem;">
+                        ${log.location || log.country || ''} <i class="fas fa-chevron-down" style="margin-left: 8px; opacity: 0.5;"></i>
+                    </td>
+                `;
+                
+                const detailTr = document.createElement('tr');
+                detailTr.id = `detail-${index}`;
+                detailTr.className = 'detail-pane';
+                detailTr.innerHTML = `
+                    <td colspan="5">
+                        <div class="detail-grid">
+                            <div class="detail-box">
+                                <div class="lab">Identity Metadata</div>
+                                <div class="val">UID: ${log.user_id || 'System'}</div>
+                                <div class="val">Node: ${log.ip || 'Internal'}</div>
+                                <div class="val">Region: ${log.location || log.country || 'Global'}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="lab">Event Classification</div>
+                                <div class="val">Source: ${isSec ? 'Security Engine' : 'Activity Ledger'}</div>
+                                <div class="val">Ref ID: ${log.id}</div>
+                            </div>
+                            <div style="grid-column: span 3;">
+                                <div class="lab">Raw Payload / Audit Details</div>
+                                <pre>${renderJSON(log.details || log.detail || log)}</pre>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                
+                body.appendChild(tr);
+                body.appendChild(detailTr);
+            });
+        }
 
-            document.getElementById('noUserView').style.display    = 'none';
-            document.getElementById('userDataView').style.display  = 'none';
-            document.getElementById('loadingView').style.display   = 'block';
-
-            try {
-                var res  = await fetch('/api/admin/users/' + userId + '/details');
-                var data = await res.json();
-
-                if (!res.ok || data.error) {
-                    showToast(data.error || 'Failed to load user data.', 'error');
-                    document.getElementById('loadingView').style.display = 'none';
-                    document.getElementById('noUserView').style.display  = 'block';
-                    return;
-                }
-
-                var u = data.user || {};
-
-                // Header
-                document.getElementById('u_username').textContent   = u.username  || '—';
-                document.getElementById('u_email').textContent      = u.email     || 'No email on record';
-                document.getElementById('u_role').textContent       = u.role      || '—';
-                document.getElementById('u_department').textContent = u.department || 'General';
-
-                var dot = document.getElementById('u_status_dot');
-                dot.className = 'status-dot ' + (data.isOnline ? 'dot-online' : 'dot-offline');
-                dot.title     = data.isOnline ? 'Online' : 'Offline';
-
-                // Stats
-                document.getElementById('u_acc_status').textContent    = (u.status || 'active').toUpperCase();
-                document.getElementById('u_failed_attempts').textContent = u.failed_attempts || '0';
-                document.getElementById('u_device_count').textContent   = (data.devices || []).length;
-                document.getElementById('u_session_count').textContent  = (data.sessions || []).length;
-
-                var latestRisk = (data.sessions && data.sessions.length) ? (data.sessions[0].risk_score || 0) : 0;
-                document.getElementById('u_risk_score').textContent = latestRisk + ' / 100';
-
-                // Sessions table
-                var sessions = data.sessions || [];
-                var audit    = data.audit    || [];
-
-                // Build a set of login times where VPN was detected
-                // (derived from audit log since sessions_log.vpn column may not exist yet)
-                var vpnTimes = {};
-                audit.forEach(function(a) {
-                    if (a.action === 'VPN_DETECTED') {
-                        // mark the minute of this event as a VPN session
-                        vpnTimes[a.created_at ? a.created_at.substring(0, 16) : ''] = true;
-                    }
-                });
-
-                function wasVPN(session) {
-                    // check the vpn field if it exists in DB
-                    if (session.vpn === true) return true;
-                    // otherwise check audit log for concurrent VPN event
-                    var loginMinute = session.login_at ? session.login_at.substring(0, 16) : '';
-                    return !!vpnTimes[loginMinute];
-                }
-
-                var sessHtml = '';
-                if (!sessions.length) {
-                    sessHtml = '<tr><td colspan="7" class="empty-state">No sessions found.</td></tr>';
-                } else {
-                    sessions.forEach(function(s) {
-                        var vpn = wasVPN(s) ? 'Yes' : 'No';
-                        sessHtml +=
-                            '<tr>' +
-                            '<td>' + esc(formatDate(s.login_at)) + '</td>' +
-                            '<td class="mono">' + esc(s.ip || '—') + '</td>' +
-                            '<td>' + esc(s.country || 'Unknown') + '</td>' +
-                            '<td class="risk-label">' + esc(String(s.risk_score || 0)) + '</td>' +
-                            '<td>' + esc(s.browser || '—') + '</td>' +
-                            '<td>' + esc(s.os || '—') + '</td>' +
-                            '<td>' + esc(vpn) + '</td>' +
-                            '</tr>';
-                    });
-                }
-                document.getElementById('sessionLogsList').innerHTML = sessHtml;
-
-                // Devices table
-                var devices = data.devices || [];
-                var devHtml = '';
-                if (!devices.length) {
-                    devHtml = '<tr><td colspan="6" class="empty-state">No devices registered.</td></tr>';
-                } else {
-                    devices.forEach(function(d) {
-                        var fp    = d.fingerprint ? d.fingerprint.substring(0, 20) + '...' : '—';
-                        var trust = d.approved
-                            ? '<span class="trust-ok">Trusted</span>'
-                            : '<span class="trust-pend">Pending</span>';
-                        devHtml +=
-                            '<tr>' +
-                            '<td class="mono">' + esc(fp) + '</td>' +
-                            '<td>' + esc(d.browser || '—') + '</td>' +
-                            '<td>' + esc(d.os || '—') + '</td>' +
-                            '<td class="mono">' + esc(d.ip_address || '—') + '</td>' +
-                            '<td>' + trust + '</td>' +
-                            '<td>' + esc(formatDate(d.last_login)) + '</td>' +
-                            '</tr>';
-                    });
-                }
-                document.getElementById('devicesList').innerHTML = devHtml;
-
-                // Audit log
-                var audit = data.audit || [];
-                var audHtml = '';
-                if (!audit.length) {
-                    audHtml = '<div class="empty-state">No audit events found.</div>';
-                } else {
-                    audit.forEach(function(a) {
-                        audHtml +=
-                            '<div class="audit-row">' +
-                            '<div class="audit-time">' + esc(formatDate(a.created_at)) + '</div>' +
-                            '<div class="action-label">' + esc(humanAction(a.action)) + '</div>' +
-                            '<div>' + renderDetail(a.detail) + '</div>' +
-                            '</div>';
-                    });
-                }
-                document.getElementById('auditList').innerHTML = audHtml;
-
-                document.getElementById('loadingView').style.display  = 'none';
-                document.getElementById('userDataView').style.display = 'block';
-
-            } catch (err) {
-                console.error('Load error:', err);
-                showToast('An error occurred loading user data.', 'error');
-                document.getElementById('loadingView').style.display = 'none';
-                document.getElementById('noUserView').style.display  = 'block';
+        function toggleDetail(index) {
+            const el = document.getElementById(`detail-${index}`);
+            const isVisible = el.style.display === 'table-row';
+            
+            // close all others
+            document.querySelectorAll('.detail-pane').forEach(d => d.style.display = 'none');
+            
+            if (!isVisible) {
+                el.style.display = 'table-row';
             }
         }
 
-        // ── Session kill switch ──────────────────────────
-
-        async function revokeUserSession() {
-            var userId = document.getElementById('userSelect').value;
-            if (!userId) return;
-            if (!confirm('This will immediately disconnect all active sessions for this user. Continue?')) return;
-
-            try {
-                var result = await postJSON('/api/mapping/users/revoke-session', { userId: userId });
-                if (result.success) {
-                    showToast('Sessions revoked successfully.', 'success');
-                    loadUserLogs(userId);
-                } else {
-                    showToast(result.message || 'Action failed.', 'error');
-                }
-            } catch (err) {
-                showToast('Request failed. Please try again.', 'error');
-            }
+        function filterLogs() {
+            const term = document.getElementById('searchTerm').value.toLowerCase();
+            const type = document.getElementById('filterType').value;
+            
+            const filtered = allLogs.filter(l => {
+                const matchTerm = (l.username || '').toLowerCase().includes(term) || 
+                                 (l.action || '').toLowerCase().includes(term) || 
+                                 (l.event_type || '').toLowerCase().includes(term) ||
+                                 (l.ip || '').toLowerCase().includes(term);
+                
+                if (type === 'all') return matchTerm;
+                
+                const action = (l.action || l.event_type || '').toUpperCase();
+                if (type === 'LOGIN') return matchTerm && action.includes('LOGIN');
+                if (type === 'MFA') return matchTerm && (action.includes('OTP') || action.includes('MFA'));
+                if (type === 'ADMIN') return matchTerm && (action.includes('USER_') || action.includes('ROLE_'));
+                if (type === 'NETWORK') return matchTerm && action.includes('IP_');
+                
+                return matchTerm;
+            });
+            
+            renderLogs(filtered);
         }
 
-        init();
+        loadLogs();
     </script>
 </body>
-
 </html>

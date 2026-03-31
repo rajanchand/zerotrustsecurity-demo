@@ -1,147 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Risk Score - ZTS</title>
+    <title>Risk Analytics & Threat Intel - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-ui: #e2e8f0;
+            --text-bold: #0f172a;
+            --text-soft: #64748b;
+            --low: #10b981;
+            --medium: #f59e0b;
+            --high: #ef4444;
+        }
 
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header-box { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .header-box h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .header-box p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
+
+        /* Scoring Master Panel */
+        .risk-master { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; margin-bottom: 32px; }
+        .score-card { background: #fff; padding: 40px; border-radius: 24px; border: 1px solid var(--border-ui); text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .score-val { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
+        .score-label { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 10px; }
+        
+        .progress-track { background: #f1f5f9; border-radius: 50px; height: 12px; margin: 24px auto; max-width: 300px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 50px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .factor-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .factor-card h3 { margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; color: var(--text-bold); }
+        
+        .factor-list { list-style: none; padding: 0; margin: 0; }
+        .factor-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .factor-item:last-child { border-bottom: none; }
+        .factor-name { font-weight: 600; font-size: 0.95rem; }
+        .factor-pts { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--high); background: #fee2e2; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+
+        /* Analytic Tables */
+        .analytics-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 32px; }
+        .card-top { padding: 16px 24px; border-bottom: 1px solid var(--border-ui); background: #fff; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-soft); letter-spacing: 0.05em; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 12px 24px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 700; border-bottom: 1px solid var(--border-ui); text-align: left; }
+        td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        tr:hover td { background: #fbfcfd; }
+
+        .time-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .b-low { background: #dcfce7; color: #166534; }
+        .b-medium { background: #fef9c3; color: #854d0e; }
+        .b-high { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
 <body>
-    <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-ui);">
+        <button class="menu-toggle">☰</button>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <div class="card" style="text-align:center; padding:30px;">
-            <div id="riskScore" style="font-size:3rem; font-weight:700; line-height:1;">-</div>
-            <div style="font-size:0.82rem; color:#636e72;">out of 100</div>
-            <div id="riskLevel" style="font-size:1rem; font-weight:600; margin-top:6px;"></div>
-            <div style="margin:16px auto; max-width:350px;">
-                <div style="background:#eee; border-radius:8px; height:10px; overflow:hidden;">
-                    <div id="riskBar" style="height:100%; border-radius:8px; transition:width 0.8s; width:0%;">
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#aaa; margin-top:3px;">
-                    <span>Low</span><span>Medium</span><span>High</span>
+        <div class="header-box">
+            <div>
+                <h1>Risk Analytics</h1>
+                <p>NIST SP 800-207 Intelligence-Driven Scoring Engine</p>
+            </div>
+            <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Re-scan Profile</button>
+        </div>
+
+        <div class="risk-master">
+            <div class="score-card">
+                <div id="sc-val" class="score-val">--</div>
+                <div id="sc-lab" class="score-label">CALCULATING...</div>
+                <div class="progress-track"><div id="sc-fill" class="progress-fill"></div></div>
+                <p style="font-size: 0.85rem; color: var(--text-soft);">Composite Risk Index (CRI) based on behavioral signals, geography, and asset integrity.</p>
+            </div>
+            
+            <div class="factor-card">
+                <h3><i class="fas fa-list-check"></i> Active Risk Drivers</h3>
+                <div id="factorsList">
+                    <p style="text-align: center; color: var(--text-soft); padding: 40px;">Initializing Risk Factor Analysis...</p>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <h3>Risk Factors</h3>
-            <div id="factorsList">
-                <p style="text-align:center; color:#aaa;">Loading...</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Scoring Rules (NIST SP 800-207)</h3>
+        <div class="analytics-card">
+            <div class="card-top">Scoring Heuristics (Policy Engine)</div>
             <table>
                 <thead>
-                    <tr>
-                        <th>Factor</th>
-                        <th>Points</th>
-                    </tr>
+                    <tr><th>Signal Origin</th><th>Risk Impact</th><th>Threat Classification</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>New Device</td>
-                        <td><span class="factor-points">+25</span></td>
-                    </tr>
-                    <tr>
-                        <td>New Country</td>
-                        <td><span class="factor-points">+30</span></td>
-                    </tr>
-                    <tr>
-                        <td>Failed Logins (3+)</td>
-                        <td><span class="factor-points">+20</span></td>
-                    </tr>
-                    <tr>
-                        <td>VPN Detected</td>
-                        <td><span class="factor-points">+15</span></td>
-                    </tr>
-                    <tr>
-                        <td>Admin Unknown IP</td>
-                        <td><span class="factor-points">+35</span></td>
-                    </tr>
+                    <tr><td>Hardware Identity Unverified</td><td><span class="factor-pts">+25</span></td><td>Asset Integrity Anomaly</td></tr>
+                    <tr><td>Geographic Displacement</td><td><span class="factor-pts">+30</span></td><td>Impossible Travel Scenario</td></tr>
+                    <tr><td>Auth Velocity Spike (3+ Fails)</td><td><span class="factor-pts">+20</span></td><td>Brute Force Probability</td></tr>
+                    <tr><td>Virtual Tunnel Detected (VPN)</td><td><span class="factor-pts">+15</span></td><td>Origin Obfuscation</td></tr>
+                    <tr><td>Privileged Access from Remote Node</td><td><span class="factor-pts">+35</span></td><td>Governance Violation</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="card">
-            <h3>Risk History</h3>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Score</th>
-                            <th>Level</th>
-                            <th>Factors</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTable">
-                        <tr>
-                            <td colspan="4" style="text-align:center; color:#aaa;">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="analytics-card">
+            <div class="card-top">Historical Risk Velocity</div>
+            <table>
+                <thead>
+                    <tr><th>CRI Score</th><th>Identity Level</th><th>Signals Detected</th><th>Timestamp</th></tr>
+                </thead>
+                <tbody id="historyTable">
+                    <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Fetching Historical Intelligence...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.5"></script>
+    <script src="/js/app.js?v=1.0.7"></script>
     <script>
         async function init() {
-            var s = await (await fetch('/api/session')).json();
+            const s = await (await fetch('/api/session')).json();
             if (!s.loggedIn) return location.href = '/login';
             buildNavbar(s.user.role, 'risk', s.user.username);
 
-            var d = await (await fetch('/api/risk-data')).json();
+            const d = await (await fetch('/api/risk-data')).json();
 
-            var sc = document.getElementById('riskScore');
-            var lv = document.getElementById('riskLevel');
-            var bar = document.getElementById('riskBar');
-            var cls = d.currentLevel === 'Low' ? 'score-low' : d.currentLevel === 'Medium' ? 'score-medium' : 'score-high';
-            sc.textContent = d.currentScore;
-            sc.className = cls;
-            lv.textContent = d.currentLevel + ' Risk';
-            lv.className = cls;
+            const val = document.getElementById('sc-val');
+            const lab = document.getElementById('sc-lab');
+            const fill = document.getElementById('sc-fill');
 
-            var col = d.currentLevel === 'Low' ? '#27ae60' : d.currentLevel === 'Medium' ? '#e67e22' : '#e74c3c';
-            bar.style.width = d.currentScore + '%';
-            bar.style.background = col;
+            const score = d.currentScore || 0;
+            const level = d.currentLevel || 'Low';
+            
+            val.textContent = score;
+            lab.textContent = `${level} Risk Index`.toUpperCase();
+            
+            const color = level === 'Low' ? 'var(--low)' : level === 'Medium' ? 'var(--medium)' : 'var(--high)';
+            val.style.color = color;
+            lab.style.color = color;
+            fill.style.width = score + '%';
+            fill.style.background = color;
 
-            var fl = document.getElementById('factorsList');
+            // Factors
+            const fl = document.getElementById('factorsList');
             if (d.factors && d.factors.length) {
-                fl.innerHTML = '<ul class="factor-list">' + d.factors.map(function (f) {
-                    return '<li class="factor-item"><span>' + f.factor + '</span><span class="factor-points">+' + f.points + '</span></li>';
-                }).join('') + '</ul>';
+                fl.innerHTML = '<ul class="factor-list">' + d.factors.map(f => `
+                    <li class="factor-item">
+                        <span class="factor-name">${f.factor}</span>
+                        <span class="factor-pts">+${f.points} PTS</span>
+                    </li>
+                `).join('') + '</ul>';
             } else {
-                fl.innerHTML = '<p style="text-align:center; color:#aaa;">No risk factors detected.</p>';
+                fl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-soft); font-weight:600;">Optimal Trust State: No threat signals detected.</div>';
             }
 
-            var tb = document.getElementById('historyTable');
+            // History
+            const tb = document.getElementById('historyTable');
+            tb.innerHTML = '';
             if (d.history && d.history.length) {
-                tb.innerHTML = '';
-                d.history.forEach(function (r) {
-                    var f = JSON.parse(r.factors_json || '[]').map(function (x) { return x.factor; }).join(', ') || 'None';
-                    var lc = r.level === 'Low' ? 'risk-low' : r.level === 'Medium' ? 'risk-medium' : 'risk-high';
-                    var tr = document.createElement('tr');
-                    tr.innerHTML = '<td><strong>' + r.score + '</strong></td><td><span class="risk-badge ' + lc + '">' + r.level + '</span></td><td style="font-size:0.8rem;">' + f + '</td><td>' + formatDate(r.created_at) + '</td>';
+                d.history.forEach(r => {
+                    const factors = JSON.parse(r.factors_json || '[]').map(x => x.factor).join(', ') || 'Baseline';
+                    const badgeCls = r.level === 'Low' ? 'b-low' : r.level === 'Medium' ? 'b-medium' : 'b-high';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${r.score}</strong></td>
+                        <td><span class="badge ${badgeCls}">${r.level}</span></td>
+                        <td>${factors}</td>
+                        <td class="time-cell">${formatDate(r.created_at)}</td>
+                    `;
                     tb.appendChild(tr);
                 });
             } else {
-                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#aaa;">No history</td></tr>';
+                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">No historical telemetry found.</td></tr>';
             }
         }
         init();
     </script>
 </body>
-
 </html>

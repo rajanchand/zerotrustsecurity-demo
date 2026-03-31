@@ -58,6 +58,38 @@ function formatDate(dateStr) {
     return day + ' ' + month + ' ' + year + ', ' + hours + ':' + mins;
 }
 
+/**
+ * Recursively renders an object or value to a clean string or HTML.
+ * Solves the [object Object] bug in tables and logs.
+ */
+function renderJSON(val) {
+    if (val === null || val === undefined) return '-';
+    if (typeof val !== 'object') return val;
+    
+    // If it's an object, let's try to make it readable
+    try {
+        if (Object.keys(val).length === 0) return '{}';
+        
+        // Custom formatting for common fields
+        if (val.reason) return val.reason;
+        if (val.message) return val.message;
+        if (val.action) return val.action;
+        
+        var summary = [];
+        for (var k in val) {
+            if (typeof val[k] === 'object') {
+                summary.push(k + ': (...)');
+            } else {
+                summary.push(k + ': ' + val[k]);
+            }
+            if (summary.length > 2) break; // Keep it short for tables
+        }
+        return summary.join(', ');
+    } catch (e) {
+        return '[Complex Object]';
+    }
+}
+
 // store csrf token globally
 var csrfToken = '';
 
@@ -80,18 +112,36 @@ fetchCSRFToken();
 // send POST request
 async function postJSON(url, data) {
     var headers = { 'Content-Type': 'application/json' };
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
     
-    // add CSRF token if we have one
-    if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
+    try {
+        var response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(data)
+        });
+
+        // Handle re-authentication requirement (Step-up Auth)
+        if (response.status === 401 && url !== '/api/verify-reauth') {
+            return { requireReAuth: true, success: false, message: 'Identity verification required' };
+        }
+
+        // Handle Forbidden / Session Expired
+        if (response.status === 403) {
+            var err = await response.json().catch(() => ({ message: 'Access Denied' }));
+            return { success: false, message: err.message || 'Forbidden' };
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        } else {
+            return { success: response.ok, message: response.ok ? 'Success' : 'Server error (status: ' + response.status + ')' };
+        }
+    } catch (e) {
+        console.error('Fetch error:', e);
+        return { success: false, message: 'Network error or server unreachable' };
     }
-    
-    var response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(data)
-    });
-    return response.json();
 }
 
 // build horizontal navbar

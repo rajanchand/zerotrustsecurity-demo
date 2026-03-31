@@ -3,119 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Security - ZTS</title>
+    <title>Enterprise Network Governance - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary: #3730a3;
-            --bg: #f1f5f9;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #475569;
-            --border: #cbd5e1;
-            --success: #15803d;
-            --danger: #b91c1c;
-            --warning: #a16207;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --bg: #f8fafc;
+            --panel-bg: #ffffff;
+            --border-ui: #e2e8f0;
+            --text-bold: #0f172a;
+            --text-soft: #64748b;
+            --allow: #10b981;
+            --block: #ef4444;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 100px 20px 40px;
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
+        .container { max-width: 1400px; margin: 0 auto; }
 
-        .container { max-width: 1200px; margin: 0 auto; }
+        .header-panel { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .header-panel h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .header-panel p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
 
-        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
-        .header p { color: var(--text-muted); margin: 4px 0 0 0; font-size: 0.9rem; }
+        /* Tech Stats Bar */
+        .tech-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+        .tech-box { background: #fff; padding: 24px; border-radius: 16px; border: 1px solid var(--border-ui); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .tech-box::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--primary); opacity: 0.3; }
+        .tech-box .lab { font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.1em; }
+        .tech-box .val { font-size: 1.75rem; font-weight: 800; margin-top: 4px; }
+        .tech-box.health-ok::before { background: var(--allow); }
 
-        /* Stats Bar */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-        }
+        /* Unified Table Card */
+        .policy-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 32px; }
+        .card-top { padding: 20px 32px; border-bottom: 1px solid var(--border-ui); background: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .card-top h3 { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-bold); display: flex; align-items: center; gap: 10px; }
+        .card-top h3 i { color: var(--primary); font-size: 1rem; }
 
-        .stat-box {
-            background: #fff;
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            text-align: center;
-        }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 16px 32px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-ui); text-align: left; }
+        td { padding: 18px 32px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; vertical-align: middle; }
+        tr:hover td { background: #fbfcfd; }
 
-        .stat-box .val { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
-        .stat-box .lab { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+        .ip-badge { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-bold); background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-ui); }
+        .status-pill { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .pill-allow { background: rgba(16, 185, 129, 0.1); color: var(--allow); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .pill-block { background: rgba(239, 68, 68, 0.1); color: var(--block); border: 1px solid rgba(239, 68, 68, 0.2); }
 
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-            overflow: hidden;
-        }
+        .usr-link { display: flex; align-items: center; gap: 10px; font-weight:600; }
+        .usr-link .initial { width: 28px; height: 28px; background: var(--bg); border: 1px solid var(--border-ui); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
 
-        .card-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-        }
-
-        .card-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
-
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { 
-            padding: 12px 20px; 
-            background: #f8fafc; 
-            color: var(--text-muted); 
-            font-size: 0.75rem; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            border-bottom: 1px solid var(--border);
-        }
-        td { padding: 12px 20px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        /* Modal styling */
+        .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: #fff; width: 450px; border-radius: 20px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .modal h3 { margin: 0 0 20px 0; font-size: 1.5rem; font-weight: 800; }
+        .form-row { margin-bottom: 20px; }
+        .form-row label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; margin-bottom: 8px; }
+        .form-row input, .form-row select { width: 100%; padding: 12px 16px; border: 1px solid var(--border-ui); border-radius: 12px; font-size: 0.95rem; box-sizing: border-box; }
         
-        tr:hover td { background: #f8fafc; }
-
-        .pill {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .pill-allow { background: #dcfce7; color: #166534; }
-        .pill-block { background: #fee2e2; color: #991b1b; }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000;
-        }
-        .modal { background: #fff; padding: 24px; border-radius: 8px; width: 100%; max-width: 400px; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
-
-        #toast {
-            position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 6px;
-            color: #fff; font-weight: 600; display: none; z-index: 3000;
-        }
+        #toast { position: fixed; top: 24px; right: 24px; z-index: 3000; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001;">
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-ui);">
         <button class="menu-toggle">☰</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
@@ -123,81 +73,86 @@
     </nav>
 
     <div class="container">
-        <div class="header">
+        <div class="header-panel">
             <div>
-                <h1>Network Policy</h1>
-                <p>Manage access control levels and device health.</p>
+                <h1>Global Network Policy</h1>
+                <p>NIST SP 800-207 Compliant Micro-Segmentation Console</p>
             </div>
-            <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Refresh</button>
+            <div style="display:flex; gap:12px;">
+                <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Reload Polices</button>
+                <button class="btn btn-primary" onclick="showAddIP()"><i class="fas fa-plus"></i> Deploy Rule</button>
+            </div>
         </div>
 
-        <div class="stats-bar">
-            <div class="stat-box"><div class="val" id="dTotal">—</div><div class="lab">Total Fleet</div></div>
-            <div class="stat-box"><div class="val" id="dApproved" style="color:var(--success)">—</div><div class="lab">Trusted</div></div>
-            <div class="stat-box"><div class="val" id="dPending" style="color:var(--warning)">—</div><div class="lab">Quarantined</div></div>
-            <div class="stat-box"><div class="val" id="dHealth">—</div><div class="lab">Health Score</div></div>
+        <div class="tech-stats">
+            <div class="tech-box"><div class="lab">Total Fleet</div><div class="val" id="dTotal">—</div></div>
+            <div class="tech-box health-ok"><div class="lab">Trusted Assets</div><div class="val" id="dApproved" style="color:var(--allow)">—</div></div>
+            <div class="tech-box"><div class="lab">Quarantined</div><div class="val" id="dPending" style="color:var(--block)">—</div></div>
+            <div class="tech-box health-ok"><div class="lab">Perimeter Health</div><div class="val" id="dHealth">—</div></div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>Sentinel IP Rules</h3>
-                <button class="btn btn-primary btn-sm" onclick="showAddIP()">Add Policy</button>
+        <div class="policy-card">
+            <div class="card-top">
+                <h3><i class="fas fa-fire-extinguisher"></i> Sentinel Firewall Table</h3>
+                <div style="font-size:0.75rem; color:var(--text-soft); font-weight:600;">ACTIVE TRAFFIC SEGMENTATION</div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>Namespace</th>
-                        <th>Policy</th>
-                        <th>Authority</th>
-                        <th style="text-align: right;">Action</th>
+                        <th>Namespace / CIDR</th>
+                        <th>Governance Action</th>
+                        <th>Issuing Authority</th>
+                        <th style="text-align: right;">Policy Operations</th>
                     </tr>
                 </thead>
                 <tbody id="ipTable">
-                    <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">Syncing firewall...</td></tr>
+                    <tr><td colspan="4" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Polling IP Ruleset...</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>Device Inventory</h3>
+        <div class="policy-card">
+            <div class="card-top">
+                <h3><i class="fas fa-microchip"></i> Hardware Asset Inventory</h3>
+                <div style="font-size:0.75rem; color:var(--text-soft); font-weight:600;">IDENTIFIED DEVICE CLUSTERS</div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>Owner</th>
-                        <th>Endpoint IP</th>
-                        <th>Confidence</th>
-                        <th style="text-align: right;">Action</th>
+                        <th>Owner / Identity</th>
+                        <th>Endpoint Address</th>
+                        <th>Trust Confidence</th>
+                        <th style="text-align: right;">Inventory Control</th>
                     </tr>
                 </thead>
                 <tbody id="deviceTable">
-                    <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">Scanning hardware...</td></tr>
+                    <tr><td colspan="4" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Scanning Fleet Topology...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div id="addIPModal" class="modal-overlay">
+    <!-- Modals -->
+    <div id="addIPModal" class="overlay">
         <div class="modal">
-            <h3>Deploy Sentinel Rule</h3>
-            <div class="form-group"><label>IP Namespace</label><input type="text" id="newIP"></div>
-            <div class="form-group">
-                <label>Access Policy</label>
-                <select id="newIPAction"><option value="block">BLOCK</option><option value="allow">ALLOW</option></select>
+            <h3>Deploy Firewall Policy</h3>
+            <p style="font-size:0.85rem; color:var(--text-soft); margin-bottom:24px;">Deploy a new micro-segmentation rule to the global fleet.</p>
+            <div class="form-row"><label>Target IP / Range</label><input type="text" id="newIP" placeholder="e.g. 192.168.1.1"></div>
+            <div class="form-row">
+                <label>Policy Behavior</label>
+                <select id="newIPAction"><option value="block">FORCE BLOCK</option><option value="allow">ALLOW LIST</option></select>
             </div>
-            <div class="form-group"><label>Governance Reason</label><input type="text" id="newIPReason"></div>
-            <p id="addIPError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:20px;">
-                <button class="btn btn-primary" onclick="addIPRule()" style="flex:1;">Deploy</button>
-                <button class="btn btn-outline" onclick="hideModal('addIPModal')">Cancel</button>
+            <div class="form-row"><label>Deployment Reason</label><input type="text" id="newIPReason" placeholder="e.g. Suspicious Botnet Origin"></div>
+            <div style="display:flex; gap:12px; margin-top:32px;">
+                <button class="btn btn-primary" onclick="addIPRule()" style="flex:1;">Deploy to Sentinel</button>
+                <button class="btn btn-outline" onclick="hideModal('addIPModal')">Abort</button>
             </div>
         </div>
     </div>
 
-    <div id="toast"></div>
+    <div id="toast-box" style="position:fixed; top:24px; right:24px; z-index:3000;"></div>
 
-    <script src="/js/app.js?v=1.0.5"></script>
+    <script src="/js/app.js?v=1.0.7"></script>
     <script>
         async function init() {
             const s = await(await fetch('/api/session')).json();
@@ -208,46 +163,50 @@
         }
 
         async function loadIPRules() {
-            const rules = await(await fetch('/api/network/ip-rules')).json();
-            const tb = document.getElementById('ipTable');
-            tb.innerHTML = '';
-            if(!rules.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 30px;">No policies.</td></tr>'; return; }
-            rules.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${r.ip_address}</strong></td>
-                    <td><span class="pill pill-${r.action}">${r.action.toUpperCase()}</span></td>
-                    <td>${r.created_by_name || '-'}</td>
-                    <td style="text-align: right;">
-                        <button class="btn btn-sm btn-outline" onclick="deleteIPRule(${r.id})">Remove</button>
-                    </td>
-                `;
-                tb.appendChild(tr);
-            });
+            try {
+                const rules = await(await fetch('/api/network/ip-rules')).json();
+                const tb = document.getElementById('ipTable');
+                tb.innerHTML = '';
+                if(!rules.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">No Active Policies.</td></tr>'; return; }
+                rules.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="ip-badge">${r.ip_address}</span></td>
+                        <td><span class="status-pill pill-${r.action}">${r.action.toUpperCase()}</span></td>
+                        <td><div class="usr-link"><div class="initial">${(r.created_by_name || 'S')[0]}</div>${r.created_by_name || 'System'}</div></td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-sm btn-outline" style="color:var(--block)" onclick="deleteIPRule(${r.id})"><i class="fas fa-trash-alt"></i> Purge Rule</button>
+                        </td>
+                    `;
+                    tb.appendChild(tr);
+                });
+            } catch(e) {}
         }
 
         async function loadDeviceHealth() {
-            const data = await(await fetch('/api/network/device-health')).json();
-            document.getElementById('dTotal').textContent = data.total;
-            document.getElementById('dApproved').textContent = data.approved;
-            document.getElementById('dPending').textContent = data.pending;
-            document.getElementById('dHealth').textContent = data.healthScore + '%';
+            try {
+                const data = await(await fetch('/api/network/device-health')).json();
+                document.getElementById('dTotal').textContent = data.total;
+                document.getElementById('dApproved').textContent = data.approved;
+                document.getElementById('dPending').textContent = data.pending;
+                document.getElementById('dHealth').textContent = data.healthScore + '%';
 
-            const tb = document.getElementById('deviceTable');
-            tb.innerHTML = '';
-            if(!data.devices.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">None detected.</td></tr>'; return; }
-            data.devices.forEach(d => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${d.username || '-'}</strong></td>
-                    <td><code>${d.ip || '-'}</code></td>
-                    <td>${d.approved ? '<span class="pill pill-allow">Trusted</span>' : '<span class="pill pill-block" style="background:#fef9c3; color:#854d0e;">Pending</span>'}</td>
-                    <td style="text-align: right;">
-                        <button class="btn btn-sm btn-outline" style="color:var(--danger)" onclick="rejectDevice('${d.id}')">De-auth</button>
-                    </td>
-                `;
-                tb.appendChild(tr);
-            });
+                const tb = document.getElementById('deviceTable');
+                tb.innerHTML = '';
+                if(!data.devices.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">Hardware Pool Empty.</td></tr>'; return; }
+                data.devices.forEach(d => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><div class="usr-link"><div class="initial">${(d.username || 'U')[0]}</div>${d.username || '-'}</div></td>
+                        <td><code>${d.ip || '-'}</code></td>
+                        <td>${d.approved ? '<span class="status-pill pill-allow">Managed Trust</span>' : '<span class="status-pill pill-block" style="background:#fefce8; color:#854d0e; border-color:#fef08a;">Unverified</span>'}</td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-sm btn-outline" style="color:var(--block)" onclick="rejectDevice('${d.id}')"><i class="fas fa-skull-crossbones"></i> Revoke Trust</button>
+                        </td>
+                    `;
+                    tb.appendChild(tr);
+                });
+            } catch(e) {}
         }
 
         async function addIPRule() {
@@ -256,19 +215,24 @@
                 action: document.getElementById('newIPAction').value,
                 reason: document.getElementById('newIPReason').value
             });
-            if (res.success) { hideModal('addIPModal'); showToast('Rule Deployed', 'success'); loadIPRules(); }
-            else { document.getElementById('addIPError').textContent = res.message; document.getElementById('addIPError').style.display='block'; }
+            if (res.success) { 
+                hideModal('addIPModal'); 
+                showToast('Policy Deployed Successfully', 'success'); 
+                loadIPRules(); 
+            } else { 
+                showToast(res.message, 'error'); 
+            }
         }
 
         async function deleteIPRule(id) {
-            if(!confirm('Delete rule?')) return;
+            if(!confirm('PURGE: Remove this network segmentation rule?')) return;
             const res = await postJSON('/api/network/ip-rules/delete', { ruleId: id });
             showToast(res.message, res.success?'success':'error');
             if(res.success) loadIPRules();
         }
 
         async function rejectDevice(id) {
-            if(!confirm('Revoke hardware trust?')) return;
+            if(!confirm('REVOKE: Immediately terminate hardware trust for this device?')) return;
             const res = await postJSON('/api/mapping/devices/reject', { deviceId: id });
             showToast(res.message, res.success?'success':'error');
             if(res.success) loadDeviceHealth();
@@ -276,8 +240,7 @@
 
         function showAddIP() { document.getElementById('addIPModal').style.display = 'flex'; }
         function hideModal(id) { document.getElementById(id).style.display = 'none'; }
-        function showToast(m,t){ const el=document.getElementById('toast'); el.textContent=m; el.style.background=t==='success'?'#16a34a':'#dc2626'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
-
+        
         init();
     </script>
 </body>

@@ -1,102 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ZTS</title>
+    <title>Enterprise Login - ZTS Secure Gateway</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-soft: #64748b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: radial-gradient(circle at top right, #e0e7ff, #f8fafc);
+            margin: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: #fff; width: 100%; max-width: 440px;
+            padding: 48px; border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .login-head { text-align: center; margin-bottom: 32px; }
+        .login-head .logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: -0.05em; margin-bottom: 8px; }
+        .login-head h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main); }
+        .login-head p { margin: 8px 0 0; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; }
+
+        .form-row { margin-bottom: 20px; }
+        .form-row label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: var(--text-soft); }
+        .form-row input { 
+            width: 100%; padding: 14px 18px; border: 1px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; font-weight: 500; box-sizing: border-box; transition: all 0.2s;
+        }
+        .form-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.1); }
+
+        .login-btn { 
+            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
+            color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s;
+            margin-top: 12px;
+        }
+        .login-btn:active { transform: scale(0.98); }
+
+        .footer-note { text-align: center; margin-top: 32px; font-size: 0.75rem; color: var(--text-soft); line-height: 1.6; }
+        .footer-note strong { color: var(--text-main); }
+
+        #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+    </style>
 </head>
-
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div style="width:44px; height:44px; background:linear-gradient(135deg,#1a73e8,#0a47a9); border-radius:12px; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1rem; font-weight:800; letter-spacing:-0.5px;">ZTS</div>
-            <h1>ZTS</h1>
-            <h2>Zero Trust Security</h2>
-             <h2>"Never Trust,Always Verify"</h2>
+    <div class="login-box">
+        <div class="login-head">
+            <div class="logo">ZTS</div>
+            <h1>Secure Identity Gateway</h1>
+            <p>Accessing Organizational Resources</p>
+        </div>
 
-            <form id="loginForm">
-                <input type="hidden" id="fingerprint" name="fingerprint">
+        <div id="errorArea"></div>
 
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" placeholder="Enter username" required autofocus>
-                </div>
+        <form id="loginForm">
+            <div class="form-row">
+                <label>Corporate Account</label>
+                <input type="text" id="username" placeholder="Username" required autofocus>
+            </div>
+            <div class="form-row">
+                <label>Security Credential</label>
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="login-btn">Authenticate</button>
+        </form>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter password" required>
-                </div>
-
-                <button type="submit" id="signInBtn" class="btn btn-primary">Sign In</button>
-            </form>
-
-            <p id="errorMsg" class="error-msg" style="display:none;"></p>
+        <div class="footer-note">
+            This system is restricted to <strong>Authorized Personnel Only</strong>.<br>
+            All access and authentication attempts are audited under NIST SP 800-207 guidelines.
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.5"></script>
+    <script src="/js/app.js?v=1.0.7"></script>
     <script>
-        document.getElementById('fingerprint').value = getFingerprint();
-
-        // Handle error messages from URL redirects
-        var urlParams = new URLSearchParams(window.location.search);
-        var msg = urlParams.get('msg');
-        if (msg) {
-            var errorEl = document.getElementById('errorMsg');
-            if (msg === 'off_hours') {
-                errorEl.innerHTML = '<strong>Access Denied:</strong> Remote work access restricted during off-hours (10:00 PM - 6:00 AM).';
-            } else if (msg === 'session_invalid') {
-                errorEl.innerHTML = '<strong>Session Invalidated:</strong> Safety mismatch detected.';
-            } else if (msg === 'session_expired') {
-                errorEl.style.display = 'none'; // handled by standard flow if any
-            } else {
-                errorEl.textContent = msg.replace(/_/g, ' ');
-            }
-            errorEl.style.display = 'block';
-        }
-
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const err = document.getElementById('errorArea');
+            err.style.display = 'none';
 
-            var btn = this.querySelector('button[type="submit"]');
-            btn.classList.add('btn-loading');
-            btn.disabled = true;
-
-            var errorEl = document.getElementById('errorMsg');
-            errorEl.style.display = 'none';
-
-            var data = {
-                username: document.getElementById('username').value.trim(),
+            // Gather fingerprint from app.js helper
+            const fp = await getBrowserFingerprint();
+            
+            const res = await postJSON('/api/login', {
+                username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
-                fingerprint: document.getElementById('fingerprint').value
-            };
+                fingerprint: fp
+            });
 
-            try {
-                var result = await postJSON('/login', data);
-
-                if (result.success) {
-                    sessionStorage.setItem('riskScore',   result.risk.score);
-                    sessionStorage.setItem('riskLevel',   result.risk.level);
-                    sessionStorage.setItem('riskFactors', JSON.stringify(result.risk.factors || []));
-                    sessionStorage.setItem('offHours',    result.offHours ? '1' : '0');
-                    sessionStorage.setItem('vpnDetected', result.vpn     ? '1' : '0');
-                    window.location.href = result.redirect;
-                } else {
-                    errorEl.textContent = result.message || 'Login failed.';
-                    errorEl.style.display = 'block';
-                    btn.classList.remove('btn-loading');
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                errorEl.textContent = 'A network error occurred. Please try again.';
-                errorEl.style.display = 'block';
-                btn.classList.remove('btn-loading');
-                btn.disabled = false;
+            if (res.success) {
+                location.href = res.redirect || '/dashboard';
+            } else {
+                err.textContent = res.message;
+                err.style.display = 'block';
             }
         });
     </script>
 </body>
-
 </html>

@@ -22,7 +22,9 @@ var SEVERITY = {
     RISK_SCORE_CHANGED: 'MEDIUM',
     USER_BLOCKED: 'HIGH',
     USER_UNBLOCKED: 'MEDIUM',
-    FORCE_LOGOUT: 'HIGH'
+    FORCE_LOGOUT: 'HIGH',
+    PASSWORD_RESET: 'HIGH',
+    SESSION_REVOKED: 'CRITICAL'
 };
 
 function getSeverity(eventType) {

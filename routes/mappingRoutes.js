@@ -75,8 +75,8 @@ router.post('/api/mapping/users/create', requirePermission('user_create'), requi
 
         var { username, password, role, email, department } = req.body;
 
-        if (!username || !password || !role) {
-            return res.json({ success: false, message: 'Username, password, and role are required.' });
+        if (!username || !password || !role || !email) {
+            return res.json({ success: false, message: 'Username, password, role, and email are required for identity provisioning.' });
         }
 
         // PASSWORD POLICY enforcement
@@ -332,7 +332,7 @@ router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), asy
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
         if (!user) return res.json({ success: false, message: 'User not found.' });
 
-        await supabase.from('users').update({ status: 'suspended' }).eq('id', userId);
+        await supabase.from('users').update({ status: 'suspended', active_session_token: null }).eq('id', userId);
 
         await logEvent(req.session.userId, 'USER_SUSPENDED', 'Suspended user: ' + user.username, req.ip);
         await logSecurityEvent({
@@ -340,7 +340,7 @@ router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), asy
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, action: 'suspended' }
+            details: { target_user: user.username, action: 'suspended', reason: 'Admin security action' }
         });
         res.json({ success: true, message: 'User suspended.' });
     } catch (err) {
@@ -368,7 +368,7 @@ router.post('/api/mapping/users/block', requirePermission('user_suspend'), async
         var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
         if (!user) return res.json({ success: false, message: 'User not found.' });
 
-        await supabase.from('users').update({ status: 'blocked' }).eq('id', userId);
+        await supabase.from('users').update({ status: 'blocked', active_session_token: null }).eq('id', userId);
 
         await logEvent(req.session.userId, 'USER_BLOCKED', 'Blocked user: ' + user.username, req.ip);
         await logSecurityEvent({
@@ -376,7 +376,7 @@ router.post('/api/mapping/users/block', requirePermission('user_suspend'), async
             user_id: req.session.userId,
             username: req.session.username,
             ip: req.ip,
-            details: { target_user: user.username, action: 'blocked' }
+            details: { target_user: user.username, action: 'blocked', reason: 'Critical policy violation' }
         });
         res.json({ success: true, message: 'User blocked.' });
     } catch (err) {
@@ -419,6 +419,44 @@ router.post('/api/mapping/users/revoke-session', async function (req, res) {
             details: { target_user: user.username, action: 'session_revoked', reason: 'Admin forced kill switch' }
         });
         res.json({ success: true, message: 'User sessions instantly revoked.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
+});
+
+// Reset user password (SuperAdmin only)
+router.post('/api/mapping/users/reset-password', requirePermission('user_edit'), requireReAuth, async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can reset passwords.' });
+    }
+    try {
+        var { userId, newPassword } = req.body;
+        if (!userId || !newPassword) return res.json({ success: false, message: 'Missing userId or password' });
+
+        var policy = validatePassword(newPassword);
+        if (!policy.valid) return res.json({ success: false, message: policy.errors.join(' ') });
+
+        var { data: user } = await supabase.from('users').select('username').eq('id', userId).single();
+        if (!user) return res.json({ success: false, message: 'User not found' });
+
+        var hash = bcrypt.hashSync(newPassword, 10);
+        await supabase.from('users').update({ 
+            password_hash: hash, 
+            active_session_token: null, // Kill sessions on password change
+            password_changed_at: new Date().toISOString() 
+        }).eq('id', userId);
+
+        await logEvent(req.session.userId, 'PASSWORD_RESET', 'Emergency password reset for: ' + user.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'ROLE_CHANGED', // Using role changed as a high-sev bucket if PASSWORD_RESET not in SEVERITY
+            severity: 'HIGH',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { action: 'password_reset', target_user: user.username, target_user_id: userId }
+        });
+
+        res.json({ success: true, message: 'Password reset successful for ' + user.username });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
     }
