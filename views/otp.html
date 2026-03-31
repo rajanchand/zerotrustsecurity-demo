@@ -112,7 +112,9 @@
 
             // Off-hours warning
             if (s.offHoursLogin || s.isUnusualHours) {
-                document.getElementById('offHoursAlert').style.display = 'flex';
+                const offAlert = document.getElementById('offHoursAlert');
+                offAlert.style.display = 'flex';
+                offAlert.querySelector('span').innerHTML = `Alert: You are working off-hours from <strong style="color:#b45309">${s.loginCountry || 'Unknown Location'}</strong>. Your risk score is <strong style="color:#b45309">${s.risk ? s.risk.score : 0}</strong> as per the off-hour login penalty.`;
             }
 
             // VPN warning

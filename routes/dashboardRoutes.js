@@ -116,7 +116,8 @@ router.get('/api/dashboard-data', async (req, res) => {
                     country:     lastSession ? lastSession.country : req.session.loginCountry || 'Unknown',
                     ip:          lastSession ? lastSession.ip     : req.session.loginIP       || 'Unknown',
                     isNewDevice: isNewDevice
-                }
+                },
+                isUnusualHours: req.session.isUnusualHours || false
             }
         });
     } catch (err) {

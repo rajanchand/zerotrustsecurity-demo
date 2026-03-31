@@ -115,6 +115,7 @@
         </div>
 
         <div class="main-content">
+            <div id="offHoursAlert" class="alert-toast" style="margin-bottom: 24px; background: #fffbeb; border-color: #f59e0b; color: #92400e; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);"></div>
             <div id="mainAlert" class="alert-toast" style="margin-bottom: 24px;"></div>
 
             <div class="dash-card">
@@ -210,6 +211,12 @@
                         <div style="font-size:0.85rem; font-weight:700;">${ctx.isNewDevice ? 'Unknown hardware detected' : 'Registered Managed Asset'}</div>
                     </div>
                 `;
+
+                if (d.security && d.security.isUnusualHours) {
+                    const offAlert = document.getElementById('offHoursAlert');
+                    offAlert.style.display = 'block';
+                    offAlert.innerHTML = `<i class="fas fa-clock" style="margin-right:6px;"></i> <strong>Off-Hours Access Alert:</strong> You are currently working from <span style="text-decoration:underline;">${ctx.country || 'Unknown Location'}</span>. Your adaptive risk score has been adjusted to <strong style="font-size:1.1em;">${d.security.riskScore}</strong>.`;
+                }
 
                 if (d.user.role === 'SuperAdmin') {
                     const statsRes = await fetch('/api/admin-stats');

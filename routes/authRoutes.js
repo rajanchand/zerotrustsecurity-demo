@@ -314,6 +314,18 @@ router.post('/api/login', loginLimiter, async function (req, res) {
             metrics.vpnDetected.inc();
         }
 
+        // ── AUTO-BLOCK AT CRITICAL RISK (100+) ──
+        if (risk.score >= 100 && user.role !== 'SuperAdmin') {
+            await supabase.from('users').update({ status: 'blocked' }).eq('id', user.id);
+            await logEvent(user.id, 'AUTO_BLOCK', 'Account auto-blocked due to critical risk score (' + risk.score + ')', ip);
+            await logSecurityEvent({
+                event_type: 'LOGIN_BLOCKED',
+                user_id: user.id, username: user.username, ip: ip, location: country, risk_score: risk.score,
+                details: { reason: 'Automatic block triggered by risk engine (100+)', role: user.role }
+            });
+            return res.json({ success: false, message: 'Account automatically blocked due to critical risk score (' + risk.score + '). Please contact an Administrator.' });
+        }
+
         // reset failed-login counter on success
         await supabase.from('users').update({ failed_attempts: 0 }).eq('id', user.id);
 
