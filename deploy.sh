@@ -3,79 +3,72 @@
 set -e  # Exit immediately if any command fails
 
 REPO_URL="https://github.com/rajanchand/Uws-zts-demo.git"
-APP_DIR="/root/zts-app"
+APP_DIR="/root/zts-web"
 APP_NAME="zts"
 VPS_IP=$(curl -s ifconfig.me)
 
 echo ""
 echo "================================================"
-echo "   ZTS - Zero Trust Security Deployment"
+echo "   🚀 ZTS - Optimized Deployment"
 echo "================================================"
 echo "  Repo : $REPO_URL"
 echo "  Dir  : $APP_DIR"
 echo "  IP   : $VPS_IP"
 echo ""
 
-# ─── Step 1: Install Node.js 20  ─────────────────────────
-if ! command -v node &> /dev/null; then
-  echo "[1/7] Installing Node.js 20..."
+# ─── Step 1 & 2: Environment Readiness ─────────────────────
+# (Fast checks)
+if ! command -v node &> /dev/null || ! command -v pm2 &> /dev/null; then
+  echo "[1/7] Bootstrapping Node.js/PM2..."
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   apt-get install -y nodejs
-else
-  echo "[1/7] Node.js already installed: $(node -v)"
-fi
-
-# ─── Step 2: Install PM2  ─────────────────────────────────
-if ! command -v pm2 &> /dev/null; then
-  echo "[2/7] Installing PM2..."
   npm install -g pm2
 else
-  echo "[2/7] PM2 already installed"
+  echo "[1/2] Environment ready (Node $(node -v)) ✓"
 fi
 
-# ─── Step 3: Clone or Pull from GitHub ──────────────────────────────────────
-echo "[3/7] Getting latest code from GitHub..."
-if [ -d "$APP_DIR/.git" ]; then
-  echo "  → Repo exists, pulling latest..."
-  cd "$APP_DIR"
-  git pull origin main
-else
+# ─── Step 3: Fast Git Fetch & Reset ──────────────────────────
+echo "[3/7] Syncing code from GitHub..."
+if [ ! -d "$APP_DIR/.git" ]; then
   echo "  → Cloning fresh..."
   rm -rf "$APP_DIR"
   git clone "$REPO_URL" "$APP_DIR"
   cd "$APP_DIR"
-fi
-
-# Get the current commit hash for logging
-GIT_COMMIT=$(git rev-parse --short HEAD)
-GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-echo "  → Deployed commit: $GIT_COMMIT on branch: $GIT_BRANCH"
-
-# ─── Step 4: Install dependencies ───────────────────────────────────────────
-echo "[4/7] Installing npm dependencies..."
-npm install --omit=dev
-
-# ─── Step 5: Setup .env (IMPORTANT: create this manually first time) ─────────
-echo "[5/7] Checking .env file..."
-if [ ! -f "$APP_DIR/.env" ]; then
-  echo ""
-  echo "  ⚠️  WARNING: No .env file found!"
-  echo "  Please upload your .env file:"
-  echo "  scp .env root@$VPS_IP:$APP_DIR/.env"
-  echo ""
-  echo "  Then re-run this script."
-  exit 1
 else
-  echo "  → .env file found ✓"
+  cd "$APP_DIR"
+  git fetch origin main
+  git reset --hard origin/main
 fi
 
-# ─── Step 6: Configure Nginx ─────────────────────────────────────────────────
-echo "[6/7] Configuring Nginx..."
-cat > /etc/nginx/sites-available/zts << 'EOF'
+GIT_COMMIT=$(git rev-parse --short HEAD)
+echo "  → Latest commit: $GIT_COMMIT ✓"
+
+# ─── Step 4: Smart NPM Install ───────────────────────────────
+# Only run if package-lock.json has changed
+LOCK_HASH=$(md5sum package-lock.json | awk '{ print $1 }')
+if [ ! -f .last_install ] || [ "$(cat .last_install)" != "$LOCK_HASH" ]; then
+    echo "[4/7] package-lock.json changed. Installing dependencies..."
+    npm install --omit=dev
+    echo "$LOCK_HASH" > .last_install
+else
+    echo "[4/7] No dependency changes. Skipping npm install ⚡"
+fi
+
+# ─── Step 5: Environment Check ───────────────────────────────
+if [ ! -f "$APP_DIR/.env" ]; then
+  echo "  ⚠️ Error: No .env file found in $APP_DIR"
+  exit 1
+fi
+
+# ─── Step 6: Config Optimization (Nginx) ────────────────────
+# Only reload if the config changed
+NGINX_CONF="/etc/nginx/sites-available/zts"
+TEMP_CONF="/tmp/zts_nginx.conf"
+
+cat > "$TEMP_CONF" << 'EOF'
 server {
     listen 80;
     server_name _;
-
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -90,52 +83,35 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/zts /etc/nginx/sites-enabled/zts
-rm -f /etc/nginx/sites-enabled/default
-nginx -t && systemctl restart nginx
-echo "  → Nginx configured ✓"
+if ! cmp -s "$TEMP_CONF" "$NGINX_CONF"; then
+    echo "[6/7] Updating Nginx config..."
+    cp "$TEMP_CONF" "$NGINX_CONF"
+    ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/zts
+    rm -f /etc/nginx/sites-enabled/default
+    nginx -t && systemctl restart nginx
+else
+    echo "[6/7] Nginx config unchanged. Skipping reload ✓"
+fi
 
-# ─── Step 7: Start/Restart app with PM2 ─────────────────────────────────────
-echo "[7/7] Starting ZTS app with PM2..."
-pm2 stop $APP_NAME 2>/dev/null || true
-pm2 delete $APP_NAME 2>/dev/null || true
+# ─── Step 7: Final PM2 Launch with Port Safety ──────────────
+echo "[7/7] Launching application..."
+
+# 💥 Hard kill any process using port 3000
+echo "  → Clearing port 3000 (EADDRINUSE safety)..."
+fuser -k 3000/tcp 2>/dev/null || true
+
+# Cleanup any alternate process names
+pm2 delete zts-live 2>/dev/null || true
+pm2 delete zts 2>/dev/null || true
+
+# Start fresh
 pm2 start server.js --name $APP_NAME --cwd "$APP_DIR"
 pm2 save
-pm2 startup systemd -u root --hp /root | tail -1 | bash 2>/dev/null || true
-echo "  → App started ✓"
 
-# ─── Log Deployment to Database ─────────────────────────────────────────────
-echo ""
-echo "Logging deployment to database..."
-node -e "
-const db = require('./db');
-(async () => {
-  try {
-    await db.query(
-      \`INSERT INTO deployments (deployed_by, git_commit, git_branch, status, vps_ip, notes)
-       VALUES (\$1, \$2, \$3, \$4, \$5, \$6)\`,
-      ['root', '$GIT_COMMIT', '$GIT_BRANCH', 'success', '$VPS_IP', 'Deployed via deploy.sh']
-    );
-    console.log('  → Deployment logged to database ✓');
-    process.exit(0);
-  } catch(e) {
-    console.log('  ⚠️  Could not log to DB:', e.message);
-    process.exit(0);
-  }
-})();
-" 2>/dev/null || echo "  ⚠️  DB log skipped (DB not ready yet)"
-
-# ─── Done! ───────────────────────────────────────────────────────────────────
 echo ""
 echo "================================================"
-echo "  ✅  DEPLOYMENT COMPLETE!"
+echo "  ✅  DEPLOYED IN RECORD TIME!"
 echo "================================================"
 echo "  App URL  : http://$VPS_IP"
-echo "  Commit   : $GIT_COMMIT ($GIT_BRANCH)"
-echo ""
-echo "  Useful commands:"
-echo "    pm2 logs $APP_NAME        → view logs"
-echo "    pm2 restart $APP_NAME     → restart"
-echo "    pm2 status                → check status"
-echo "    git -C $APP_DIR log --oneline -5  → recent commits"
+echo "  Commit   : $GIT_COMMIT"
 echo ""
