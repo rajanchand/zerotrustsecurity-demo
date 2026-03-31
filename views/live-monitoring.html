@@ -3,158 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Security Telemetry - ZTS</title>
+    <title>Live Monitoring - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-light: #eef2ff;
-            --bg: #f8fafc;
+            --primary: #3730a3;
+            --bg: #f1f5f9;
             --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #cbd5e1;
+            --success: #15803d;
+            --danger: #b91c1c;
+            --warning: #a16207;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 100px 20px 40px;
-            min-height: 100vh;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 100px 20px 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        .container { max-width: 1300px; margin: 0 auto; }
-
-        .header {
-            margin-bottom: 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .header-title h1 { font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.025em; }
-        .header-title p { color: var(--text-muted); margin-top: 4px; }
-
-        /* Live Control Bar */
-        .control-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            background: white;
-            padding: 12px 20px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 14px;
-            background: #f0fdf4;
-            color: #166534;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border: 1px solid #bbf7d0;
-        }
-
-        .live-indicator .dot {
-            width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
-            animation: blink 1.5s infinite;
-        }
-
+        .header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
+        
+        .live-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; color: #166534; background: #dcfce7; padding: 4px 12px; border-radius: 50px; border: 1px solid #bbf7d0; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: blink 1.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
+        /* KPI Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 16px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .stat-val { font-size: 1.4rem; font-weight: 700; color: var(--text-main); }
+        .stat-lab { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
 
-        .stat-card {
-            background: white;
-            padding: 16px 20px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover { transform: translateY(-2px); }
-        .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
-        .stat-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.05em; }
-
-        /* Filter Row */
-        .filter-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: center;
-        }
-
-        .filter-row select, .filter-row input {
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 0.85rem;
-            background: white;
-        }
-
-        /* Event Table Styles */
-        .card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+        .card { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-        th { padding: 12px 20px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; border-bottom: 1px solid var(--border); }
-        td { padding: 12px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { padding: 12px 16px; background: #f8fafc; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         
         .event-row { cursor: pointer; transition: background 0.1s; }
         .event-row:hover { background: #fcfcfc; }
-        .event-row.expanded { background: #f1f5f9; }
 
-        .sev-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .sev-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; }
         .sev-CRITICAL { background: #fee2e2; color: #991b1b; }
-        .sev-HIGH { background: #ffedd5; color: #9a3412; }
-        .sev-MEDIUM { background: #fef9c3; color: #854d0e; }
-        .sev-LOW { background: #dcfce7; color: #166534; }
+        .sev-HIGH { background: #fff7ed; color: #9a3412; }
+        .sev-MEDIUM { background: #fefce8; color: #854d0e; }
+        .sev-LOW { background: #f0fdf4; color: #166534; }
 
-        .type-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #475569; }
+        .type-code { font-family: ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #475569; }
 
-        .risk-pip-container { width: 60px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; display: inline-block; margin-right: 8px; vertical-align: middle; }
-        .risk-pip { height: 100%; border-radius: 3px; }
-        .risk-low { background: var(--success); }
-        .risk-med { background: var(--warning); }
-        .risk-high { background: var(--danger); }
+        /* Risk indicator */
+        .risk-fill { height: 6px; background: #e2e8f0; border-radius: 3px; position: relative; overflow: hidden; width: 50px; display: inline-block; vertical-align: middle; }
+        .risk-bar { position: absolute; height: 100%; top: 0; left: 0; border-radius: 3px; }
 
         /* Detail Panel */
-        .detail-cell { padding: 0 !important; background: #f8fafc; }
-        .detail-wrap { padding: 20px; border-bottom: 2px solid var(--border); }
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .detail-box h4 { margin: 0 0 10px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-        .kv { display: flex; margin-bottom: 6px; font-size: 0.85rem; }
-        .k { font-weight: 600; width: 100px; color: var(--text-muted); }
-        .v { color: var(--text-main); font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+        .detail-cell { padding: 0 !important; background: #f8fafc; display: none; }
+        .detail-inner { padding: 16px; border-bottom: 1px solid var(--border); }
+        pre { background: #1e293b; color: #cbd5e1; padding: 12px; border-radius: 6px; font-size: 0.75rem; margin: 0; overflow-x: auto; }
 
-        pre { background: #1e293b; color: #cbd5e1; padding: 16px; border-radius: 12px; font-size: 0.75rem; margin: 0; overflow-x: auto; }
-
-        #toast {
-            position: fixed; top: 24px; right: 24px;
-            padding: 16px 24px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 0.9rem;
-            display: none; box-shadow: var(--shadow);
-            z-index: 3000;
-        }
+        #toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; color: #fff; font-weight: 600; display: none; z-index: 3000; }
     </style>
 </head>
 <body>
@@ -167,35 +75,23 @@
 
     <div class="container">
         <div class="header">
-            <div class="header-title">
-                <h1>Live Security Telemetry</h1>
-                <p>Enterprise-wide event streaming and threat detection.</p>
-            </div>
-            <div class="live-indicator" id="liveLabel">
-                <div class="dot"></div>
-                <span id="connState">SYNCING...</span>
-            </div>
-        </div>
-
-        <div class="control-bar">
-            <button class="btn btn-outline btn-sm" id="pauseBtn" onclick="togglePause()"><i class="fas fa-pause"></i> Pause Stream</button>
-            <button class="btn btn-outline btn-sm" onclick="clearFeed()"><i class="fas fa-eraser"></i> Clear</button>
-            <div style="flex:1"></div>
-            <span id="syncCount" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">0 packets captured</span>
+            <h1>Live Telemetry</h1>
+            <div class="live-status" id="liveLabel"><div class="dot"></div> <span id="connState">Establishing Secure Feed...</span></div>
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Telemetry Packets</div></div>
-            <div class="stat-card" style="border-top:3px solid var(--danger)"><div class="stat-value" id="statCritical" style="color:var(--danger)">—</div><div class="stat-label">Critical Alerts</div></div>
-            <div class="stat-card" style="border-top:3px solid var(--warning)"><div class="stat-value" id="statHigh" style="color:var(--warning)">—</div><div class="stat-label">High Risk Evt</div></div>
-            <div class="stat-card"><div class="stat-value" id="statLoginFailed">—</div><div class="stat-label">Auth Failures</div></div>
-            <div class="stat-card"><div class="stat-value" id="statAvgRisk">—</div><div class="stat-label">Global Risk Avg</div></div>
+            <div class="stat-card"><div class="stat-val" id="statTotal">—</div><div class="stat-lab">Total Events</div></div>
+            <div class="stat-card" style="border-top: 2px solid var(--danger);"><div class="stat-val" id="statCritical" style="color:var(--danger)">—</div><div class="stat-lab">Critical</div></div>
+            <div class="stat-card"><div class="stat-val" id="statHigh">—</div><div class="stat-lab">High Risk</div></div>
+            <div class="stat-card"><div class="stat-val" id="statLoginFailed">—</div><div class="stat-lab">Auth Fail</div></div>
+            <div class="stat-card"><div class="stat-val" id="statAvgRisk">—</div><div class="stat-lab">Avg Risk Score</div></div>
         </div>
 
-        <div class="filter-row">
-            <select id="filterType" onchange="renderTable()"><option value="">All Event Types</option></select>
-            <select id="filterSev" onchange="renderTable()"><option value="">All Severities</option><option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option></select>
-            <input type="text" id="filterUser" placeholder="Filter identity..." oninput="renderTable()">
+        <div class="card" style="margin-bottom: 16px; padding: 8px 16px; display: flex; gap: 12px; align-items: center; border: 1px solid var(--border); background: #fff;">
+            <button class="btn btn-outline btn-sm" id="pauseBtn" onclick="togglePause()"><i class="fas fa-pause"></i> Pause</button>
+            <button class="btn btn-outline btn-sm" onclick="events=[]; renderTable();"><i class="fas fa-eraser"></i> Clear</button>
+            <div style="flex:1"></div>
+            <span id="syncCount" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">0 packets captured</span>
         </div>
 
         <div class="card">
@@ -203,37 +99,31 @@
                 <thead>
                     <tr>
                         <th style="width:30px"></th>
-                        <th>Time (UTC)</th>
+                        <th>Time</th>
                         <th>Severity</th>
-                        <th>Vector / Event</th>
+                        <th>Event Type</th>
                         <th>Identity</th>
-                        <th>Endpoint Analysis</th>
+                        <th>IP / Source</th>
                         <th>Risk</th>
                     </tr>
                 </thead>
-                <tbody id="eventBody"><tr><td colspan="7" style="text-align:center; padding:60px; color:var(--text-muted)">Awaiting telemetry stream...</td></tr></tbody>
+                <tbody id="eventBody"><tr><td colspan="7" style="text-align:center; padding:50px; color:var(--text-muted)">Awaiting telemetry stream...</td></tr></tbody>
             </table>
         </div>
     </div>
 
     <div id="toast"></div>
 
-    <script src="/js/app.js?v=1.0.4"></script>
+    <script src="/js/app.js?v=1.0.5"></script>
     <script>
         let events = [];
         let paused = false;
-        const MAX_LOGS = 500;
+        const MAX = 500;
 
         async function init() {
             const s = await(await fetch('/api/session')).json();
             if(!s.loggedIn) return location.href='/login';
             buildNavbar(s.user.role, 'live-monitoring', s.user.username);
-            
-            // Populate types
-            const types = ["LOGIN_SUCCESS", "LOGIN_FAILED", "OTP_SENT", "OTP_SUCCESS", "ACCESS_DENIED", "VPN_DETECTED", "IMPOSSIBLE_TRAVEL", "RISK_SCORE_CHANGED", "ROLE_CHANGED", "USER_CREATED", "USER_BLOCKED"];
-            const select = document.getElementById('filterType');
-            types.forEach(t => { const o = document.createElement('option'); o.value=t; o.textContent=t.replace(/_/g,' '); select.appendChild(o); });
-
             loadStats();
             fetchHistory();
             connect();
@@ -247,80 +137,46 @@
         }
 
         function renderTable() {
-            const type = document.getElementById('filterType').value;
-            const sev = document.getElementById('filterSev').value;
-            const usr = document.getElementById('filterUser').value.toLowerCase();
-            
-            const filtered = events.filter(e => {
-                if(type && e.event_type !== type) return false;
-                if(sev && e.severity !== sev) return false;
-                if(usr && !String(e.username || '').toLowerCase().includes(usr)) return false;
-                return true;
-            });
-
             const body = document.getElementById('eventBody');
             body.innerHTML = '';
-            filtered.forEach(e => body.appendChild(createRow(e)));
-            document.getElementById('syncCount').textContent = `${filtered.length} packets displayed`;
+            events.forEach(e => body.appendChild(createRow(e)));
+            document.getElementById('syncCount').textContent = `${events.length} packets displayed`;
         }
 
         function createRow(e) {
             const uId = e.id || Math.random().toString(36).substr(2,9);
-            const tbody = document.createElement('tbody');
-            
+            const tb = document.createElement('tbody');
             const tr = document.createElement('tr');
             tr.className = 'event-row';
-            tr.onclick = () => toggleRow(uId);
+            tr.onclick = () => { const el = document.getElementById(`det-${uId}`); el.style.display = el.style.display === 'none' ? 'table-row' : 'none'; };
             
-            const riskColor = e.risk_score >= 60 ? 'risk-high' : e.risk_score >= 30 ? 'risk-med' : 'risk-low';
+            const rColor = e.risk_score >= 60 ? '#b91c1c' : e.risk_score >= 30 ? '#a16207' : '#15803d';
 
             tr.innerHTML = `
-                <td style="color:var(--text-muted); font-size:0.6rem">▶</td>
+                <td style="color:#cbd5e1; font-size:0.6rem">▶</td>
                 <td style="color:var(--text-muted); font-size:0.8rem">${formatDate(e.timestamp)}</td>
-                <td><span class="sev-badge sev-${e.severity || 'INFO'}">${e.severity || 'INFO'}</span></td>
-                <td><span class="type-tag">${e.event_type}</span></td>
+                <td><span class="sev-tag sev-${e.severity || 'INFO'}">${e.severity || 'INFO'}</span></td>
+                <td><span class="type-code">${e.event_type}</span></td>
                 <td style="font-weight:600">${e.username || 'System'}</td>
-                <td><code style="font-size:0.75rem">${e.ip || '-'}</code><div style="font-size:0.7rem; color:var(--text-muted)">${e.location || '-'}</div></td>
+                <td><code>${e.ip || '-'}</code></td>
                 <td>
-                    <div class="risk-pip-container"><div class="risk-pip ${riskColor}" style="width:${e.risk_score}%"></div></div>
-                    <span style="font-weight:700">${e.risk_score}</span>
+                    <div class="risk-fill"><div class="risk-bar" style="width:${e.risk_score}%; background:${rColor}"></div></div>
+                    <span style="font-weight:700; margin-left:4px">${e.risk_score}</span>
                 </td>
             `;
 
             const dr = document.createElement('tr');
             dr.id = `det-${uId}`;
-            dr.style.display = 'none';
+            dr.className = 'detail-cell';
             dr.innerHTML = `
-                <td colspan="7" class="detail-cell">
-                    <div class="detail-wrap">
-                        <div class="detail-grid">
-                            <div class="detail-box">
-                                <h4>Request Fingerprint</h4>
-                                <div class="kv"><div class="k">Endpoint IP</div><div class="v">${e.ip || '-'}</div></div>
-                                <div class="kv"><div class="k">Origin Geo</div><div class="v">${e.location || '-'}</div></div>
-                                <div class="kv"><div class="k">Platform</div><div class="v">${e.details?.os || '-'} (${e.details?.browser || 'Handshake'})</div></div>
-                            </div>
-                            <div class="detail-box">
-                                <h4>Policy Engine Output</h4>
-                                <div class="kv"><div class="k">Risk Impact</div><div class="v">${e.risk_score} / 100</div></div>
-                                <div class="kv"><div class="k">Trigger</div><div class="v">${e.event_type}</div></div>
-                            </div>
-                        </div>
-                        <div style="margin-top:20px">
-                            <h4>Raw Telemetry Payload</h4>
-                            <pre>${JSON.stringify(e.details, null, 2)}</pre>
-                        </div>
+                <td colspan="7">
+                    <div class="detail-inner">
+                        <pre>${JSON.stringify(e.details, null, 2)}</pre>
                     </div>
                 </td>
             `;
-            tbody.appendChild(tr);
-            tbody.appendChild(dr);
-            return tbody;
-        }
-
-        function toggleRow(id) {
-            const el = document.getElementById(`det-${id}`);
-            el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+            tb.appendChild(tr); tb.appendChild(dr);
+            return tb;
         }
 
         function connect() {
@@ -329,13 +185,9 @@
             es.onmessage = (m) => {
                 const d = JSON.parse(m.data);
                 if(d.type === 'ping') return;
-                if(!paused) {
-                    events.unshift(d);
-                    if(events.length > MAX_LOGS) events.pop();
-                    renderTable();
-                }
+                if(!paused) { events.unshift(d); if(events.length > MAX) events.pop(); renderTable(); }
             };
-            es.onerror = () => { document.getElementById('connState').textContent = 'CONNECTION INTERRUPTED'; };
+            es.onerror = () => { document.getElementById('connState').textContent = 'FEED INTERRUPTED'; };
         }
 
         async function loadStats() {
@@ -349,9 +201,8 @@
 
         function togglePause() { 
             paused = !paused; 
-            document.getElementById('pauseBtn').innerHTML = paused ? '<i class="fas fa-play"></i> Resume Stream' : '<i class="fas fa-pause"></i> Pause Stream'; 
+            document.getElementById('pauseBtn').innerHTML = paused ? '<i class="fas fa-play"></i> Resume' : '<i class="fas fa-pause"></i> Pause'; 
         }
-        function clearFeed() { events=[]; renderTable(); }
         init();
     </script>
 </body>

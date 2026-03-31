@@ -3,316 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Access Dashboard - ZTS</title>
+    <title>User Access - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-light: #eef2ff;
-            --bg: #f8fafc;
+            --primary: #3730a3;
+            --bg: #f1f5f9;
             --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #cbd5e1;
+            --success: #15803d;
+            --danger: #b91c1c;
+            --warning: #a16207;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 100px 20px 120px; /* Extra bottom padding for floating bar */
-            min-height: 100vh;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 100px 20px 120px; }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        .container {
-            max-width: 1300px;
-            margin: 0 auto;
-        }
+        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .header h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
+        .header p { color: var(--text-muted); margin: 4px 0 0 0; font-size: 0.9rem; }
 
-        .header {
-            margin-bottom: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
+        .card { background: white; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 12px 16px; background: #f8fafc; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        
+        tr:hover td { background: #f8fafc; }
+        tr.modified td { background: #fffbeb; }
 
-        .header-title h1 {
-            font-size: 2.25rem;
-            font-weight: 800;
-            margin: 0;
-            letter-spacing: -0.025em;
-        }
-
-        .header-title p {
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            padding: 16px 24px;
-            background: #f1f5f9;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid var(--border);
-        }
-
-        td {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.95rem;
-            transition: background 0.2s;
-        }
-
-        tr:hover td {
-            background-color: #f8fafc;
-        }
-
-        tr.modified td {
-            background-color: #fffbeb;
-        }
-
-        .user-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            position: relative;
-        }
-
-        .avatar {
-            width: 36px;
-            height: 36px;
-            background: var(--primary-light);
-            color: var(--primary);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        .user-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .username {
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .role-badge {
-            display: inline-block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 1px 6px;
-            border-radius: 4px;
-            margin-top: 2px;
-        }
-
-        .role-superadmin { background: #fee2e2; color: #991b1b; }
-        .role-it { background: #dcfce7; color: #166534; }
-        .role-hr { background: #fef9c3; color: #854d0e; }
-
-        .unsaved-badge {
-            position: absolute;
-            left: -12px;
-            width: 8px;
-            height: 8px;
-            background: var(--warning);
-            border-radius: 50%;
-            display: none;
-            box-shadow: 0 0 0 2px white;
-        }
-
-        tr.modified .unsaved-badge {
-            display: block;
-        }
+        .user-tag { display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 32px; height: 32px; background: #e0e7ff; color: #3730a3; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+        
+        .role-pill { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; }
 
         /* Toggle Switch */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 22px;
-        }
-
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #cbd5e1;
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 22px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(18px); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #cbd5e1; transition: .2s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background: #16a34a; }
+        input:checked + .slider:before { transform: translateX(16px); }
         input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
 
-        /* Floating Footer Action Bar */
+        /* Action Bar */
         .action-bar {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(12px);
-            padding: 16px 32px;
-            border-radius: 100px;
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; padding: 12px 24px; border-radius: 50px;
+            display: flex; align-items: center; gap: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+            z-index: 1000; opacity: 0; visibility: hidden; transition: .2s;
         }
+        .action-bar.visible { opacity: 1; visibility: visible; }
+        .action-bar span { color: #fff; font-size: 0.9rem; font-weight: 500; }
+        .btn-save { background: #fff; color: #1e293b; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 700; cursor: pointer; }
 
-        .action-bar.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .action-text {
-            color: white;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .btn-bulk-save {
-            background: white;
-            color: var(--text-main);
-            border: none;
-            padding: 10px 24px;
-            border-radius: 50px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-bulk-save:hover {
-            background: var(--primary-light);
-            color: var(--primary);
-            transform: scale(1.05);
-        }
-
-        .btn-reset {
-            background: transparent;
-            color: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-reset:hover {
-            color: white;
-            border-color: white;
-        }
-
-        /* Modal Overlays (Production Re-Auth) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        .modal {
-            background: white;
-            padding: 32px;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        .modal h3 { margin-bottom: 8px; font-weight: 800; font-size: 1.5rem; }
-        .modal p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem; }
-
-        .spinner {
-            width: 48px; height: 48px; border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        #toast {
-            position: fixed; top: 24px; right: 24px;
-            padding: 16px 24px; border-radius: 12px;
-            color: white; font-weight: 600; font-size: 0.95rem;
-            display: none; box-shadow: var(--shadow);
-            z-index: 3000;
-        }
-
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: #fff; padding: 24px; border-radius: 8px; width: 100%; max-width: 400px; }
+        
+        #toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; color: #fff; font-weight: 600; display: none; z-index: 3000; }
     </style>
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001;">
         <button class="menu-toggle">☰</button>
-        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
+        <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="container" id="mainContainer">
+    <div class="container">
         <div class="header">
-            <div class="header-title">
-                <h1>User Access Dashboard</h1>
-                <p>Enterprise identity and entitlement management for <span id="accountCount">...</span> accounts.</p>
+            <div>
+                <h1>Access Authority</h1>
+                <p>Granular entitlement management for <span id="accountCount">...</span> accounts.</p>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="loadPermissions()"><i class="fas fa-sync"></i> Refresh Data</button>
+            <button class="btn btn-outline" onclick="loadPermissions()"><i class="fas fa-sync"></i> Sync</button>
         </div>
 
         <div class="card">
@@ -320,233 +90,108 @@
                 <thead>
                     <tr>
                         <th>Identity</th>
-                        <th title="Create Users">Create</th>
-                        <th title="Edit Users">Edit</th>
-                        <th title="Delete Users">Delete</th>
-                        <th title="Suspend Users">Susp</th>
-                        <th title="Approve Users">Appr</th>
-                        <th title="Approve Devices">Device</th>
-                        <th title="Network Security">Net</th>
-                        <th title="Live Monitor">Mon</th>
-                        <th title="Manage Dept">Dept</th>
+                        <th>Create</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                        <th>Susp</th>
+                        <th>Appr</th>
+                        <th>Dev</th>
+                        <th>Net</th>
+                        <th>Mon</th>
+                        <th>Dept</th>
                     </tr>
                 </thead>
                 <tbody id="userTableBody">
-                    <tr><td colspan="10" style="text-align: center; padding: 100px;">Loading identities...</td></tr>
+                    <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--text-muted);">Parsing identities...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Floating Action Bar -->
     <div id="actionBar" class="action-bar">
-        <span class="action-text"><i class="fas fa-info-circle"></i> <span id="pendingCount">0</span> changes pending</span>
-        <button class="btn-bulk-save" id="btnBulkSave" onclick="saveBulkChanges()">Save Changes</button>
-        <button class="btn-reset" onclick="loadPermissions()">Reset</button>
+        <span><span id="pendingCount">0</span> changes pending deployment</span>
+        <button class="btn-save" onclick="saveBulkChanges()">Deploy Changes</button>
+        <button class="btn btn-sm btn-outline" style="color:#fff; border-color:rgba(255,255,255,0.2)" onclick="loadPermissions()">Cancel</button>
     </div>
 
-    <!-- Re-Authentication Modal -->
     <div id="reAuthModal" class="modal-overlay">
         <div class="modal">
             <h3>Verify Identity</h3>
-            <p>Access control changes require high-privilege verification. Please confirm your administrator password.</p>
-            <div class="form-group">
-                <label>Administrator Password</label>
-                <input type="password" id="reAuthPassword" placeholder="Confirm your password">
-            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">Privileged access change detected. Confirm your password.</p>
+            <div class="form-group"><input type="password" id="reAuthPassword" placeholder="Confirm password"></div>
             <p id="reAuthError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:12px; margin-top:24px;">
+            <div style="display:flex; gap:8px;">
                 <button class="btn btn-primary" onclick="submitReAuth()" style="flex:1;">Confirm</button>
                 <button class="btn btn-outline" onclick="hideModal('reAuthModal')">Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="loadingOverlay" class="modal-overlay">
-        <div class="spinner"></div>
-    </div>
-
     <div id="toast"></div>
 
-    <script src="/js/app.js?v=1.0.4"></script>
+    <script src="/js/app.js?v=1.0.5"></script>
     <script>
-        const PERM_KEYS = [
-            'user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve',
-            'device_approve', 'network_manage', 'monitor_live', 'dept_manage'
-        ];
-
-        let originalState = {}; // userId -> permissions mapping
-        let pendingUpdates = {}; // userId -> permissions mapping
+        const PERM_KEYS = ['user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve', 'device_approve', 'network_manage', 'monitor_live', 'dept_manage'];
+        let originalState = {};
+        let pendingUpdates = {};
 
         async function loadPermissions() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
-            try {
-                const res = await fetch('/api/mapping/permissions');
-                const users = await res.json();
-                
-                originalState = {};
-                pendingUpdates = {};
-                
-                users.forEach(u => {
-                    originalState[u.id] = JSON.parse(JSON.stringify(u.permissions || {}));
-                });
-
-                document.getElementById('accountCount').textContent = users.length;
-                renderTable(users);
-                updateActionBar();
-            } catch (err) {
-                showToast('Failed to load access records.', 'error');
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
+            const users = await(await fetch('/api/mapping/permissions')).json();
+            originalState = {}; pendingUpdates = {};
+            users.forEach(u => originalState[u.id] = JSON.parse(JSON.stringify(u.permissions || {})));
+            document.getElementById('accountCount').textContent = users.length;
+            renderTable(users);
+            updateBar();
         }
 
         function renderTable(users) {
-            const body = document.getElementById('userTableBody');
-            body.innerHTML = '';
-
-            users.forEach(user => {
-                const tr = document.createElement('tr');
-                tr.id = `row-${user.id}`;
-                
-                const isSuper = user.role === 'SuperAdmin';
-                const initial = user.username.charAt(0).toUpperCase();
-
-                let html = `
-                    <td>
-                        <div class="user-cell">
-                            <div class="unsaved-badge"></div>
-                            <div class="avatar">${initial}</div>
-                            <div class="user-info">
-                                <span class="username">${user.username}</span>
-                                <span class="role-badge role-${user.role.toLowerCase()}">${user.role}</span>
-                            </div>
-                        </div>
-                    </td>
-                `;
-
-                PERM_KEYS.forEach(key => {
-                    const isChecked = (user.permissions && user.permissions[key] === true) || isSuper;
-                    const disabled = isSuper ? 'disabled' : '';
-                    html += `
-                        <td style="text-align: center;">
-                            <label class="switch">
-                                <input type="checkbox" 
-                                    onchange="trackChange(${user.id}, '${key}', this.checked)"
-                                    data-user-id="${user.id}" 
-                                    data-perm="${key}" 
-                                    ${isChecked ? 'checked' : ''} ${disabled}>
-                                <span class="slider"></span>
-                            </label>
-                        </td>
-                    `;
+            const body = document.getElementById('userTableBody'); body.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr'); tr.id = `row-${u.id}`;
+                const isSuper = u.role === 'SuperAdmin';
+                let html = `<td><div class="user-tag"><div class="avatar-sm">${u.username[0].toUpperCase()}</div><div><strong>${u.username}</strong><br><span class="role-pill">${u.role}</span></div></div></td>`;
+                PERM_KEYS.forEach(k => {
+                    const chk = (u.permissions && u.permissions[k]) || isSuper;
+                    html += `<td style="text-align:center"><label class="switch"><input type="checkbox" onchange="track(${u.id},'${k}',this.checked)" ${chk?'checked':''} ${isSuper?'disabled':''}><span class="slider"></span></label></td>`;
                 });
-
-                tr.innerHTML = html;
-                body.appendChild(tr);
+                tr.innerHTML = html; body.appendChild(tr);
             });
         }
 
-        function trackChange(userId, key, isChecked) {
-            if (!pendingUpdates[userId]) {
-                pendingUpdates[userId] = JSON.parse(JSON.stringify(originalState[userId]));
-            }
-
-            pendingUpdates[userId][key] = isChecked;
-
-            // Check if it's back to original
-            const isDifferent = JSON.stringify(pendingUpdates[userId]) !== JSON.stringify(originalState[userId]);
-            
-            const row = document.getElementById(`row-${userId}`);
-            if (isDifferent) {
-                row.classList.add('modified');
-            } else {
-                row.classList.remove('modified');
-                delete pendingUpdates[userId];
-            }
-
-            updateActionBar();
+        function track(uid, key, val) {
+            if(!pendingUpdates[uid]) pendingUpdates[uid] = JSON.parse(JSON.stringify(originalState[uid]));
+            pendingUpdates[uid][key] = val;
+            const diff = JSON.stringify(pendingUpdates[uid]) !== JSON.stringify(originalState[uid]);
+            const r = document.getElementById(`row-${uid}`);
+            if(diff) r.classList.add('modified'); else { r.classList.remove('modified'); delete pendingUpdates[uid]; }
+            updateBar();
         }
 
-        function updateActionBar() {
-            const count = Object.keys(pendingUpdates).length;
-            const bar = document.getElementById('actionBar');
-            document.getElementById('pendingCount').textContent = count;
-            
-            if (count > 0) {
-                bar.classList.add('visible');
-            } else {
-                bar.classList.remove('visible');
-            }
+        function updateBar() {
+            const c = Object.keys(pendingUpdates).length;
+            document.getElementById('pendingCount').textContent = c;
+            document.getElementById('actionBar').classList.toggle('visible', c > 0);
         }
 
         async function saveBulkChanges() {
-            const updatesArray = Object.keys(pendingUpdates).map(id => ({
-                userId: parseInt(id),
-                permissions: pendingUpdates[id]
-            }));
-
-            document.getElementById('loadingOverlay').style.display = 'flex';
-
-            try {
-                const res = await postJSON('/api/mapping/permissions/bulk-update', { updates: updatesArray });
-
-                if (res.success) {
-                    showToast(`Successfully processed ${updatesArray.length} entitlement changes.`, 'success');
-                    loadPermissions(); // Full reload to sync
-                } else if (res.requireReAuth) {
-                    handleReAuthRequired(saveBulkChanges);
-                } else {
-                    showToast(res.message || 'Bulk update failed.', 'error');
-                }
-            } catch (err) {
-                showToast('Network error during bulk operation.', 'error');
-            } finally {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            }
+            const ups = Object.keys(pendingUpdates).map(id => ({ userId: parseInt(id), permissions: pendingUpdates[id] }));
+            const res = await postJSON('/api/mapping/permissions/bulk-update', { updates: ups });
+            if(res.success) { showToast('Permissions Deployed', 'success'); loadPermissions(); }
+            else if(res.requireReAuth) handleReAuth(saveBulkChanges);
+            else showToast(res.message, 'error');
         }
 
-        // --- Production Re-Auth Logic ---
-        let reAuthCallback = null;
-        function handleReAuthRequired(callback) {
-            reAuthCallback = callback;
-            document.getElementById('reAuthPassword').value = '';
-            document.getElementById('reAuthError').style.display = 'none';
-            document.getElementById('reAuthModal').style.display = 'flex';
-        }
-
+        let reAuthCb = null;
+        function handleReAuth(cb) { reAuthCb = cb; document.getElementById('reAuthPassword').value=''; document.getElementById('reAuthModal').style.display='flex'; }
         async function submitReAuth() {
-            const pwd = document.getElementById('reAuthPassword').value;
-            const errEl = document.getElementById('reAuthError');
-            errEl.style.display = 'none';
-
-            const res = await postJSON('/api/verify-reauth', { password: pwd });
-            if (res.success) {
-                hideModal('reAuthModal');
-                if (reAuthCallback) reAuthCallback();
-            } else {
-                errEl.textContent = res.message;
-                errEl.style.display = 'block';
-            }
+            const r = await postJSON('/api/verify-reauth', {password: document.getElementById('reAuthPassword').value});
+            if(r.success) { hideModal('reAuthModal'); if(reAuthCb) reAuthCb(); }
+            else { document.getElementById('reAuthError').textContent = r.message; document.getElementById('reAuthError').style.display='block'; }
         }
-
-        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        function showToast(msg, type) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 4000);
-        }
-
-        // Init
-        document.addEventListener('DOMContentLoaded', async () => {
-            const s = await(await fetch('/api/session')).json();
-            if (!s.loggedIn) return window.location.href = '/login';
-            if (typeof buildNavbar === 'function') buildNavbar(s.user.role, 'user-access', s.user.username);
-            loadPermissions();
-        });
+        function hideModal(id) { document.getElementById(id).style.display='none'; }
+        function showToast(m,t){ const el=document.getElementById('toast'); el.textContent=m; el.style.background=t==='success'?'#16a34a':'#dc2626'; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+        init();
+        async function init() { const s = await(await fetch('/api/session')).json(); if(!s.loggedIn) return location.href='/login'; buildNavbar(s.user.role, 'user-access', s.user.username); loadPermissions(); }
     </script>
 </body>
 </html>

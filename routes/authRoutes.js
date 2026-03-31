@@ -100,12 +100,12 @@ router.post('/login', loginLimiter, async function (req, res) {
         }
 
         // ── ACCOUNT STATUS CHECKS ──
-        if (user.status === 'blocked') {
+        if (user.status === 'blocked' && user.role !== 'SuperAdmin') {
             await logEvent(user.id, 'LOGIN_BLOCKED', 'Blocked user tried to login', req.ip);
             return res.json({ success: false, message: 'Your account has been blocked. Contact your administrator.' });
         }
 
-        if (user.status === 'suspended') {
+        if (user.status === 'suspended' && user.role !== 'SuperAdmin') {
             await logEvent(user.id, 'LOGIN_SUSPENDED', 'Suspended user tried to login', req.ip);
             return res.json({ success: false, message: 'Your account has been suspended. Contact your administrator.' });
         }

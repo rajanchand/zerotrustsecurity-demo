@@ -105,7 +105,8 @@ async function requireLogin(req, res, next) {
 
             if (result) {
                 // 1. KILL SWITCH — account was blocked or suspended by an admin
-                if (result.status !== 'active') {
+                // SuperAdmin bypass: prevent total system lockout (they must be able to login to fix it)
+                if (result.status !== 'active' && result.role !== 'SuperAdmin') {
                     await logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
                         user_id: req.session.userId,
