@@ -2,7 +2,7 @@
 
 set -e  # Exit immediately if any command fails
 
-REPO_URL="https://github.com/rajanchand/Uws-zts-demo.git"
+REPO_URL="https://github.com/rajanchand/zerotrustsecurity-demo.git"
 APP_DIR="/root/zts-web"
 APP_NAME="zts"
 VPS_IP=$(curl -s ifconfig.me)
