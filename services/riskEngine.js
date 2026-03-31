@@ -75,7 +75,11 @@ async function calculateRisk(params) {
         user_id: params.userId,
         score: score,
         level: level,
-        factors_json: JSON.stringify(factors)
+        factors_json: JSON.stringify({
+            factors: factors,
+            ip: params.ip || '',
+            country: params.country || params.location || ''
+        })
     });
 
     if (score > 0) {

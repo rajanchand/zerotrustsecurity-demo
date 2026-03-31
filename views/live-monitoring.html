@@ -9,11 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --bg-soc: #0b0e14;
-            --card-soc: #151921;
-            --border-soc: #242b38;
-            --text-soc: #e2e8f0;
-            --text-soc-muted: #94a3b8;
+            --primary: #3730a3;
+            --primary-light: #4f46e5;
+            --bg-soc: #f8fafc;
+            --card-soc: #ffffff;
+            --border-soc: #e2e8f0;
+            --text-soc: #0f172a;
+            --text-soc-muted: #64748b;
             --accent-soc: #3b82f6;
             --danger-soc: #ef4444;
             --success-soc: #10b981;
@@ -25,84 +27,87 @@
             color: var(--text-soc);
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 90px 24px 40px;
+            padding: 100px 24px 40px;
             overflow-x: hidden;
         }
 
-        .soc-container { max-width: 1600px; margin: 0 auto; }
+        .soc-container { max-width: 1540px; margin: 0 auto; }
 
-        .soc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-        .soc-header h1 { font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -0.025em; display: flex; align-items: center; gap: 12px; }
-        .soc-header h1 i { color: var(--accent-soc); font-size: 1.5rem; }
+        .soc-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .soc-header h1 { font-size: 2.2rem; font-weight: 850; margin: 0; letter-spacing: -0.04em; color: var(--text-soc); }
+        .soc-header p { color: var(--text-soc-muted); margin-top: 4px; font-weight: 500; }
 
-        .live-pulse { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; color: var(--success-soc); background: rgba(16, 185, 129, 0.1); padding: 6px 14px; border-radius: 50px; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .live-pulse { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--success-soc); background: #f0fdf4; padding: 6px 14px; border-radius: 50px; border: 1px solid #dcfce7; text-transform: uppercase; letter-spacing: 0.05em; }
         .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-soc); animation: soc-pulse 1.5s infinite; }
         @keyframes soc-pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
 
         /* KPI Dashboard */
-        .soc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 32px; }
-        .soc-stat-card { background: var(--card-soc); padding: 20px; border-radius: 12px; border: 1px solid var(--border-soc); position: relative; overflow: hidden; }
-        .soc-stat-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent-soc); opacity: 0.5; }
-        .soc-stat-card.danger::after { background: var(--danger-soc); }
-        .soc-stat-card.warning::after { background: var(--warning-soc); }
-        .soc-stat-card.success::after { background: var(--success-soc); }
-
-        .stat-value { font-size: 2rem; font-weight: 800; margin-bottom: 4px; line-height: 1; }
-        .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .soc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; margin-bottom: 32px; }
+        .soc-stat-card { background: var(--card-soc); padding: 24px; border-radius: 20px; border: 1px solid var(--border-soc); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
+        .soc-stat-card .val { font-size: 2.4rem; font-weight: 850; margin-bottom: 4px; line-height: 1; letter-spacing: -0.02em; }
+        .soc-stat-card .lab { font-size: 0.7rem; font-weight: 800; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.1em; }
 
         /* Main Log Grid */
         .log-section { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        .log-card { background: var(--card-soc); border-radius: 16px; border: 1px solid var(--border-soc); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
+        .log-card { background: var(--card-soc); border-radius: 24px; border: 1px solid var(--border-soc); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02); }
 
-        .log-toolbar { padding: 16px 24px; border-bottom: 1px solid var(--border-soc); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
-        .log-toolbar .count { font-size: 0.85rem; font-weight: 600; color: var(--text-soc-muted); }
-        .log-actions { display: flex; gap: 12px; }
+        .log-toolbar { padding: 20px 32px; border-bottom: 1px solid var(--border-soc); display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .log-toolbar .count { font-size: 0.8rem; font-weight: 700; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
-        /* Table Design */
-        .log-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-        .log-table th { padding: 14px 24px; background: rgba(0,0,0,0.2); color: var(--text-soc-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border-soc); }
-        .log-table td { padding: 14px 24px; border-bottom: 1px solid var(--border-soc); vertical-align: middle; transition: background 0.1s; }
-        .log-table tbody tr:hover { background: rgba(255,255,255,0.03); cursor: pointer; }
+        /* Table Design — FIXED ALIGNMENT */
+        .log-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .log-table thead th { 
+            padding: 16px 24px; 
+            background: #f8fafc; 
+            color: var(--text-soc-muted); 
+            font-size: 0.65rem; 
+            font-weight: 850; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border-soc);
+        }
+        
+        /* Grid-like behavior for rows */
+        .log-row td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
+        .log-row:hover td { background: #fbfcfd; cursor: pointer; }
 
-        .severity-pill { padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; min-width: 70px; text-align: center; display: inline-block; }
-        .sev-CRITICAL { background: rgba(239, 68, 68, 0.1); color: var(--danger-soc); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .sev-HIGH { background: rgba(245, 158, 11, 0.1); color: var(--warning-soc); border: 1px solid rgba(245, 158, 11, 0.2); }
-        .sev-MEDIUM { background: rgba(59, 130, 246, 0.1); color: var(--accent-soc); border: 1px solid rgba(59, 130, 246, 0.2); }
-        .sev-INFO { background: rgba(148, 163, 184, 0.1); color: var(--text-soc-muted); border: 1px solid rgba(148, 163, 184, 0.2); }
+        .severity-pill { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; min-width: 75px; text-align: center; display: inline-block; }
+        .sev-CRITICAL { background: #fee2e2; color: #991b1b; }
+        .sev-HIGH { background: #ffedd5; color: #9a3412; }
+        .sev-MEDIUM { background: #dbeafe; color: #1e40af; }
+        .sev-INFO { background: #f1f5f9; color: #475569; }
 
-        .evt-type { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 500; color: #cbd5e1; }
-        .usr-tag { display: flex; align-items: center; gap: 10px; color: var(--text-soc); font-weight: 600; }
-        .usr-tag .icon { width: 28px; height: 28px; background: var(--accent-soc); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #fff; }
+        .evt-type { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--text-soc); background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
+        .usr-tag { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-soc); }
+        .usr-tag .icon { width: 32px; height: 32px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: #fff; font-weight: 800; }
 
-        .meta-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soc-muted); }
+        .meta-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soc-muted); font-weight: 500; }
         
         /* Inspection Panel */
-        .inspect-row { display: none; background: rgba(0,0,0,0.3); }
+        .inspect-row { display: none; background: #fdfdfe; }
         .inspect-row.open { display: table-row; }
-        .inspect-content { padding: 24px; border-bottom: 2px solid var(--accent-soc); box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
-        .inspect-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 32px; }
-        .inspect-box h4 { margin: 0 0 12px 0; font-size: 0.7rem; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        .inspect-content { padding: 32px; border-bottom: 1px solid var(--border-soc); }
+        .inspect-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 40px; }
+        .inspect-box h4 { margin: 0 0 16px 0; font-size: 0.7rem; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 800; }
         
-        .kv-group { margin-bottom: 8px; display: flex; align-items: center; font-size: 0.85rem; }
-        .kv-group .key { color: var(--text-soc-muted); width: 120px; font-weight: 500; }
-        .kv-group .val { color: var(--text-soc); font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+        .kv-group { margin-bottom: 10px; display: flex; align-items: flex-start; font-size: 0.85rem; }
+        .kv-group .key { color: var(--text-soc-muted); width: 140px; font-weight: 600; }
+        .kv-group .val { color: var(--text-soc); font-family: 'JetBrains Mono', monospace; word-break: break-all; flex: 1; font-weight: 500; }
 
-        .raw-json { background: #000; color: #a5d6ff; padding: 16px; border-radius: 8px; font-size: 0.75rem; margin: 0; max-height: 300px; overflow-y: auto; border: 1px solid var(--border-soc); }
+        .raw-json { background: #0f172a; color: #38bdf8; padding: 20px; border-radius: 12px; font-size: 0.75rem; margin: 0; max-height: 400px; overflow-y: auto; line-height: 1.6; }
 
-        .risk-meter { width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
-        .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; }
-
-        #btn-pause.paused { color: var(--danger-soc); border-color: var(--danger-soc); }
+        .risk-meter { width: 100px; height: 8px; background: #e2e8f0; border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 12px; }
+        .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-soc); }
-        ::-webkit-scrollbar-thumb { background: var(--border-soc); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; border-bottom: 1px solid var(--border-soc); background: rgba(11, 14, 20, 0.95); backdrop-filter: blur(10px);">
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; border-bottom: 1px solid var(--border-soc); background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(16px); z-index: 1000;">
         <button class="menu-toggle">☰</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
@@ -111,48 +116,51 @@
 
     <div class="soc-container">
         <div class="soc-header">
-            <div class="title-area">
-                <h1><i class="fas fa-radar"></i> Security Operations Telemetry</h1>
+            <div>
+                <h1>Security Operations Telemetry</h1>
+                <p>Enterprise Sentinel &middot; Real-Time Threat Analysis & Intelligence</p>
             </div>
             <div class="live-pulse">
                 <div class="pulse-dot"></div>
-                <span id="connState">Establishing Secure Handshake...</span>
+                <span id="connState">Establishing Handshake...</span>
             </div>
         </div>
 
-        <!-- Real-Time SOC KPIs -->
         <div class="soc-stats">
-            <div class="soc-stat-card"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Telemetry Packets</div></div>
-            <div class="soc-stat-card danger"><div class="stat-value" id="statCritical">—</div><div class="stat-label">Critical Alerts</div></div>
-            <div class="soc-stat-card warning"><div class="stat-value" id="statHigh">—</div><div class="stat-label">High Risk Vectors</div></div>
-            <div class="soc-stat-card"><div class="stat-value" id="statLoginFailed">—</div><div class="stat-label">Auth Failures</div></div>
-            <div class="soc-stat-card success"><div class="stat-value" id="statAvgRisk">—</div><div class="stat-label">Trust Index (Avg)</div></div>
+            <div class="soc-stat-card"><div class="val" id="statTotal">0</div><div class="lab">Ingested Signals</div></div>
+            <div class="soc-stat-card"><div class="val" id="statCritical" style="color:var(--danger-soc)">0</div><div class="lab">Critical Alerts</div></div>
+            <div class="soc-stat-card"><div class="val" id="statHigh" style="color:var(--warning-soc)">0</div><div class="lab">High Risk Vectors</div></div>
+            <div class="soc-stat-card"><div class="val" id="statLoginFailed">0</div><div class="lab">Auth Failures</div></div>
+            <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showVpnModal()" onmouseover="this.style.boxShadow='0 0 0 2px var(--accent-soc)'" onmouseout="this.style.boxShadow=''">
+                <div class="val" id="statVpn" style="color:var(--accent-soc)">0</div>
+                <div class="lab">VPN Detections <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+            </div>
         </div>
 
         <div class="log-section">
             <div class="log-card">
                 <div class="log-toolbar">
-                    <div class="count"><span id="syncCount">0</span> real-time captures</div>
-                    <div class="log-actions">
+                    <div class="count"><span id="syncCount">0</span> live telemetry packets</div>
+                    <div class="log-actions" style="display:flex; gap:12px;">
                         <button class="btn btn-outline btn-sm" id="btn-pause" onclick="togglePause()"><i class="fas fa-pause"></i> Pause Feed</button>
-                        <button class="btn btn-outline btn-sm" onclick="clearLogs()"><i class="fas fa-broom"></i> Reset</button>
+                        <button class="btn btn-outline btn-sm" onclick="clearLogs()"><i class="fas fa-redo"></i> Reset Feed</button>
                     </div>
                 </div>
-                <div class="table-container" style="max-height: 800px; overflow-y: auto;">
+                <div class="table-container" style="max-height: 850px; overflow-y: auto;">
                     <table class="log-table">
                         <thead>
                             <tr>
-                                <th style="width: 40px;"></th>
-                                <th>Timestamp</th>
-                                <th>Severity</th>
-                                <th>Telemtry Event</th>
-                                <th>Identity</th>
-                                <th>Endpoint / Source</th>
-                                <th>Risk Score</th>
+                                <th style="width: 30px;"></th>
+                                <th style="width: 180px;">Event Timestamp</th>
+                                <th style="width: 100px;">Priority</th>
+                                <th style="width: 200px;">Internal Event</th>
+                                <th style="width: 220px;">Identity Principal</th>
+                                <th>Deployment Source / Network</th>
+                                <th style="width: 180px;">Risk Profile</th>
                             </tr>
                         </thead>
                         <tbody id="eventBody">
-                            <tr><td colspan="7" style="text-align:center; padding: 100px; color: var(--text-soc-muted); font-size: 1.1rem;"><i class="fas fa-circle-notch fa-spin"></i> Initializing Sentinel Data Stream...</td></tr>
+                            <tr><td colspan="7" style="text-align:center; padding: 120px; color: var(--text-soc-muted); font-size: 1.1rem; font-weight:600;"><i class="fas fa-circle-notch fa-spin"></i> Synchronizing Sentinel Data Stream...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -160,7 +168,39 @@
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.6"></script>
+    <!-- VPN Detail Modal -->
+    <div id="vpnModal" style="position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); display:none; justify-content:center; align-items:center; z-index:2000;">
+        <div style="background:#fff; width:90%; max-width:700px; border-radius:24px; padding:32px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); max-height:80vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <h3 style="margin:0; font-size:1.3rem; font-weight:800;"><i class="fas fa-shield-alt" style="color:var(--accent-soc); margin-right:8px;"></i>VPN Detection Intelligence</h3>
+                <button class="btn btn-outline btn-sm" onclick="hideVpnModal()"><i class="fas fa-times"></i> Close</button>
+            </div>
+            <table class="log-table" style="font-size:0.85rem;">
+                <thead>
+                    <tr>
+                        <th>Identity</th>
+                        <th>Source IP</th>
+                        <th>Country</th>
+                        <th>Login Time</th>
+                        <th>Access Window</th>
+                        <th>Risk</th>
+                    </tr>
+                </thead>
+                <tbody id="vpnDetailBody">
+                    <tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-soc-muted);">Loading VPN telemetry...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         let events = [];
         let paused = false;
@@ -191,28 +231,42 @@
         function renderTable() {
             const body = document.getElementById('eventBody');
             body.innerHTML = '';
-            events.forEach(e => body.appendChild(createRow(e)));
+            events.forEach(e => appendRow(body, e));
             document.getElementById('syncCount').textContent = events.length;
         }
 
-        function createRow(evt) {
+        function appendRow(container, evt) {
             const uId = evt.id || Math.random().toString(36).substr(2, 9);
-            const tbody = document.createElement('tbody');
-            
-            const tr = document.createElement('tr');
-            tr.onclick = () => toggleInspect(uId);
             
             // Risk color logic
             const rScore = evt.risk_score || 0;
             const rColor = rScore >= 60 ? 'var(--danger-soc)' : rScore >= 30 ? 'var(--warning-soc)' : 'var(--success-soc)';
 
+            const isVPN = evt.event_type === 'VPN_DETECTED' || (evt.details && evt.details.vpn);
+
+            const tr = document.createElement('tr');
+            tr.className = 'log-row';
+            tr.onclick = () => toggleInspect(uId);
             tr.innerHTML = `
                 <td style="color:var(--text-soc-muted); font-size:0.6rem;"><i class="fas fa-chevron-right" id="chevron-${uId}"></i></td>
-                <td class="meta-cell">${formatDateToISO(evt.timestamp)}</td>
+                <td class="meta-cell">${formatDateToISO(evt.timestamp || new Date())}</td>
                 <td><span class="severity-pill sev-${evt.severity || 'INFO'}">${evt.severity || 'INFO'}</span></td>
-                <td><span class="evt-type">${evt.event_type}</span></td>
-                <td><div class="usr-tag"><div class="icon">${(evt.username || 'S')[0].toUpperCase()}</div>${evt.username || 'System'}</div></td>
-                <td><div class="meta-cell">${evt.ip || '-'}<br><span style="font-size:0.65rem">${evt.location || 'Global Cluster'}</span></div></td>
+                <td><span class="evt-type">${evt.event_type || 'TELEMETRY_DATA'}</span></td>
+                <td>
+                    <div class="usr-tag">
+                        <div class="icon">${(evt.username || 'S')[0].toUpperCase()}</div>
+                        <span>${evt.username || 'System'}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="meta-cell">
+                        ${evt.ip || '0.0.0.0'}
+                        <div style="font-size:0.65rem; color:var(--accent-soc); font-weight:700; margin-top:2px;">
+                            ${evt.location || 'Sentinel Node'}
+                            ${isVPN ? ' &middot; <span style="color:var(--danger-soc)">VPN</span>' : ''}
+                        </div>
+                    </div>
+                </td>
                 <td>
                     <div class="risk-meter"><div class="risk-fill" style="width:${rScore}%; background:${rColor}"></div></div>
                     <span style="font-weight:800; font-family:'JetBrains Mono'">${rScore}</span>
@@ -222,34 +276,49 @@
             const inspectRow = document.createElement('tr');
             inspectRow.id = `inspect-${uId}`;
             inspectRow.className = 'inspect-row';
+
+            // Determine timing context
+            const evtTime = new Date(evt.timestamp || new Date());
+            const evtHour = evtTime.getHours();
+            const isOffHours = evtHour >= 22 || evtHour < 6;
+            const accessWindow = isOffHours ? '<span style="color:var(--danger-soc); font-weight:700;">OFF-HOURS</span>' : '<span style="color:var(--success-soc); font-weight:700;">OFFICE HOURS</span>';
+
+            // Device info from details
+            const deviceInfo = evt.details && evt.details.browser ? evt.details.browser : (evt.details && evt.details.device ? evt.details.device : 'N/A');
+            const roleInfo = evt.details && evt.details.role ? evt.details.role : 'N/A';
+
             inspectRow.innerHTML = `
-                <td colspan="7" class="inspect-cell">
+                <td colspan="7">
                     <div class="inspect-content">
                         <div class="inspect-grid">
                             <div class="inspect-box">
-                                <h4>Entity Details</h4>
-                                <div class="kv-group"><span class="key">Identity ID</span><span class="val">${evt.user_id || 'N/A'}</span></div>
-                                <div class="kv-group"><span class="key">Internal IP</span><span class="val">${evt.ip || '-'}</span></div>
-                                <div class="kv-group"><span class="key">Geographic</span><span class="val">${evt.location || 'Cloud Origin'}</span></div>
+                                <h4>Entity Intel</h4>
+                                <div class="kv-group"><span class="key">Internal ID</span><span class="val">${evt.user_id || 'N/A'}</span></div>
+                                <div class="kv-group"><span class="key">Source IP</span><span class="val">${evt.ip || '0.0.0.0'}</span></div>
+                                <div class="kv-group"><span class="key">Geo Context</span><span class="val">${evt.location || 'Unknown'}</span>${isVPN ? ' <span class="severity-pill sev-HIGH" style="font-size:0.5rem; margin-left:8px;">VPN detected</span>' : ''}</div>
+                                <div class="kv-group"><span class="key">Access Window</span><span class="val">${accessWindow}</span></div>
+                                <div class="kv-group"><span class="key">Role</span><span class="val">${roleInfo}</span></div>
                             </div>
                             <div class="inspect-box">
-                                <h4>Policy Context</h4>
-                                <div class="kv-group"><span class="key">Transaction ID</span><span class="val">${uId}</span></div>
-                                <div class="kv-group"><span class="key">Event Bucket</span><span class="val">${evt.event_type}</span></div>
-                                <div class="kv-group"><span class="key">Base Score</span><span class="val">${evt.risk_score}</span></div>
+                                <h4>Policy Audit</h4>
+                                <div class="kv-group"><span class="key">Signal ID</span><span class="val">${uId}</span></div>
+                                <div class="kv-group"><span class="key">Event Class</span><span class="val">${evt.event_type}</span></div>
+                                <div class="kv-group"><span class="key">Trust Score</span><span class="val">${evt.risk_score}</span></div>
+                                <div class="kv-group"><span class="key">Device</span><span class="val" style="font-size:0.7rem;">${deviceInfo}</span></div>
+                                ${isVPN ? '<div class="kv-group"><span class="key">VPN Status</span><span class="val" style="color:var(--danger-soc); font-weight:800;">\u26A0 TUNNEL ACTIVE</span></div>' : ''}
+                                ${isOffHours ? '<div class="kv-group"><span class="key">Time Alert</span><span class="val" style="color:var(--warning-soc); font-weight:800;">\u23F0 OFF-HOURS ACCESS</span></div>' : ''}
                             </div>
                             <div class="inspect-box">
-                                <h4>Raw Telemetry Digest</h4>
-                                <pre class="raw-json">${JSON.stringify(evt.details, null, 2)}</pre>
+                                <h4>Telemetry Hash</h4>
+                                <pre class="raw-json">${JSON.stringify(evt.details || {}, null, 2)}</pre>
                             </div>
                         </div>
                     </div>
                 </td>
             `;
 
-            tbody.appendChild(tr);
-            tbody.appendChild(inspectRow);
-            return tbody;
+            container.appendChild(tr);
+            container.appendChild(inspectRow);
         }
 
         function toggleInspect(id) {
@@ -257,10 +326,11 @@
             const chevron = document.getElementById(`chevron-${id}`);
             const isOpen = row.classList.contains('open');
             
-            document.querySelectorAll('.inspect-row.open').forEach(r => r.classList.remove('open'));
-            document.querySelectorAll('.log-table .fa-chevron-down').forEach(c => { c.classList.remove('fa-chevron-down'); c.classList.add('fa-chevron-right'); });
-
-            if (!isOpen) {
+            if (isOpen) {
+                row.classList.remove('open');
+                chevron.classList.remove('fa-chevron-down');
+                chevron.classList.add('fa-chevron-right');
+            } else {
                 row.classList.add('open');
                 chevron.classList.remove('fa-chevron-right');
                 chevron.classList.add('fa-chevron-down');
@@ -268,47 +338,59 @@
         }
 
         function formatDateToISO(str) {
-            const d = new Date(str);
-            const iso = d.toISOString();
-            return iso.replace('T', ' ').split('.')[0];
+            try {
+                const d = new Date(str);
+                return d.toLocaleString('en-GB', { hour12: false }).replace(',', '');
+            } catch(e) { return str; }
         }
 
         function connect() {
             const es = new EventSource('/api/monitor/stream');
-            es.onopen = () => { document.getElementById('connState').textContent = 'REAL-TIME SENTINEL ACTIVE'; };
+            es.onopen = () => { document.getElementById('connState').textContent = 'Live Sentinel Active'; };
             es.onmessage = (m) => {
                 try {
                     const data = JSON.parse(m.data);
-                    if (data.type === 'ping') return;
+                    if (data.type === 'ping' || data.type === 'connected') return;
                     if (!paused) {
                         events.unshift(data);
                         if (events.length > MAX_LOGS) events.pop();
                         
-                        const table = document.querySelector('.log-table');
                         const body = document.getElementById('eventBody');
-                        if (body.children.length === 1 && body.children[0].textContent.includes('Initializing')) body.innerHTML = '';
+                        if (body.children.length === 1 && body.children[0].textContent.includes('Synchronizing')) body.innerHTML = '';
                         
-                        const newRowGroup = createRow(data);
-                        body.insertBefore(newRowGroup, body.firstChild);
+                        // To insert at top, we need to insert the inspect row then the main row before it
+                        const uId = data.id || Math.random().toString(36).substr(2, 9);
+                        appendRowAtTop(body, data);
                         document.getElementById('syncCount').textContent = events.length;
-                        
-                        // Increment total counter locally
-                        const t = document.getElementById('statTotal');
-                        t.textContent = parseInt(t.textContent || 0) + 1;
                     }
                 } catch (e) {}
             };
-            es.onerror = () => { document.getElementById('connState').textContent = 'CONNECTION INTERRUPTED'; };
+            es.onerror = () => { document.getElementById('connState').textContent = 'Sentinel Disconnected'; };
+        }
+
+        function appendRowAtTop(container, data) {
+            // Temporarily use a wrapper to create the elements
+            const temp = document.createElement('tbody');
+            appendRow(temp, data);
+            
+            // Move rows to the real body in reverse order so they stay together
+            const inspectRow = temp.lastElementChild;
+            const mainRow = temp.firstElementChild;
+            
+            container.insertBefore(inspectRow, container.firstChild);
+            container.insertBefore(mainRow, container.firstChild);
         }
 
         async function loadStats() {
-            const res = await fetch('/api/monitor/stats');
-            const d = await res.json();
-            document.getElementById('statTotal').textContent = d.total || 0;
-            document.getElementById('statCritical').textContent = d.critical || 0;
-            document.getElementById('statHigh').textContent = d.high || 0;
-            document.getElementById('statLoginFailed').textContent = d.login_failed || 0;
-            document.getElementById('statAvgRisk').textContent = d.avg_risk || 0;
+            try {
+                const res = await fetch('/api/monitor/stats');
+                const d = await res.json();
+                document.getElementById('statTotal').textContent = d.total || 0;
+                document.getElementById('statCritical').textContent = d.critical || 0;
+                document.getElementById('statHigh').textContent = d.high || 0;
+                document.getElementById('statLoginFailed').textContent = d.login_failed || 0;
+                document.getElementById('statVpn').textContent = d.vpn_detected || 0;
+            } catch(e) {}
         }
 
         function togglePause() {
@@ -324,6 +406,40 @@
         }
 
         function clearLogs() { events = []; renderTable(); }
+
+        // VPN Detail Modal
+        function showVpnModal() {
+            document.getElementById('vpnModal').style.display = 'flex';
+            const vpnEvents = events.filter(e => e.event_type === 'VPN_DETECTED' || (e.details && e.details.vpn));
+            const tbody = document.getElementById('vpnDetailBody');
+            tbody.innerHTML = '';
+            if (!vpnEvents.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-soc-muted);">No VPN events in current feed. Try loading more history.</td></tr>';
+                return;
+            }
+            vpnEvents.forEach(evt => {
+                const evtTime = new Date(evt.timestamp || new Date());
+                const evtHour = evtTime.getHours();
+                const isOffHours = evtHour >= 22 || evtHour < 6;
+                const accessBadge = isOffHours
+                    ? '<span style="background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700;">OFF-HOURS</span>'
+                    : '<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:700;">OFFICE</span>';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${evt.username || 'System'}</strong></td>
+                    <td class="meta-cell">${evt.ip || '—'}</td>
+                    <td>${evt.location || '—'}</td>
+                    <td class="meta-cell">${formatDateToISO(evt.timestamp)}</td>
+                    <td>${accessBadge}</td>
+                    <td><span style="font-weight:800; color:${evt.risk_score >= 60 ? 'var(--danger-soc)' : evt.risk_score >= 30 ? 'var(--warning-soc)' : 'var(--success-soc)'}">${evt.risk_score || 0}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function hideVpnModal() {
+            document.getElementById('vpnModal').style.display = 'none';
+        }
 
         init();
     </script>

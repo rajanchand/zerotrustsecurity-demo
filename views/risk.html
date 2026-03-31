@@ -114,16 +114,23 @@
             <div class="card-top">Historical Risk Velocity</div>
             <table>
                 <thead>
-                    <tr><th>CRI Score</th><th>Identity Level</th><th>Signals Detected</th><th>Timestamp</th></tr>
+                    <tr><th>CRI Score</th><th>Identity Level</th><th>Source IP</th><th>Location</th><th>Signals Detected</th><th>Timestamp</th></tr>
                 </thead>
                 <tbody id="historyTable">
-                    <tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Fetching Historical Intelligence...</td></tr>
+                    <tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Fetching Historical Intelligence...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         async function init() {
             const s = await (await fetch('/api/session')).json();
@@ -166,19 +173,34 @@
             tb.innerHTML = '';
             if (d.history && d.history.length) {
                 d.history.forEach(r => {
-                    const factors = JSON.parse(r.factors_json || '[]').map(x => x.factor).join(', ') || 'Baseline';
+                    // Handle both old (array) and new (object) formats
+                    let parsed;
+                    try { parsed = JSON.parse(r.factors_json || '[]'); } catch(e) { parsed = []; }
+                    let factors, rip, rcountry;
+                    if (Array.isArray(parsed)) {
+                        factors = parsed;
+                        rip = '';
+                        rcountry = '';
+                    } else {
+                        factors = parsed.factors || [];
+                        rip = parsed.ip || '';
+                        rcountry = parsed.country || '';
+                    }
+                    const signalNames = factors.map(x => x.factor).join(', ') || 'Baseline';
                     const badgeCls = r.level === 'Low' ? 'b-low' : r.level === 'Medium' ? 'b-medium' : 'b-high';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${r.score}</strong></td>
                         <td><span class="badge ${badgeCls}">${r.level}</span></td>
-                        <td>${factors}</td>
+                        <td class="time-cell">${rip || '—'}</td>
+                        <td>${rcountry || '—'}</td>
+                        <td>${signalNames}</td>
                         <td class="time-cell">${formatDate(r.created_at)}</td>
                     `;
                     tb.appendChild(tr);
                 });
             } else {
-                tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">No historical telemetry found.</td></tr>';
+                tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;">No historical telemetry found.</td></tr>';
             }
         }
         init();
