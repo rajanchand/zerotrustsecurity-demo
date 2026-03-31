@@ -26,27 +26,7 @@ app.use(helmet({
     hsts: false
 }));
 
-// 2. Force HTTPS in production — this app sits behind NGINX which sets
-//    X-Forwarded-Proto to "https". Without this check, the browser would
-//    allow plain HTTP requests to reach the app directly on port 3000.
-if (isProduction) {
-    app.use(function (req, res, next) {
-        // Allow /metrics over plain HTTP — Prometheus scrapes from localhost
-        if (req.path === '/metrics') return next();
-
-        // ⚡ FIX: Allow local requests (diagnostics) to stay on HTTP
-        var clientIP = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
-        var isLocal = clientIP === '127.0.0.1' || clientIP === '::1' || clientIP === '::ffff:127.0.0.1' || clientIP === '';
-        if (isLocal) return next();
-
-        // Standard HTTPS redirect for external traffic
-        if (req.headers['x-forwarded-proto'] !== 'https') {
-            return res.redirect('https://' + req.headers.host + req.url);
-        }
-        next();
-    });
-}
-
+// 2. Load environment variables and trust proxies
 app.set('trust proxy', 1);
 
 app.use(express.json());
