@@ -8,22 +8,28 @@ const path = require('path');
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Fail-fast: require SESSION_SECRET in production
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'zts-default-secret')) {
+    console.error('FATAL: SESSION_SECRET must be set to a strong random value in production.');
+    process.exit(1);
+}
+
 // 1. HELMET — set security headers (CSP, X-Frame-Options, etc.)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'"],
             upgradeInsecureRequests: null
         }
     },
     crossOriginEmbedderPolicy: false,
-    hsts: false
+    hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false
 }));
 
 // 2. Load environment variables and trust proxies
@@ -129,6 +135,11 @@ app.get('/', function (req, res) {
 // Security block page (shown for high-risk sessions)
 app.get('/security-block', function (req, res) {
     res.sendFile(path.join(__dirname, 'views', 'security-block.html'));
+});
+
+// Branded 404 handler — must be after all routes
+app.use(function (req, res) {
+    res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
 });
 
 const PORT = process.env.PORT || 3000;

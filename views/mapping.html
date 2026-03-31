@@ -174,9 +174,47 @@
         </div>
     </div>
 
+    <!-- Identity Update Modal (Role/Dept) -->
+    <div id="updateUserModal" class="modal-overlay">
+        <div class="modal-content" style="border-top: 5px solid var(--zts-primary);">
+            <h3>Governance Identity Update</h3>
+            <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem;">Modify professional identity context for <span id="update-target-name" style="font-weight:700;"></span>.</p>
+            <input type="hidden" id="update-target-id">
+            
+            <div class="form-grid" style="display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:24px;">
+                <div class="form-group">
+                    <label>Governance Role</label>
+                    <select id="update-role">
+                        <option value="HR">Human Resources (HR)</option>
+                        <option value="IT">Information Technology (IT)</option>
+                        <option value="SuperAdmin">SuperAdmin (Full Control)</option>
+                        <option value="CustomerSupport">Customer Support</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assigned Org Unit</label>
+                    <select id="update-dept"></select>
+                </div>
+            </div>
+
+            <p id="update-error" style="color:var(--danger); font-size:0.8rem; margin-bottom:12px; display:none;"></p>
+            <div style="display:flex; gap:12px;">
+                <button class="btn-full btn-primary" onclick="submitUpdateUser()">Commit Changes</button>
+                <button class="btn-full btn-outline" onclick="hideModal('updateUserModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-box"></div>
 
-    <script src="/js/app.js?v=1.0.6"></script>
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         let currentUserRole = '';
         let pendingCallback = null;
@@ -222,6 +260,7 @@
                                 `<button class="tool-btn success" title="Activate Account" onclick="activateUser(${u.id})"><i class="fas fa-user-check"></i></button>`
                             }
                             <button class="tool-btn" title="Emergency Pass Reset" onclick="showResetModal(${u.id}, '${u.username}')"><i class="fas fa-key"></i></button>
+                            <button class="tool-btn" title="Change Role / Org Unit" onclick="showUpdateModal(${u.id}, '${u.username}', '${u.role}', '${u.department}')" style="color:var(--zts-primary)"><i class="fas fa-id-badge"></i></button>
                             <button class="tool-btn danger" title="Instant Session Kill" onclick="revokeSessions(${u.id})"><i class="fas fa-bolt"></i></button>
                             <button class="tool-btn danger" title="Purge Identity" onclick="deleteUser(${u.id}, '${u.username}')"><i class="fas fa-trash-alt"></i></button>
                         </div>
@@ -240,12 +279,12 @@
 
         function populateDepts(depts) {
             const sel = document.getElementById('new-dept');
-            sel.innerHTML = '<option value="General">General</option>';
-            depts.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.name; opt.textContent = d.name;
-                sel.appendChild(opt);
-            });
+            const sel2 = document.getElementById('update-dept');
+            const opts = '<option value="General">General</option>' + 
+                         depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+            
+            sel.innerHTML = opts;
+            sel2.innerHTML = opts;
         }
 
         async function createUser() {
@@ -274,6 +313,35 @@
             if (res.requireReAuth) return handleReAuthRequired(() => activateUser(id));
             showToast(res.message, res.success ? 'success' : 'error');
             if (res.success) loadContent();
+        }
+
+        function showUpdateModal(id, name, role, dept) {
+            document.getElementById('update-target-id').value = id;
+            document.getElementById('update-target-name').textContent = name;
+            document.getElementById('update-role').value = role;
+            document.getElementById('update-dept').value = dept;
+            document.getElementById('update-error').style.display = 'none';
+            showModal('updateUserModal');
+        }
+
+        async function submitUpdateUser() {
+            const id = document.getElementById('update-target-id').value;
+            const data = {
+                userId: id,
+                role: document.getElementById('update-role').value,
+                department: document.getElementById('update-dept').value
+            };
+            const res = await postJSON('/api/mapping/users/edit', data);
+            if (res.success) { 
+                showToast('Identity Context Updated', 'success'); 
+                hideModal('updateUserModal'); 
+                loadContent(); 
+            }
+            else if (res.requireReAuth) handleReAuthRequired(submitUpdateUser);
+            else {
+                document.getElementById('update-error').textContent = res.message;
+                document.getElementById('update-error').style.display = 'block';
+            }
         }
 
         async function revokeSessions(id) {

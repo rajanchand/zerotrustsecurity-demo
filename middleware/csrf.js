@@ -11,7 +11,8 @@ function generateCSRFToken(req) {
 }
 
 // paths that are exempt from CSRF (pre-auth or public)
-const EXEMPT_PATHS = ['/login', '/logout', '/verify-otp', '/otp'];
+// paths that are exempt from CSRF (pre-auth or public)
+const EXEMPT_PATHS = ['/login', '/logout', '/verify-otp', '/otp', '/api/login', '/api/verify-otp'];
 
 function csrfProtection(req, res, next) {
     // only check POST/PUT/DELETE methods

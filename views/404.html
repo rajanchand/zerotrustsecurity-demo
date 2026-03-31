@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Resource Not Found | ZTS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text-main: #f8fafc;
+            --text-soft: #94a3b8;
+            --primary: #3730a3;
+            --accent: #6366f1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridDrift 20s linear infinite;
+        }
+
+        @keyframes gridDrift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        .error-card {
+            position: relative;
+            background: var(--card);
+            width: 100%;
+            max-width: 520px;
+            padding: 56px 48px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.06);
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .error-code {
+            font-size: 6rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: var(--text-soft);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .context-pane {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-align: left;
+            margin-bottom: 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+
+        .context-pane .label { color: var(--accent); font-weight: 600; }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            padding: 16px;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-card">
+        <div class="error-code">404</div>
+        <h1>Resource Not Found</h1>
+        <p>The requested endpoint does not exist in the Zero Trust Security perimeter. This access attempt has been logged.</p>
+
+        <div class="context-pane">
+            <div><span class="label">Path:</span> <span id="reqPath"></span></div>
+            <div style="margin-top: 6px;"><span class="label">Policy:</span> DENY_UNKNOWN_ROUTES</div>
+            <div style="margin-top: 6px;"><span class="label">Action:</span> Redirecting to secure origin</div>
+        </div>
+
+        <a href="/dashboard" class="btn-back"><i class="fas fa-shield-alt"></i> Return to Dashboard</a>
+
+        <div class="footer">
+            <i class="fas fa-lock"></i> ZTS Zero Trust Security &middot; NIST SP 800-207
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('reqPath').textContent = window.location.pathname;
+    </script>
+</body>
+</html>

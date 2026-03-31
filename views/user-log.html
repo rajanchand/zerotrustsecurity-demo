@@ -3,204 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identity Audit Trails - ZTS</title>
+    <title>Identity Audit Investigations - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary: #3730a3;
-            --bg: #f8fafc;
-            --panel: #ffffff;
-            --border: #e2e8f0;
-            --text-bold: #0f172a;
-            --text-soft: #64748b;
+            --primary-light: #4f46e5;
+            --bg-forensic: #f8fafc;
+            --card-forensic: #ffffff;
+            --border-forensic: #e2e8f0;
+            --text-forensic: #0f172a;
+            --text-forensic-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
         }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        body {
+            background-color: var(--bg-forensic);
+            color: var(--text-forensic);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 100px 24px 40px;
+        }
 
-        .audit-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .audit-header h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-        .audit-header p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
+        .forensic-container { max-width: 1540px; margin: 0 auto; }
 
-        /* Search & Filter Bar */
-        .filter-bar { background: #fff; padding: 20px 32px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 24px; display: flex; gap: 16px; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .filter-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.9rem; font-weight: 500; }
-        .filter-select { padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.85rem; font-weight: 600; background: #fff; }
+        .forensic-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .forensic-header h1 { font-size: 2.2rem; font-weight: 850; margin: 0; letter-spacing: -0.04em; }
+        .forensic-header p { color: var(--text-forensic-muted); font-weight: 500; margin-top: 4px; }
 
-        /* Audit Table */
-        .audit-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
-        th { padding: 16px 24px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); text-align: left; }
-        td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
-        tr:hover td { background: #fbfcfd; cursor: pointer; }
+        /* Filtration Matrix */
+        .filter-matrix { 
+            background: var(--card-forensic); 
+            padding: 24px 32px; 
+            border-radius: 20px; 
+            border: 1px solid var(--border-forensic); 
+            margin-bottom: 24px; 
+            display: flex; 
+            gap: 16px; 
+            align-items: center; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .filter-input { flex: 1; padding: 12px 18px; border: 1px solid var(--border-forensic); border-radius: 12px; font-size: 0.95rem; font-weight: 500; outline: none; transition: border-color 0.2s; }
+        .filter-input:focus { border-color: var(--primary); }
+        .filter-select { padding: 12px 18px; border: 1px solid var(--border-forensic); border-radius: 12px; font-size: 0.85rem; font-weight: 700; background: #fff; cursor: pointer; }
 
-        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
-        .action-pill { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-        .pill-log { background: #e0e7ff; color: #4338ca; }
-        .pill-sec { background: #fee2e2; color: #991b1b; }
+        /* Ledger Table */
+        .ledger-card { 
+            background: var(--card-forensic); 
+            border-radius: 24px; 
+            border: 1px solid var(--border-forensic); 
+            overflow: hidden; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05);
+        }
+        .ledger-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .ledger-table thead th { 
+            padding: 18px 24px; 
+            background: #f8fafc; 
+            color: var(--text-forensic-muted); 
+            font-size: 0.65rem; 
+            font-weight: 850; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border-forensic);
+        }
+        .ledger-row td { padding: 18px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; transition: background 0.1s; }
+        .ledger-row:hover td { background: #fbfcfd; cursor: pointer; }
+
+        /* Data Badges */
+        .event-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; }
+        .badge-sec { background: #fee2e2; color: #991b1b; }
+        .badge-act { background: #f1f5f9; color: #475569; }
+        .badge-auth { background: #e0e7ff; color: #4338ca; }
+
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-forensic-muted); font-weight: 500; }
+        .principal-tag { font-weight: 750; color: var(--text-forensic); display: flex; align-items: center; gap: 10px; }
+        .principal-tag .avatar { width: 30px; height: 30px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 850; }
+
+        /* Side Investigation Panel */
+        .investigation-overlay { position: fixed; top: 0; right: -650px; width: 600px; height: 100%; background: #fff; border-left: 1px solid var(--border-forensic); box-shadow: -20px 0 50px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .investigation-overlay.open { right: 0; }
+        .inv-header { padding: 40px; border-bottom: 1px solid var(--border-forensic); display: flex; justify-content: space-between; align-items: flex-start; }
+        .inv-header h2 { margin: 0; font-size: 1.8rem; font-weight: 850; letter-spacing: -0.03em; }
+        .inv-content { flex: 1; overflow-y: auto; padding: 40px; }
+
+        .report-section { margin-bottom: 40px; }
+        .report-section h3 { font-size: 0.7rem; font-weight: 850; color: var(--text-forensic-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
         
-        .row-expanded { background: #f8fafc !important; }
-        .detail-pane { padding: 24px; background: #fdfdfd; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: none; }
-        .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .detail-box { font-size: 0.8rem; }
-        .detail-box .lab { font-weight: 700; color: var(--text-soft); text-transform: uppercase; font-size: 0.65rem; margin-bottom: 4px; }
-        .detail-box .val { font-weight: 600; color: var(--text-bold); }
+        .kv-pair { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; font-size: 0.85rem; }
+        .kv-pair .key { color: var(--text-forensic-muted); font-weight: 600; }
+        .kv-pair .val { font-weight: 700; color: var(--text-forensic); }
 
-        pre { background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 0.75rem; margin: 0; color: #334155; overflow-x: auto; }
+        .tag-pill { display: inline-block; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; font-size: 0.7rem; font-weight: 700; margin-right: 4px; margin-bottom: 4px; }
+
+        .inv-tabs { display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--border-forensic); }
+        .inv-tab { padding: 10px 0; font-size: 0.8rem; font-weight: 800; color: var(--text-forensic-muted); cursor: pointer; position: relative; }
+        .inv-tab.active { color: var(--primary); }
+        .inv-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--primary); }
+
+        /* Forensic Report Styles */
+        .forensic-report-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 32px; }
+        .forensic-stat-card { background: #f8fafc; border: 1px solid var(--border-forensic); border-radius: 16px; padding: 20px; transition: transform 0.2s; }
+        .forensic-stat-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .forensic-stat-card i { color: var(--text-forensic-muted); font-size: 0.9rem; margin-bottom: 8px; display: block; }
+        .forensic-stat-card .val { font-size: 1.5rem; font-weight: 850; color: var(--text-forensic); line-height: 1.2; }
+        .forensic-stat-card .label { font-size: 0.7rem; font-weight: 700; color: var(--text-forensic-muted); text-transform: uppercase; margin-top: 4px; }
+
+        .session-item { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .session-item:last-child { border-bottom: none; }
+        .session-item .time { font-size: 0.8rem; font-weight: 750; color: var(--text-forensic); margin-bottom: 4px; }
+        .session-item .details { font-size: 0.72rem; color: var(--text-forensic-muted); display: flex; gap: 12px; }
+        .session-item .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 850; text-transform: uppercase; }
+        .badge-vpn { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+        .badge-geo { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+
+        .user-select-box { position: relative; width: 280px; }
+        #userSearchList { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid var(--border-forensic); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-height: 300px; overflow-y: auto; display: none; z-index: 1002; }
+        .user-option { padding: 10px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .user-option:hover { background: #f8fafc; color: var(--primary); }
+        .user-option .tiny-avatar { width: 20px; height: 20px; border-radius: 4px; background: #e2e8f0; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
-    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: rgba(255,255,255,0.8); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-forensic);">
         <button class="menu-toggle">☰</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="container">
-        <div class="audit-header">
+    <div class="forensic-container">
+        <div class="forensic-header">
             <div>
-                <h1>Identity Audit Trails</h1>
-                <p>NIST SP 800-207 Immutable Event Ledger & Forensic Logs</p>
+                <h1>Identity Audit Investigations</h1>
+                <p>NIST SP 800-207 Immutable Event Ledger & Forensic Analysis Dashboard</p>
             </div>
             <button class="btn btn-primary" onclick="loadLogs()"><i class="fas fa-sync"></i> Refresh Ledger</button>
         </div>
 
-        <div class="filter-bar">
-            <i class="fas fa-search" style="color: var(--text-soft);"></i>
-            <input type="text" id="searchTerm" class="filter-input" placeholder="Search by Principal, Action, IP, or CIDR..." onkeyup="filterLogs()">
+        <div class="filter-matrix">
+            <div style="display:flex; flex:1; gap:16px; align-items:center;">
+                <i class="fas fa-search" style="color: var(--text-forensic-muted);"></i>
+                <input type="text" id="searchTerm" class="filter-input" placeholder="Search identities, action vectors, or source IPs..." onkeyup="filterLogs()">
+            </div>
+            
+            <div class="user-select-box">
+                <input type="text" id="userPicker" class="filter-input" placeholder="Forensic Identity Search..." onfocus="showUserSuggestions()" onkeyup="filterUserSuggestions()">
+                <div id="userSearchList"></div>
+            </div>
+
             <select id="filterType" class="filter-select" onchange="filterLogs()">
-                <option value="all">All Event Types</option>
-                <option value="LOGIN">Login Activities</option>
-                <option value="MFA">MFA / OTP</option>
-                <option value="ADMIN">Administrative</option>
-                <option value="NETWORK">Network Changes</option>
+                <option value="all">All Threat Vectors</option>
+                <option value="LOGIN">Auth Events</option>
+                <option value="MFA">Identity Pulse (MFA)</option>
+                <option value="ADMIN">Governance Actions</option>
+                <option value="NETWORK">Network Transitions</option>
             </select>
         </div>
 
-        <div class="audit-card">
-            <table id="logTable">
+        <div class="ledger-card">
+            <table class="ledger-table" id="logTable">
                 <thead>
                     <tr>
-                        <th>Access Timestamp</th>
-                        <th>Principal Identity</th>
-                        <th>Event Action</th>
-                        <th>Source Node</th>
-                        <th style="text-align: right;">Context Flags</th>
+                        <th style="width: 180px;">Ingest Timestamp</th>
+                        <th style="width: 250px;">Principal Identity</th>
+                        <th style="width: 220px;">Security Action</th>
+                        <th>Deployment Source / Geo</th>
+                        <th style="text-align: right; width: 150px;">Forensic Pulse</th>
                     </tr>
                 </thead>
                 <tbody id="logBody">
-                    <tr><td colspan="5" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Synchronizing with Security Ledger...</td></tr>
+                    <tr><td colspan="5" style="text-align: center; padding: 120px; color: var(--text-forensic-muted); font-size: 1.1rem; font-weight:600;"><i class="fas fa-circle-notch fa-spin"></i> Synchronizing with Security Ledger...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <!-- Side Investigation Overlay -->
+    <div id="invOverlay" class="investigation-overlay">
+        <div class="inv-header">
+            <div>
+                <div class="btn btn-outline btn-sm" onclick="closeInvestigation()" style="margin-bottom: 12px;"><i class="fas fa-arrow-left"></i> Back to Ledger</div>
+                <h2 id="invPrincipal">Principal Investigator</h2>
+                <div id="invRole" class="tag-pill" style="margin-top: 8px;">Managed Identity</div>
+            </div>
+        </div>
+        <div class="inv-content" id="invContent">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
+        let allUsers = [];
         let allLogs = [];
 
         async function loadLogs() {
             try {
+                // Initial State: Skeletons
+                renderSkeletons('logBody', 8, 5);
+                
                 const s = await (await fetch('/api/session')).json();
-                if (!s.loggedIn || s.user.role !== 'SuperAdmin') return location.href = '/dashboard';
+                if (!s.loggedIn || !['SuperAdmin', 'IT'].includes(s.user.role)) return location.href = '/dashboard';
                 buildNavbar(s.user.role, 'user-log', s.user.username);
 
-                const res = await fetch('/api/admin/logs/all');
-                allLogs = await res.json();
-                renderLogs(allLogs);
-            } catch (e) {
-                console.error('Ledger sync failed:', e);
-            }
+                const [logsRes, usersRes] = await Promise.all([
+                    fetch('/api/admin/logs/all'),
+                    fetch('/api/mapping/users')
+                ]);
+                
+                allLogs = await logsRes.json();
+                allUsers = await usersRes.json();
+                
+                if (!allLogs || allLogs.length === 0) {
+                    renderEmptyState('logBody', 5, 'Security Ledger is empty.');
+                } else {
+                    renderLogs(allLogs);
+                }
+                buildUserSuggestions();
+            } catch (e) { console.error('Ledger sync failed:', e); }
         }
+
+        function buildUserSuggestions() {
+            const list = document.getElementById('userSearchList');
+            list.innerHTML = '';
+            (allUsers || []).forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'user-option';
+                div.innerHTML = `<div class="tiny-avatar">${u.username[0].toUpperCase()}</div> ${u.username}`;
+                div.onclick = () => {
+                    document.getElementById('userPicker').value = u.username;
+                    list.style.display = 'none';
+                    launchInvestigation(u.id, u.username);
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function showUserSuggestions() {
+            document.getElementById('userSearchList').style.display = 'block';
+        }
+
+        function filterUserSuggestions() {
+            const query = document.getElementById('userPicker').value.toLowerCase();
+            const items = document.querySelectorAll('.user-option');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-select-box')) {
+                document.getElementById('userSearchList').style.display = 'none';
+            }
+        });
 
         function renderLogs(logs) {
             const body = document.getElementById('logBody');
             body.innerHTML = '';
             
-            logs.forEach((log, index) => {
+            logs.forEach(log => {
                 const tr = document.createElement('tr');
-                tr.onclick = () => toggleDetail(index);
+                tr.className = 'ledger-row';
+                tr.onclick = () => launchInvestigation(log.user_id, log.username);
                 
-                const isSec = log.event_type && !log.action; // determine if it's from security_events table
-                const action = log.action || log.event_type || 'GENERAL_LOG';
-                const pillCls = isSec ? 'pill-sec' : 'pill-log';
+                const type = log.action || 'GENERAL_LOG';
+                const isSec = type.includes('FAILED') || type.includes('BLOCKED');
+                const badgeCls = isSec ? 'badge-sec' : (type.includes('USER') ? 'badge-auth' : 'badge-act');
 
                 tr.innerHTML = `
                     <td class="mono">${formatDate(log.created_at)}</td>
-                    <td style="font-weight:700;">${log.username || log.user_id || 'SYSTEM'}</td>
-                    <td><span class="action-pill ${pillCls}">${action.replace(/_/g, ' ')}</span></td>
-                    <td class="mono">${log.ip || '--'}</td>
-                    <td style="text-align: right; color: var(--text-soft); font-size: 0.75rem;">
-                        ${log.location || log.country || ''} <i class="fas fa-chevron-down" style="margin-left: 8px; opacity: 0.5;"></i>
-                    </td>
-                `;
-                
-                const detailTr = document.createElement('tr');
-                detailTr.id = `detail-${index}`;
-                detailTr.className = 'detail-pane';
-                detailTr.innerHTML = `
-                    <td colspan="5">
-                        <div class="detail-grid">
-                            <div class="detail-box">
-                                <div class="lab">Identity Metadata</div>
-                                <div class="val">UID: ${log.user_id || 'System'}</div>
-                                <div class="val">Node: ${log.ip || 'Internal'}</div>
-                                <div class="val">Region: ${log.location || log.country || 'Global'}</div>
-                            </div>
-                            <div class="detail-box">
-                                <div class="lab">Event Classification</div>
-                                <div class="val">Source: ${isSec ? 'Security Engine' : 'Activity Ledger'}</div>
-                                <div class="val">Ref ID: ${log.id}</div>
-                            </div>
-                            <div style="grid-column: span 3;">
-                                <div class="lab">Raw Payload / Audit Details</div>
-                                <pre>${renderJSON(log.details || log.detail || log)}</pre>
-                            </div>
+                    <td>
+                        <div class="principal-tag">
+                            <div class="avatar">${(log.username || 'S')[0].toUpperCase()}</div>
+                            <span>${log.username || 'System Sentinel'}</span>
                         </div>
                     </td>
+                    <td><span class="event-badge ${badgeCls}">${type.replace(/_/g, ' ')}</span></td>
+                    <td>
+                        <div class="mono">${log.ip || '0.0.0.0'}</div>
+                        <div style="font-size:0.65rem; color:var(--primary); font-weight:700;">${log.location || log.country || 'Global Infrastructure'}</div>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-outline btn-xs" style="font-size:0.6rem; padding:4px 8px;">Investigate <i class="fas fa-search-plus" style="margin-left:4px;"></i></button>
+                    </td>
                 `;
-                
                 body.appendChild(tr);
-                body.appendChild(detailTr);
             });
         }
 
-        function toggleDetail(index) {
-            const el = document.getElementById(`detail-${index}`);
-            const isVisible = el.style.display === 'table-row';
+        async function launchInvestigation(userId, username) {
+            if (!userId) return;
+            currentUserId = userId;
+            const overlay = document.getElementById('invOverlay');
+            overlay.classList.add('open');
+            document.getElementById('invPrincipal').textContent = username || 'Identity Investigation';
             
-            // close all others
-            document.querySelectorAll('.detail-pane').forEach(d => d.style.display = 'none');
+            document.getElementById('invContent').innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Running forensic deep-dive...';
             
-            if (!isVisible) {
-                el.style.display = 'table-row';
+            try {
+                const res = await fetch(`/api/admin/users/${userId}/forensics`);
+                const data = await res.json();
+                renderForensics(data);
+            } catch(e) {
+                document.getElementById('invContent').innerHTML = 'Forensic retrieval failed.';
             }
+        }
+
+        function switchForensicTab(btn, tabId) {
+            document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.report-section').forEach(s => s.style.display = 'none');
+            document.getElementById('inv-' + tabId).style.display = 'block';
+        }
+
+        function renderForensics(data) {
+            const container = document.getElementById('invContent');
+            const { identity, inventory, telemetry, report } = data;
+
+            container.innerHTML = `
+                <div class="forensic-report-grid">
+                    <div class="forensic-stat-card">
+                        <i class="fas fa-history"></i>
+                        <div class="val">${report.total_sessions || 0}</div>
+                        <div class="label">Total Sessions</div>
+                    </div>
+                    <div class="forensic-stat-card">
+                        <i class="fas fa-user-shield"></i>
+                        <div class="val">${report.risk_summary ? report.risk_summary.last_risk : 0}</div>
+                        <div class="label">Last Risk Score</div>
+                    </div>
+                    <div class="forensic-stat-card">
+                        <i class="fas fa-user-secret"></i>
+                        <div class="val">${report.vpn_sessions || 0}</div>
+                        <div class="label">VPN Affinity</div>
+                    </div>
+                    <div class="forensic-stat-card">
+                        <i class="fas fa-moon"></i>
+                        <div class="val">${report.off_hour_logins || 0}</div>
+                        <div class="label">Off-Hours Logins</div>
+                    </div>
+                </div>
+
+                <div class="inv-tabs">
+                    <div class="inv-tab active" onclick="switchForensicTab(this, 'snapshot')">Identity Snapshot</div>
+                    <div class="inv-tab" onclick="switchForensicTab(this, 'sessions')">Session History</div>
+                    <div class="inv-tab" onclick="switchForensicTab(this, 'hardware')">Hardware Registry</div>
+                </div>
+
+                <div id="inv-snapshot" class="report-section">
+                    <h3>Principal Governance Report</h3>
+                    <div class="kv-pair"><span class="key">Identity ID</span><span class="val">${identity.id}</span></div>
+                    <div class="kv-pair"><span class="key">User Role</span><span class="val"><span class="role-badge">${identity.role}</span></span></div>
+                    <div class="kv-pair"><span class="key">Department</span><span class="val">${identity.department || 'General'}</span></div>
+                    <div class="kv-pair"><span class="key">Account Status</span><span class="val"><span class="tag-pill">${identity.status.toUpperCase()}</span></span></div>
+                    <div class="kv-pair"><span class="key">Auth Failure Count</span><span class="val">${identity.failed_attempts}</span></div>
+                    <div class="kv-pair"><span class="key">Identity Provisioned</span><span class="val">${formatDate(identity.created_at)}</span></div>
+                </div>
+
+                <div id="inv-sessions" class="report-section" style="display:none;">
+                    <h3>High-Fidelity Session History</h3>
+                    <div style="margin-top:20px;">
+                        ${inventory.sessions.length > 0 ? inventory.sessions.map(s => `
+                            <div class="session-item">
+                                <div class="time">${formatDate(s.login_at)}</div>
+                                <div class="details">
+                                    <span>${s.ip} (${s.country || 'Unknown'})</span>
+                                    <span>${s.browser} on ${s.os}</span>
+                                </div>
+                                <div style="margin-top:6px; display:flex; gap:8px;">
+                                    ${s.vpn ? '<span class="badge badge-vpn">VPN Origin</span>' : ''}
+                                    ${s.risk_score > 0 ? `<span class="badge badge-sec">Risk: ${s.risk_score}</span>` : '<span class="badge badge-geo">Secure / Residential</span>'}
+                                </div>
+                            </div>
+                        `).join('') : '<p>No session data available.</p>'}
+                    </div>
+                </div>
+
+                <div id="inv-hardware" class="report-section" style="display:none;">
+                    <h3>Managed Device Inventory</h3>
+                    <div style="margin-top:20px;">
+                        ${(inventory.devices || []).map(d => `
+                            <div class="kv-pair"><span class="key">${d.label || 'Inventory Asset'}</span><span class="val">${d.os} (${d.browser})</span></div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeInvestigation() {
+            document.getElementById('invOverlay').classList.remove('open');
+            currentUserId = null;
+        }
+
+        function formatDate(str) {
+            try {
+                const d = new Date(str);
+                return d.toLocaleString('en-GB', { hour12: false, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+            } catch(e) { return str; }
         }
 
         function filterLogs() {
             const term = document.getElementById('searchTerm').value.toLowerCase();
-            const type = document.getElementById('filterType').value;
+            const typeValue = document.getElementById('filterType').value;
             
             const filtered = allLogs.filter(l => {
                 const matchTerm = (l.username || '').toLowerCase().includes(term) || 
                                  (l.action || '').toLowerCase().includes(term) || 
-                                 (l.event_type || '').toLowerCase().includes(term) ||
                                  (l.ip || '').toLowerCase().includes(term);
                 
-                if (type === 'all') return matchTerm;
+                if (typeValue === 'all') return matchTerm;
                 
-                const action = (l.action || l.event_type || '').toUpperCase();
-                if (type === 'LOGIN') return matchTerm && action.includes('LOGIN');
-                if (type === 'MFA') return matchTerm && (action.includes('OTP') || action.includes('MFA'));
-                if (type === 'ADMIN') return matchTerm && (action.includes('USER_') || action.includes('ROLE_'));
-                if (type === 'NETWORK') return matchTerm && action.includes('IP_');
+                const action = (l.action || '').toUpperCase();
+                if (typeValue === 'LOGIN') return matchTerm && action.includes('LOGIN');
+                if (typeValue === 'MFA') return matchTerm && (action.includes('OTP') || action.includes('MFA'));
+                if (typeValue === 'ADMIN') return matchTerm && (action.includes('USER_') || action.includes('ROLE_'));
+                if (typeValue === 'NETWORK') return matchTerm && action.includes('IP_');
                 
                 return matchTerm;
             });
-            
             renderLogs(filtered);
         }
 

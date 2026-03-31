@@ -22,6 +22,13 @@
             margin: 0; min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 20px;
+            animation: bgShift 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% { background: radial-gradient(circle at top right, #e0e7ff, #f8fafc); }
+            50% { background: radial-gradient(circle at bottom left, #ede9fe, #f8fafc); }
+            100% { background: radial-gradient(circle at top right, #e0e7ff, #f8fafc); }
         }
 
         .login-box {
@@ -55,6 +62,11 @@
         .footer-note strong { color: var(--text-main); }
 
         #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+        #infoArea { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+
+        .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -65,6 +77,7 @@
             <p>Accessing Organizational Resources</p>
         </div>
 
+        <div id="infoArea"></div>
         <div id="errorArea"></div>
 
         <form id="loginForm">
@@ -85,25 +98,52 @@
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
+        // Show redirect messages
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var msg = params.get('msg');
+            var messages = {
+                'session_expired': 'Your session has expired due to inactivity. Please log in again.',
+                'account_blocked': 'Your account has been blocked by an administrator.',
+                'off_hours':       'Access is restricted during off-hours. Please try again during business hours.',
+                'session_invalid': 'Your session was invalidated. This may be due to a login from another device.',
+                'password_changed': 'Password updated successfully. Please log in with your new credentials.'
+            };
+            if (msg && messages[msg]) {
+                var info = document.getElementById('infoArea');
+                info.textContent = messages[msg];
+                info.style.display = 'block';
+            }
+        })();
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const err = document.getElementById('errorArea');
+            var err = document.getElementById('errorArea');
+            var info = document.getElementById('infoArea');
             err.style.display = 'none';
+            info.style.display = 'none';
+
+            var btn = document.querySelector('.login-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Authenticating...';
 
             // Gather fingerprint from app.js helper
-            const fp = await getBrowserFingerprint();
+            var fp = getFingerprint();
             
-            const res = await postJSON('/api/login', {
+            var res = await postJSON('/api/login', {
                 username: document.getElementById('username').value,
                 password: document.getElementById('password').value,
                 fingerprint: fp
             });
 
             if (res.success) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Redirecting...';
                 location.href = res.redirect || '/dashboard';
             } else {
+                btn.disabled = false;
+                btn.innerHTML = 'Authenticate';
                 err.textContent = res.message;
                 err.style.display = 'block';
             }

@@ -17,6 +17,7 @@
             --text-soft: #475569;
             --accent-glow: #3b82f6;
             --danger-glow: #ef4444;
+            --warning-glow: #f59e0b;
             --success-glow: #10b981;
         }
 
@@ -160,7 +161,14 @@
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         function updateClock() {
             const now = new Date();
@@ -208,16 +216,21 @@
                     const stats = await statsRes.json();
                     
                     document.getElementById('k-users').textContent = stats.users.total;
-                    document.getElementById('k-dev').textContent = stats.devices.owned || stats.devices.pendingApproval + stats.devices.managed || 0;
                     document.getElementById('k-evt').textContent = stats.activity.events24h;
                     document.getElementById('k-block').textContent = stats.users.blocked;
 
-                    // Fetch actual device count if missing
-                    const {data: dv} = await fetch('/api/mapping/devices/all').then(r=>r.json().then(x=>({data:x})));
-                    if(dv) document.getElementById('k-dev').textContent = dv.length;
+                    // Fetch actual device count from fleet inventory
+                    try {
+                        var devList = await fetch('/api/mapping/devices/all').then(function(r){return r.json();});
+                        document.getElementById('k-dev').textContent = Array.isArray(devList) ? devList.length : 0;
+                    } catch(e) { document.getElementById('k-dev').textContent = stats.devices.pendingApproval || 0; }
 
                     // Events
                     const area = document.getElementById('eventArea');
+                    if (!stats.recentEvents || stats.recentEvents.length === 0) {
+                        area.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fas fa-history"></i><p>No recent activity logs.</p></div>';
+                        return;
+                    }
                     area.innerHTML = '';
                     (stats.recentEvents || []).slice(0, 10).forEach(e => {
                         const div = document.createElement('div');

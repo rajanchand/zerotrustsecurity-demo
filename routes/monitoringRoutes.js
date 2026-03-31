@@ -60,63 +60,103 @@ router.get('/admin/user-log', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'user-log.html'));
 });
 
-// REST: user comprehensive details
-router.get('/api/admin/users/:userId/details', async function (req, res) {
+// REST: user comprehensive forensics (reports, devices, sessions, risk)
+router.get('/api/admin/users/:userId/forensics', async function (req, res) {
     try {
         var userId = parseInt(req.params.userId);
 
         // 1. User base data
         var { data: user } = await require('../db').supabase
             .from('users')
-            .select('id, username, email, role, department, status, failed_attempts, created_at, active_session_token')
+            .select('id, username, email, role, department, status, failed_attempts, created_at, active_session_token, permissions')
             .eq('id', userId)
             .single();
 
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        if (!user) return res.status(404).json({ error: 'Identity not found' });
 
-        // 2. Devices — include unapproved/pending ones
+        // 2. Devices registry
         var { data: devices } = await require('../db').supabase
             .from('devices')
-            .select('id, fingerprint, browser, os, ip_address, approved, last_login, created_at')
+            .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
-        // 3. Sessions Logs
+        // 3. High Fidelity Session Logs
         var { data: sessions } = await require('../db').supabase
             .from('sessions_log')
             .select('*')
             .eq('user_id', userId)
             .order('login_at', { ascending: false })
-            .limit(20);
+            .limit(30);
 
-        // 4. Audit events (fetch more to include VPN detection events)
+        // 4. Audit & Policy Events
         var { data: audit } = await require('../db').supabase
             .from('audit_log')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
+            .limit(100);
+            
+        // 5. Correlated Security Pulse
+        var { data: secEvents } = await require('../db').supabase
+            .from('security_events')
+            .select('*')
+            .eq('user_id', userId)
+            .order('timestamp', { ascending: false })
             .limit(50);
 
-        // Compute online status
-        var isOnline = false;
-        if (user.active_session_token && sessions && sessions.length > 0) {
-            var lastLoginMs = new Date(sessions[0].login_at).getTime();
-            // simple heuristic: if they have a session token and logged in recently
-            isOnline = true; 
-        }
+        // 6. Aggregate Forensic Statistics
+        var totalSessions = sessions ? sessions.length : 0;
+        var vpnSessions = sessions ? sessions.filter(s => s.vpn).length : 0;
+        
+        // Off-hours: 22:00 - 06:00
+        var offHourLogins = sessions ? sessions.filter(s => {
+            const hour = new Date(s.login_at).getHours();
+            return hour >= 22 || hour < 6;
+        }).length : 0;
+
+        var uniqueCountries = [...new Set((sessions || []).map(s => s.country ))].length;
+        var uniqueIPs = [...new Set((sessions || []).map(s => s.ip))].length;
 
         res.json({
-            user: user,
-            isOnline: isOnline,
-            devices: devices || [],
-            sessions: sessions || [],
-            audit: audit || []
+            identity: user,
+            inventory: {
+                devices: devices || [],
+                sessions: sessions || []
+            },
+            telemetry: {
+                audit: audit || [],
+                security: secEvents || []
+            },
+            report: {
+                total_sessions: totalSessions,
+                vpn_sessions: vpnSessions,
+                off_hour_logins: offHourLogins,
+                geo_velocity: {
+                    countries: uniqueCountries,
+                    ips: uniqueIPs
+                },
+                risk_summary: {
+                    avg_score: sessions && sessions.length ? (sessions.reduce((acc, s) => acc + (s.risk_score || 0), 0) / sessions.length).toFixed(1) : 0,
+                    last_risk: sessions && sessions.length ? sessions[0].risk_score : 0
+                }
+            }
         });
     } catch (e) {
-        console.error('Error fetching user details:', e);
-        res.status(500).json({ error: 'Failed to fetch user details' });
+        console.error('Forensic retrieval failure:', e);
+        res.status(500).json({ error: 'Forensic engine error' });
+    }
+});
+
+// REST: Unified Audit Ledger for the entire platform
+router.get('/api/admin/logs/all', async function (req, res) {
+    try {
+        const { getAllAuditLogs } = require('../services/auditService');
+        const logs = await getAllAuditLogs(parseInt(req.query.limit) || 200);
+        res.json(logs);
+    } catch (e) {
+        console.error('Audit ledger retrieval failure:', e);
+        res.json([]);
     }
 });
 

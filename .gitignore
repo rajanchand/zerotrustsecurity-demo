@@ -12,3 +12,7 @@ npm-debug.log*
 
 # Deployment script — contains VPS-specific paths
 deploy.sh
+
+# Python virtual env
+.venv/
+

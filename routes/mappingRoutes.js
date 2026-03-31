@@ -185,6 +185,14 @@ router.post('/api/mapping/users/delete', requirePermission('user_delete'), requi
             return res.json({ success: false, message: 'User not found.' });
         }
 
+        // clear department references (head_user_id and created_by)
+        await supabase.from('departments').update({ head_user_id: null }).eq('head_user_id', userId);
+        await supabase.from('departments').update({ created_by: null }).eq('created_by', userId);
+
+        // clear security_events references (resolved_by and user_id)
+        await supabase.from('security_events').update({ resolved_by: null }).eq('resolved_by', userId);
+        await supabase.from('security_events').update({ user_id: null }).eq('user_id', userId);
+
         // clear approved_by references on other users' devices (foreign key)
         await supabase.from('devices').update({ approved_by: null }).eq('approved_by', userId);
 
@@ -196,6 +204,7 @@ router.post('/api/mapping/users/delete', requirePermission('user_delete'), requi
         await supabase.from('otp_store').delete().eq('user_id', userId);
         await supabase.from('risk_logs').delete().eq('user_id', userId);
         await supabase.from('sessions_log').delete().eq('user_id', userId);
+        await supabase.from('password_history').delete().eq('user_id', userId);
 
         // keep audit log but remove user_id reference (data stays in database)
         await supabase.from('audit_log').update({ user_id: null }).eq('user_id', userId);

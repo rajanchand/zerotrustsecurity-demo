@@ -5,6 +5,7 @@
 // replaces the old browser alert() dialogs
 function showToast(message, type) {
     type = type || 'info';
+    var icon = type === 'success' ? '✓ ' : (type === 'error' ? '✕ ' : 'ℹ ');
 
     // remove any existing toast
     var old = document.querySelector('.toast');
@@ -12,7 +13,7 @@ function showToast(message, type) {
 
     var toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
-    toast.textContent = message;
+    toast.innerHTML = '<span class="toast-icon">' + icon + '</span>' + message;
     document.body.appendChild(toast);
 
     // trigger animation
@@ -23,6 +24,45 @@ function showToast(message, type) {
         toast.classList.remove('show');
         setTimeout(function () { toast.remove(); }, 300);
     }, 3500);
+}
+
+/**
+ * Skeleton Loader Helper
+ * Renders placeholder rows for tables during data fetch.
+ */
+function renderSkeletons(targetId, rowCount, columnCount) {
+    var area = document.getElementById(targetId);
+    if (!area) return;
+    var html = '';
+    for (var i = 0; i < rowCount; i++) {
+        html += '<tr>';
+        for (var j = 0; j < columnCount; j++) {
+            html += '<td><div class="skeleton"></div></td>';
+        }
+        html += '</tr>';
+    }
+    area.innerHTML = html;
+}
+
+/**
+ * Empty State Helper
+ * Renders a professional empty state message.
+ */
+function renderEmptyState(targetId, colSpan, message, icon) {
+    var area = document.getElementById(targetId);
+    if (!area) return;
+    icon = icon || 'fa-folder-open';
+    area.innerHTML = `
+        <tr>
+            <td colspan="${colSpan}">
+                <div class="empty-state">
+                    <i class="fas ${icon}"></i>
+                    <p>${message}</p>
+                    <div class="hint">No forensic signals detected matching the current criteria.</div>
+                </div>
+            </td>
+        </tr>
+    `;
 }
 
 // generate a  device fingerprint
