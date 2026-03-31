@@ -205,8 +205,8 @@ router.post('/api/login', loginLimiter, async function (req, res) {
         }
 
         // ── WORKING HOURS CHECK (local server time) ──
-        var localHour     = new Date().getHours();
-        var isUnusualHours = localHour >= 22 || localHour < 6;
+        var localHour      = new Date().getHours();
+        var isUnusualHours = localHour >= 18 || localHour < 9;
 
         // ── GEO-FENCING CHECK PER DEPARTMENT ──
         if (user.department) {
