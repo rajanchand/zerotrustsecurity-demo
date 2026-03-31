@@ -79,7 +79,7 @@
                 <p>NIST SP 800-207 Compliant Micro-Segmentation Console</p>
             </div>
             <div style="display:flex; gap:12px;">
-                <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Reload Polices</button>
+                <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Reload Policies</button>
                 <button class="btn btn-primary" onclick="showAddIP()"><i class="fas fa-plus"></i> Deploy Rule</button>
             </div>
         </div>
@@ -120,13 +120,17 @@
                 <thead>
                     <tr>
                         <th>Owner / Identity</th>
+                        <th>Device Label</th>
+                        <th>Operating System</th>
                         <th>Endpoint Address</th>
+                        <th>Country</th>
+                        <th>Last Seen</th>
                         <th>Trust Confidence</th>
                         <th style="text-align: right;">Inventory Control</th>
                     </tr>
                 </thead>
                 <tbody id="deviceTable">
-                    <tr><td colspan="4" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Scanning Fleet Topology...</td></tr>
+                    <tr><td colspan="8" style="text-align: center; padding: 60px; color: var(--text-soft);"><i class="fas fa-circle-notch fa-spin"></i> Scanning Fleet Topology...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -152,7 +156,14 @@
 
     <div id="toast-box" style="position:fixed; top:24px; right:24px; z-index:3000;"></div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         async function init() {
             const s = await(await fetch('/api/session')).json();
@@ -193,12 +204,17 @@
 
                 const tb = document.getElementById('deviceTable');
                 tb.innerHTML = '';
-                if(!data.devices.length) { tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">Hardware Pool Empty.</td></tr>'; return; }
+                if(!data.devices.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 40px;">Hardware Pool Empty.</td></tr>'; return; }
                 data.devices.forEach(d => {
                     const tr = document.createElement('tr');
+                    const lastSeen = d.last_seen ? formatDate(d.last_seen) : (d.first_seen ? formatDate(d.first_seen) : '—');
                     tr.innerHTML = `
                         <td><div class="usr-link"><div class="initial">${(d.username || 'U')[0]}</div>${d.username || '-'}</div></td>
+                        <td>${d.label || 'Unknown Device'}</td>
+                        <td>${d.os || '—'}</td>
                         <td><code>${d.ip || '-'}</code></td>
+                        <td>${d.country || '—'}</td>
+                        <td class="meta-cell" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--text-soft);">${lastSeen}</td>
                         <td>${d.approved ? '<span class="status-pill pill-allow">Managed Trust</span>' : '<span class="status-pill pill-block" style="background:#fefce8; color:#854d0e; border-color:#fef08a;">Unverified</span>'}</td>
                         <td style="text-align: right;">
                             <button class="btn btn-sm btn-outline" style="color:var(--block)" onclick="rejectDevice('${d.id}')"><i class="fas fa-skull-crossbones"></i> Revoke Trust</button>
