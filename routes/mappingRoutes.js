@@ -15,6 +15,17 @@ var { requirePermission }                                                  = req
 
 var router = express.Router();
 
+const ALLOWED_PERMISSIONS = [
+    'user_view', 'user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve',
+    'device_approve', 'network_manage', 'monitor_live', 'dept_manage'
+];
+
+function validatePermissions(perms) {
+    if (!perms || typeof perms !== 'object') return false;
+    const keys = Object.keys(perms);
+    return keys.every(k => ALLOWED_PERMISSIONS.includes(k));
+}
+
 // ── Page Routes ─────────────────────────────────────────────
 
 router.get('/mapping', function (req, res) {
@@ -677,6 +688,10 @@ router.post('/api/mapping/permissions/update', requireReAuth, async function (re
         var { data: targetUser } = await supabase.from('users').select('username').eq('id', userId).single();
         if (!targetUser) return res.json({ success: false, message: 'User not found.' });
 
+        if (!validatePermissions(permissions)) {
+            return res.json({ success: false, message: 'Invalid permission keys detected.' });
+        }
+
         var { error } = await supabase
             .from('users')
             .update({ permissions: permissions })
@@ -697,6 +712,55 @@ router.post('/api/mapping/permissions/update', requireReAuth, async function (re
     } catch (err) {
         console.error('Update permissions error:', err);
         res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+    }
+});
+
+// POST /api/mapping/permissions/bulk-update — Bulk update permissions (SuperAdmin ONLY)
+router.post('/api/mapping/permissions/bulk-update', requireReAuth, async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    try {
+        var { updates } = req.body; // Array of { userId, permissions }
+
+        if (!updates || !Array.isArray(updates)) {
+            return res.json({ success: false, message: 'Invalid updates format.' });
+        }
+
+        // Validate all updates first
+        for (let update of updates) {
+            if (!update.userId || !validatePermissions(update.permissions)) {
+                return res.json({ success: false, message: 'Validation failed for one or more updates.' });
+            }
+        }
+
+        // Execute updates
+        const results = [];
+        for (let update of updates) {
+            const { error } = await supabase
+                .from('users')
+                .update({ permissions: update.permissions })
+                .eq('id', update.userId);
+            
+            if (error) {
+                console.error(`Bulk update failed for user ${update.userId}:`, error);
+                results.push({ userId: update.userId, success: false });
+            } else {
+                results.push({ userId: update.userId, success: true });
+            }
+        }
+
+        await logEvent(req.session.userId, 'PERMISSIONS_BULK_UPDATED', `Performed bulk permission update for ${updates.length} users`, req.ip);
+        
+        res.json({ 
+            success: true, 
+            message: `Processed ${updates.length} updates.`,
+            results: results
+        });
+    } catch (err) {
+        console.error('Bulk update permissions error:', err);
+        res.status(500).json({ success: false, message: 'Server error during bulk operation.' });
     }
 });
 
