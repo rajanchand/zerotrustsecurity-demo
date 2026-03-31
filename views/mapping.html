@@ -93,7 +93,7 @@
                 <p>Advanced lifecycle management for enterprise identities.</p>
             </div>
             <div style="display:flex; gap:12px;">
-                <button class="btn btn-outline" onclick="loadContent()"><i class="fas fa-sync"></i> Refresh</button>
+                <button class="btn btn-outline" onclick="const b=this; b.innerHTML='<i class=\'fas fa-sync fa-spin\'></i> Refreshing...'; loadContent().then(()=>{setTimeout(()=>{b.innerHTML='<i class=\'fas fa-sync\'></i> Refresh'},500)})"><i class="fas fa-sync"></i> Refresh</button>
                 <button class="btn btn-primary" onclick="showModal('createUserModal')"><i class="fas fa-plus"></i> Provision Account</button>
             </div>
         </div>

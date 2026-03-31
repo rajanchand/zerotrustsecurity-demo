@@ -83,7 +83,7 @@
                 <h1>Identity Entitlements</h1>
                 <p>Granular Access Authority management for <span id="accountCount">...</span> identities.</p>
             </div>
-            <button class="btn btn-outline" onclick="loadPermissions()"><i class="fas fa-sync"></i> Synchronize Assets</button>
+            <button class="btn btn-outline" onclick="const b=this; b.innerHTML='<i class=\'fas fa-sync fa-spin\'></i> Synchronizing...'; loadPermissions().then(()=>{setTimeout(()=>{b.innerHTML='<i class=\'fas fa-sync\'></i> Synchronize Assets'},500)})"><i class="fas fa-sync"></i> Synchronize Assets</button>
         </div>
 
         <div class="access-card">

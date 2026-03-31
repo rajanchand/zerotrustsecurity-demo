@@ -79,7 +79,7 @@
                 <p>NIST SP 800-207 Compliant Micro-Segmentation Console</p>
             </div>
             <div style="display:flex; gap:12px;">
-                <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i> Reload Policies</button>
+                <button class="btn btn-outline" onclick="const b=this; b.innerHTML='<i class=\'fas fa-sync fa-spin\'></i> Reloading...'; init().then(()=>{setTimeout(()=>{b.innerHTML='<i class=\'fas fa-sync\'></i> Reload Policies'},500)})"><i class="fas fa-sync"></i> Reload Policies</button>
                 <button class="btn btn-primary" onclick="showAddIP()"><i class="fas fa-plus"></i> Deploy Rule</button>
             </div>
         </div>
