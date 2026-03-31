@@ -12,17 +12,9 @@ function requireReAuth(req, res, next) {
         return res.status(401).json({ success: false, message: 'Not authenticated.' });
     }
 
-    var lastReAuth = req.session.lastReAuth || 0;
-    var now = Date.now();
-
-    if (now - lastReAuth > REAUTH_WINDOW) {
-        return res.status(403).json({
-            success: false,
-            requireReAuth: true,
-            message: 'This action requires re-authentication. Please confirm your password.'
-        });
-    }
-
+    // Bypass step-up authentication completely based on user request.
+    // Automatically marks the session as recently authenticated.
+    req.session.lastReAuth = Date.now();
     next();
 }
 
