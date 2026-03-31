@@ -99,7 +99,7 @@ async function requireLogin(req, res, next) {
         try {
             var { data: result } = await supabase
                 .from('users')
-                .select('status, active_session_token, password_changed_at')
+                .select('status, role, permissions, active_session_token, password_changed_at')
                 .eq('id', req.session.userId)
                 .single();
 
@@ -118,10 +118,22 @@ async function requireLogin(req, res, next) {
                     });
                 }
 
-                // 2. CONCURRENT LOGIN REVOCATION — a newer login was made elsewhere
-                // Only enforce if the DB token is set AND it doesn't match.
-                // If the DB token is null it means the account just logged out elsewhere
-                // which is fine — don't penalise the current session.
+                // 2. REAL-TIME ROLE & PERMISSION SYNC ──
+                // If an admin changed the user's role or granular permissions, 
+                // update the session immediately without requiring a logout.
+                if (result.role !== req.session.role) {
+                    console.log(`[AUTH] Syncing role for ${req.session.username}: ${req.session.role} -> ${result.role}`);
+                    req.session.role = result.role;
+                }
+                
+                var currentPermsStr = JSON.stringify(req.session.permissions || {});
+                var dbPermsStr = JSON.stringify(result.permissions || {});
+                if (currentPermsStr !== dbPermsStr) {
+                    console.log(`[AUTH] Syncing permissions for ${req.session.username}`);
+                    req.session.permissions = result.permissions || {};
+                }
+
+                // 3. CONCURRENT LOGIN REVOCATION — a newer login was made elsewhere
                 if (
                     result.active_session_token &&
                     result.active_session_token !== req.session.sessionToken
@@ -134,14 +146,12 @@ async function requireLogin(req, res, next) {
                         details: { reason: 'Concurrent login detected — session invalidated by newer login' }
                     }).catch(function () { });
 
-                    console.log('[DEBUG] Auth middleware: Concurrent login detected. DB token:', result.active_session_token, 'Session token:', req.session.sessionToken);
-
                     return req.session.destroy(function () {
                         res.redirect('/login?msg=session_invalid');
                     });
                 }
 
-                // 3. PASSWORD EXPIRY — flag if password older than 90 days
+                // 4. PASSWORD EXPIRY — flag if password older than 90 days
                 if (result.password_changed_at) {
                     var changedAt = new Date(result.password_changed_at).getTime();
                     var ninetyDays = 90 * 24 * 60 * 60 * 1000;

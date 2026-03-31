@@ -1,648 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping - ZTS</title>
+    <title>Identity & Mapping - ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 100px 20px 40px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.025em;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            background: #f1f5f9;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 12px 24px;
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: #fcfcfc;
+        }
+
+        .user-tag {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-suspended { background: #fef9c3; color: #854d0e; }
+        .status-blocked { background: #fee2e2; color: #991b1b; }
+
+        .role-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .btn-icon.btn-danger-lite:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: #fee2e2;
+        }
+
+        /* Modal Overlays */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal {
+            background: white;
+            padding: 32px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal h3 { margin: 0 0 8px 0; font-weight: 800; font-size: 1.25rem; }
+        .modal p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        #toast {
+            position: fixed; top: 24px; right: 24px;
+            padding: 16px 24px; border-radius: 12px;
+            color: white; font-weight: 600; font-size: 0.9rem;
+            display: none; box-shadow: var(--shadow);
+            z-index: 3000;
+        }
+    </style>
+</head>
 <body>
-    <nav class="navbar">
-        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001;">
+        <button class="menu-toggle">☰</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Zero Trust Security</a>
         <div class="nav-menu" id="mainNav"></div>
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
     <div class="container">
-        <!-- User Management -->
+        <div class="header">
+            <div class="header-title">
+                <h1>Identity & Mapping</h1>
+                <p>Manage organizational hierarchy and user entitlements.</p>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-outline" onclick="init()"><i class="fas fa-sync"></i></button>
+            </div>
+        </div>
+
+        <!-- User Management Card -->
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h3 style="margin:0;">Users</h3>
-                <button class="btn btn-primary btn-sm" onclick="showCreateUser()">Create User</button>
+            <div class="card-header">
+                <h3>User Accounts</h3>
+                <button class="btn btn-primary btn-sm" onclick="showCreateUser()"><i class="fas fa-plus"></i> Create User</button>
             </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Department</th>
-                            <th>Status</th>
-                            <th>Failed</th>
-                            <th>Actions</th>
+                            <th>Identity</th>
+                            <th>Role & Department</th>
+                            <th>System Status</th>
+                            <th>Security Info</th>
+                            <th style="text-align: right;">Operations</th>
                         </tr>
                     </thead>
                     <tbody id="usersTable">
-                        <tr>
-                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
-                        </tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 40px;">Synchronizing...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Department Management -->
+        <!-- Department Management Card -->
         <div class="card" id="departmentsCard">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <h3 style="margin:0;">Departments</h3>
-                <button class="btn btn-primary btn-sm" onclick="showCreateDept()">Create Department</button>
+            <div class="card-header">
+                <h3>Organizational Units</h3>
+                <button class="btn btn-primary btn-sm" onclick="showCreateDept()"><i class="fas fa-plus"></i> Create Unit</button>
             </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Created By</th>
-                            <th>Department Head</th>
-                            <th>Total Users</th>
-                            <th>Created</th>
-                            <th>Action</th>
+                            <th>Unit Name</th>
+                            <th>Executive Head</th>
+                            <th>Occupancy</th>
+                            <th>Created On</th>
+                            <th style="text-align: right;">Operations</th>
                         </tr>
                     </thead>
                     <tbody id="deptsTable">
-                        <tr>
-                            <td colspan="7" style="text-align:center; color:#aaa;">Loading...</td>
-                        </tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 40px;">Synchronizing...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Create User Modal -->
-    <div id="createUserModal" class="modal-overlay" style="display:none;">
+    <!-- Modals (Simplified Design) -->
+    <div id="createUserModal" class="modal-overlay">
         <div class="modal">
-            <h3>Create New User</h3>
+            <h3>Create Resource</h3>
+            <div class="form-group"><label>Username</label><input type="text" id="newUsername"></div>
+            <div class="form-group"><label>Initial Password</label><input type="password" id="newPassword"></div>
+            <div class="form-group"><label>Work Email</label><input type="email" id="newEmail"></div>
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="newUsername">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="newPassword">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="newEmail">
-            </div>
-            <div class="form-group">
-                <label>Role</label>
+                <label>System Role</label>
                 <select id="newRole">
                     <option value="HR">HR</option>
                     <option value="Finance">Finance</option>
                     <option value="IT">IT</option>
-                    <option value="CustomerSupport">Customer Support</option>
+                    <option value="CustomerSupport">Support</option>
                     <option value="SuperAdmin">SuperAdmin</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Department</label>
-                <select id="newDepartment"></select>
-            </div>
+            <div class="form-group"><label>Organizational Unit</label><select id="newDepartment"></select></div>
             <p id="createUserError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="createUser()">Create</button>
+            <div style="display:flex; gap:12px; margin-top:24px;">
+                <button class="btn btn-primary" onclick="createUser()" style="flex:1;">provision</button>
                 <button class="btn btn-outline" onclick="hideModal('createUserModal')">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Create Department Modal -->
-    <div id="createDeptModal" class="modal-overlay" style="display:none;">
-        <div class="modal">
-            <h3>Create Department</h3>
-            <div class="form-group">
-                <label>Department Name</label>
-                <input type="text" id="newDeptName">
-            </div>
-            <div class="form-group">
-                <label>Department Head (optional)</label>
-                <select id="newDeptHead">
-                    <option value="">-- None --</option>
-                </select>
-            </div>
-            <p id="createDeptError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="createDept()">Create</button>
-                <button class="btn btn-outline" onclick="hideModal('createDeptModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Set Department Head Modal -->
-    <div id="setHeadModal" class="modal-overlay" style="display:none;">
-        <div class="modal">
-            <h3>Set Department Head</h3>
-            <p id="setHeadDeptName" style="margin-bottom:12px;"></p>
-            <input type="hidden" id="setHeadDeptId">
-            <div class="form-group">
-                <label>Select Head</label>
-                <select id="setHeadSelect">
-                    <option value="">-- None --</option>
-                </select>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="setDeptHead()">Update</button>
-                <button class="btn btn-outline" onclick="hideModal('setHeadModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Change Role Modal -->
-    <div id="changeRoleModal" class="modal-overlay" style="display:none;">
-        <div class="modal">
-            <h3>Change Role</h3>
-            <p id="changeRoleUser" style="margin-bottom:12px;"></p>
-            <div class="form-group">
-                <label>New Role</label>
-                <select id="changeRoleSelect">
-                    <option value="HR">HR</option>
-                    <option value="Finance">Finance</option>
-                    <option value="IT">IT</option>
-                    <option value="CustomerSupport">Customer Support</option>
-                    <option value="SuperAdmin">SuperAdmin</option>
-                </select>
-            </div>
-            <input type="hidden" id="changeRoleUserId">
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="changeRole()">Update</button>
-                <button class="btn btn-outline" onclick="hideModal('changeRoleModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reset Password Modal -->
-    <div id="resetPasswordModal" class="modal-overlay" style="display:none;">
-        <div class="modal">
-            <h3>Reset Password</h3>
-            <p id="resetPasswordUser" style="margin-bottom:12px;"></p>
-            <div class="form-group">
-                <label>New Password</label>
-                <input type="password" id="resetNewPassword" placeholder="Enter new password (min 6 characters)">
-            </div>
-            <div class="form-group">
-                <label>Confirm Password</label>
-                <input type="password" id="resetConfirmPassword" placeholder="Confirm new password">
-            </div>
-            <input type="hidden" id="resetPasswordUserId">
-            <p id="resetPasswordError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="resetPassword()">Reset Password</button>
-                <button class="btn btn-outline" onclick="hideModal('resetPasswordModal')">Cancel</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Edit User Modal -->
-    <div id="editUserModal" class="modal-overlay" style="display:none;">
+    <div id="editUserModal" class="modal-overlay">
         <div class="modal">
-            <h3>Edit User</h3>
+            <h3>Modify Resource</h3>
             <input type="hidden" id="editUserId">
+            <div class="form-group"><label>Username</label><input type="text" id="editUsername"></div>
+            <div class="form-group"><label>Work Email</label><input type="email" id="editEmail"></div>
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="editUsername">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="editEmail">
-            </div>
-            <div class="form-group">
-                <label>Role</label>
+                <label>System Role</label>
                 <select id="editRole">
                     <option value="HR">HR</option>
                     <option value="Finance">Finance</option>
                     <option value="IT">IT</option>
-                    <option value="CustomerSupport">Customer Support</option>
+                    <option value="CustomerSupport">Support</option>
                     <option value="SuperAdmin">SuperAdmin</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Department</label>
-                <select id="editDepartment"></select>
-            </div>
+            <div class="form-group"><label>Organizational Unit</label><select id="editDepartment"></select></div>
             <p id="editUserError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="editUser()">Save Changes</button>
+            <div style="display:flex; gap:12px; margin-top:24px;">
+                <button class="btn btn-primary" onclick="editUser()" style="flex:1;">Apply Changes</button>
                 <button class="btn btn-outline" onclick="hideModal('editUserModal')">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Re-Authentication Modal -->
-    <div id="reAuthModal" class="modal-overlay" style="display:none; z-index: 9999;">
+    <!-- Re-Auth Modal (Required for Production) -->
+    <div id="reAuthModal" class="modal-overlay">
         <div class="modal">
             <h3>Security Verification</h3>
-            <p style="margin-bottom:12px;">This action requires an extra security check. Please confirm your password to
-                continue.</p>
-            <div class="form-group">
-                <label>Your Password</label>
-                <input type="password" id="reAuthPassword" placeholder="Confirm your password">
-            </div>
+            <p>Verification required. Please confirm your administrative password.</p>
+            <div class="form-group"><input type="password" id="reAuthPassword" placeholder="Confirm password"></div>
             <p id="reAuthError" class="error-msg" style="display:none;"></p>
-            <div style="display:flex; gap:8px; margin-top:16px;">
-                <button class="btn btn-primary" onclick="submitReAuth()">Verify</button>
+            <div style="display:flex; gap:12px; margin-top:24px;">
+                <button class="btn btn-primary" onclick="submitReAuth()" style="flex:1;">Verify</button>
                 <button class="btn btn-outline" onclick="hideModal('reAuthModal')">Cancel</button>
             </div>
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.3"></script>
+    <div id="toast"></div>
+
+    <script src="/js/app.js?v=1.0.4"></script>
     <script>
-        var allDepartments = [];
-
-        var pendingReAuthCallback = null;
-
-        function handleReAuthRequired(callback) {
-            pendingReAuthCallback = callback;
-            document.getElementById('reAuthPassword').value = '';
-            document.getElementById('reAuthError').style.display = 'none';
-            document.getElementById('reAuthModal').style.display = 'flex';
-        }
-
-        async function submitReAuth() {
-            var pwd = document.getElementById('reAuthPassword').value;
-            var errEl = document.getElementById('reAuthError');
-            errEl.style.display = 'none';
-
-            var result = await postJSON('/api/verify-reauth', { password: pwd });
-            if (result.success) {
-                hideModal('reAuthModal');
-                showToast('Re-authenticated successfully.', 'success');
-                if (pendingReAuthCallback) pendingReAuthCallback();
-            } else {
-                errEl.textContent = result.message;
-                errEl.style.display = 'block';
-            }
-        }
+        let allDepartments = [];
+        let reAuthCallback = null;
 
         async function init() {
-            var s = await (await fetch('/api/session')).json();
+            const s = await(await fetch('/api/session')).json();
             if (!s.loggedIn) return location.href = '/login';
             buildNavbar(s.user.role, 'mapping', s.user.username);
             
             if (s.user.role === 'HR') {
-                var deptCard = document.getElementById('departmentsCard');
-                if (deptCard) deptCard.style.display = 'none';
+                const card = document.getElementById('departmentsCard');
+                if (card) card.style.display = 'none';
             } else {
                 loadDepartments();
             }
-            
             loadUsers(s.user.role);
         }
 
         async function loadUsers(currentUserRole) {
-            var users = await (await fetch('/api/mapping/users')).json();
-            var tb = document.getElementById('usersTable');
+            const users = await(await fetch('/api/mapping/users')).json();
+            const tb = document.getElementById('usersTable');
             tb.innerHTML = '';
 
-            users.forEach(function (u) {
-                var statusClass = 'status-' + u.status;
-                var tr = document.createElement('tr');
-                var actions = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                const initial = u.username.charAt(0).toUpperCase();
 
-                actions += '<button class="btn btn-sm btn-primary" onclick="showEditUser(' + u.id + ')">Edit</button> ';
+                let actions = `<div class="btn-group" style="justify-content: flex-end;">`;
+                actions += `<button class="btn-icon" title="Edit" onclick="showEditUser(${u.id})"><i class="fas fa-edit"></i></button>`;
+                
                 if (u.status === 'active') {
-                    actions += '<button class="btn btn-sm btn-warning" onclick="suspendUser(' + u.id + ')">Suspend</button> ';
-                    actions += '<button class="btn btn-sm btn-danger" onclick="blockUser(' + u.id + ')">Block</button> ';
+                    actions += `<button class="btn-icon" title="Suspend" onclick="suspendUser(${u.id})"><i class="fas fa-pause"></i></button>`;
                     if (currentUserRole !== 'HR') {
-                        actions += '<button class="btn btn-sm" style="background:#000; color:#fff;" onclick="revokeSession(' + u.id + ')">Revoke</button> ';
+                        actions += `<button class="btn-icon" title="Kill Session" onclick="revokeSession(${u.id})"><i class="fas fa-power-off"></i></button>`;
                     }
                 } else {
-                    actions += '<button class="btn btn-sm btn-success" onclick="activateUser(' + u.id + ')">Activate</button> ';
+                    actions += `<button class="btn-icon" title="Activate" onclick="activateUser(${u.id})"><i class="fas fa-play"></i></button>`;
                 }
                 
-                if (currentUserRole !== 'HR') {
-                    actions += '<button class="btn btn-sm btn-outline" onclick="showChangeRole(' + u.id + ',\'' + u.username + '\',\'' + u.role + '\')">Role</button> ';
-                }
-                
-                actions += '<button class="btn btn-sm btn-outline" onclick="showResetPassword(' + u.id + ',\'' + u.username + '\')">Password</button> ';
-                actions += '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ',\'' + u.username + '\')">Delete</button>';
+                actions += `<button class="btn-icon btn-danger-lite" title="Delete" onclick="deleteUser(${u.id}, '${u.username}')"><i class="fas fa-trash-alt"></i></button>`;
+                actions += `</div>`;
 
-                tr.innerHTML =
-                    '<td>' + u.id + '</td>' +
-                    '<td><strong>' + u.username + '</strong></td>' +
-                    '<td><span class="role-badge" style="font-size:0.7rem;">' + u.role + '</span></td>' +
-                    '<td>' + (u.department || '-') + '</td>' +
-                    '<td><span class="' + statusClass + '">' + u.status + '</span></td>' +
-                    '<td>' + (u.failed_attempts || 0) + '</td>' +
-                    '<td>' + actions + '</td>';
+                tr.innerHTML = `
+                    <td>
+                        <div class="user-tag">
+                            <div class="avatar-sm">${initial}</div>
+                            <div class="user-info">
+                                <span class="username">${u.username}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">${u.email || 'no-email'}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="role-badge">${u.role}</span>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${u.department || 'General'}</div>
+                    </td>
+                    <td><span class="status-pill status-${u.status}">${u.status}</span></td>
+                    <td>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Failed: ${u.failed_attempts || 0}</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">ID: 00${u.id}</div>
+                    </td>
+                    <td>${actions}</td>
+                `;
                 tb.appendChild(tr);
             });
         }
 
         async function loadDepartments() {
-            allDepartments = await (await fetch('/api/mapping/departments')).json();
-            var tb = document.getElementById('deptsTable');
+            allDepartments = await(await fetch('/api/mapping/departments')).json();
+            const tb = document.getElementById('deptsTable');
             tb.innerHTML = '';
 
-            // update the department dropdown
-            var select = document.getElementById('newDepartment');
-            select.innerHTML = '';
-            allDepartments.forEach(function (d) {
-                var opt = document.createElement('option');
-                opt.value = d.name;
-                opt.textContent = d.name;
-                select.appendChild(opt);
-
-                var tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td>' + d.id + '</td>' +
-                    '<td>' + d.name + '</td>' +
-                    '<td>' + (d.created_by_name || '-') + '</td>' +
-                    '<td>' + (d.head_name || '-') + '</td>' +
-                    '<td><span class="role-badge" style="font-size:0.7rem;">' + (d.total_users || 0) + '</span></td>' +
-                    '<td>' + formatDate(d.created_at) + '</td>' +
-                    '<td>' +
-                    '<button class="btn btn-sm btn-primary" onclick="showSetHead(' + d.id + ',\'' + d.name + '\')" style="margin-right:4px;">Set Head</button>' +
-                    '<button class="btn btn-sm btn-danger" onclick="deleteDept(' + d.id + ',\'' + d.name + '\')">Delete</button>' +
-                    '</td>';
-                tb.appendChild(tr);
+            const select = document.getElementById('newDepartment');
+            const editSelect = document.getElementById('editDepartment');
+            [select, editSelect].forEach(sel => {
+                if (sel) {
+                    sel.innerHTML = '<option value="General">General</option>';
+                    allDepartments.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.name; opt.textContent = d.name;
+                        sel.appendChild(opt);
+                    });
+                }
             });
 
-            if (!allDepartments.length) {
-                tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#aaa;">No departments</td></tr>';
-            }
-        }
-
-        function showCreateUser() { document.getElementById('createUserModal').style.display = 'flex'; }
-        function showCreateDept() { showCreateDeptPopulated(); }
-        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        function showChangeRole(userId, username, currentRole) {
-            document.getElementById('changeRoleUserId').value = userId;
-            document.getElementById('changeRoleUser').textContent = 'User: ' + username + ' (current: ' + currentRole + ')';
-            document.getElementById('changeRoleSelect').value = currentRole;
-            document.getElementById('changeRoleModal').style.display = 'flex';
+            allDepartments.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${d.name}</strong></td>
+                    <td>${d.head_name || '-'}</td>
+                    <td><span class="role-badge">${d.total_users || 0} users</span></td>
+                    <td>${formatDate(d.created_at)}</td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-sm btn-outline" onclick="deleteDept(${d.id}, '${d.name}')">Delete</button>
+                    </td>
+                `;
+                tb.appendChild(tr);
+            });
         }
 
         async function createUser() {
-            var errEl = document.getElementById('createUserError');
-            errEl.style.display = 'none';
-
-            var result = await postJSON('/api/mapping/users/create', {
+            const result = await postJSON('/api/mapping/users/create', {
                 username: document.getElementById('newUsername').value,
                 password: document.getElementById('newPassword').value,
                 email: document.getElementById('newEmail').value,
                 role: document.getElementById('newRole').value,
                 department: document.getElementById('newDepartment').value
             });
-
             if (result.success) {
                 hideModal('createUserModal');
-                
-                // Need to get role again or pass it down, let's just use empty string or reload
-                // Wait, loadUsers requires the role now. Let's fetch it or just rely on init state.
-                // We'll safely omit role so it might hide role/revoke buttons until full refresh, or just refresh page.
-                window.location.reload();
+                showToast('Provisioned successfully.', 'success');
+                init();
             } else if (result.requireReAuth) {
                 handleReAuthRequired(createUser);
             } else {
-                errEl.textContent = result.message;
-                errEl.style.display = 'block';
+                document.getElementById('createUserError').textContent = result.message;
+                document.getElementById('createUserError').style.display = 'block';
             }
-        }
-
-        async function deleteUser(id, name, skipConfirm = false) {
-            if (!skipConfirm && !confirm('Delete user "' + name + '"? This cannot be undone.')) return;
-            var result = await postJSON('/api/mapping/users/delete', { userId: id });
-
-            if (result.requireReAuth) {
-                handleReAuthRequired(function () { deleteUser(id, name, true); });
-                return;
-            }
-
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) window.location.reload();
-        }
-
-        async function suspendUser(id) {
-            var result = await postJSON('/api/mapping/users/suspend', { userId: id });
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) window.location.reload();
-        }
-
-        async function blockUser(id) {
-            if (!confirm('Block this user?')) return;
-            var result = await postJSON('/api/mapping/users/block', { userId: id });
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) window.location.reload();
-        }
-
-        async function revokeSession(id) {
-            if (!confirm('Instantly zero-trust kill all active sessions for this user?')) return;
-            var result = await postJSON('/api/mapping/users/revoke-session', { userId: id });
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) window.location.reload();
-        }
-
-        async function activateUser(id) {
-            var result = await postJSON('/api/mapping/users/activate', { userId: id });
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) window.location.reload();
-        }
-
-        async function changeRole() {
-            var userId = document.getElementById('changeRoleUserId').value;
-            var newRole = document.getElementById('changeRoleSelect').value;
-            var result = await postJSON('/api/mapping/users/change-role', { userId: parseInt(userId), newRole: newRole });
-
-            if (result.requireReAuth) {
-                handleReAuthRequired(changeRole);
-                return;
-            }
-
-            showToast(result.message, result.success ? 'success' : 'error');
-            hideModal('changeRoleModal');
-            if (result.success) window.location.reload();
-        }
-
-        async function createDept() {
-            var errEl = document.getElementById('createDeptError');
-            errEl.style.display = 'none';
-
-            var payload = {
-                name: document.getElementById('newDeptName').value
-            };
-            var headVal = document.getElementById('newDeptHead').value;
-            if (headVal) payload.head_user_id = parseInt(headVal);
-
-            var result = await postJSON('/api/mapping/departments/create', payload);
-
-            if (result.success) {
-                hideModal('createDeptModal');
-                loadDepartments();
-            } else if (result.requireReAuth) {
-                handleReAuthRequired(createDept);
-            } else {
-                errEl.textContent = result.message;
-                errEl.style.display = 'block';
-            }
-        }
-
-        async function deleteDept(id, name, skipConfirm = false) {
-            if (!skipConfirm && !confirm('Delete department "' + name + '"?')) return;
-            var result = await postJSON('/api/mapping/departments/delete', { departmentId: id });
-
-            if (result.requireReAuth) {
-                handleReAuthRequired(function () { deleteDept(id, name, true); });
-                return;
-            }
-
-            showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadDepartments();
-        }
-
-        async function showSetHead(deptId, deptName) {
-            document.getElementById('setHeadDeptId').value = deptId;
-            document.getElementById('setHeadDeptName').textContent = 'Department: ' + deptName;
-
-            // populate dropdown with all users
-            var users = await (await fetch('/api/mapping/users')).json();
-            var sel = document.getElementById('setHeadSelect');
-            sel.innerHTML = '<option value="">-- None --</option>';
-            users.forEach(function (u) {
-                var opt = document.createElement('option');
-                opt.value = u.id;
-                opt.textContent = u.username + ' (' + u.role + ')';
-                sel.appendChild(opt);
-            });
-
-            // pre-select current head if set
-            var dept = allDepartments.find(function (d) { return d.id === deptId; });
-            if (dept && dept.head_user_id) sel.value = dept.head_user_id;
-
-            document.getElementById('setHeadModal').style.display = 'flex';
-        }
-
-        async function setDeptHead() {
-            var deptId = parseInt(document.getElementById('setHeadDeptId').value);
-            var headUserId = document.getElementById('setHeadSelect').value;
-
-            var result = await postJSON('/api/mapping/departments/update-head', {
-                departmentId: deptId,
-                head_user_id: headUserId || null
-            });
-
-            if (result.requireReAuth) {
-                handleReAuthRequired(setDeptHead);
-                return;
-            }
-
-            showToast(result.message, result.success ? 'success' : 'error');
-            hideModal('setHeadModal');
-            if (result.success) loadDepartments();
-        }
-
-        function showCreateDeptPopulated() {
-            // populate head dropdown when opening create modal
-            fetch('/api/mapping/users').then(function (r) { return r.json(); }).then(function (users) {
-                var sel = document.getElementById('newDeptHead');
-                sel.innerHTML = '<option value="">-- None --</option>';
-                users.forEach(function (u) {
-                    var opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.textContent = u.username + ' (' + u.role + ')';
-                    sel.appendChild(opt);
-                });
-            });
-            document.getElementById('createDeptModal').style.display = 'flex';
-        }
-
-        function showResetPassword(userId, username) {
-            document.getElementById('resetPasswordUserId').value = userId;
-            document.getElementById('resetPasswordUser').textContent = 'Reset password for: ' + username;
-            document.getElementById('resetNewPassword').value = '';
-            document.getElementById('resetConfirmPassword').value = '';
-            document.getElementById('resetPasswordError').style.display = 'none';
-            document.getElementById('resetPasswordModal').style.display = 'flex';
-        }
-
-        async function resetPassword() {
-            var errEl = document.getElementById('resetPasswordError');
-            errEl.style.display = 'none';
-
-            var newPwd = document.getElementById('resetNewPassword').value;
-            var confirmPwd = document.getElementById('resetConfirmPassword').value;
-
-            if (newPwd !== confirmPwd) {
-                errEl.textContent = 'Passwords do not match.';
-                errEl.style.display = 'block';
-                return;
-            }
-
-            var userId = document.getElementById('resetPasswordUserId').value;
-            var result = await postJSON('/api/profile/' + userId + '/change-password', { newPassword: newPwd });
-
-            if (result.success) {
-                hideModal('resetPasswordModal');
-                showToast(result.message, 'success');
-            } else if (result.requireReAuth) {
-                handleReAuthRequired(resetPassword);
-            } else {
-                errEl.textContent = result.message;
-                errEl.style.display = 'block';
-            }
-        }
-
-        async function showEditUser(userId) {
-            // fetch user details
-            var users = await (await fetch('/api/mapping/users')).json();
-            var user = null;
-            for (var i = 0; i < users.length; i++) {
-                if (users[i].id === userId) { user = users[i]; break; }
-            }
-            if (!user) return alert('User not found.');
-
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editUsername').value = user.username;
-            document.getElementById('editEmail').value = user.email || '';
-            document.getElementById('editRole').value = user.role;
-
-            // populate department dropdown
-            var deptSelect = document.getElementById('editDepartment');
-            deptSelect.innerHTML = '';
-            allDepartments.forEach(function (d) {
-                var opt = document.createElement('option');
-                opt.value = d.name;
-                opt.textContent = d.name;
-                deptSelect.appendChild(opt);
-            });
-            deptSelect.value = user.department || '';
-
-            document.getElementById('editUserError').style.display = 'none';
-            document.getElementById('editUserModal').style.display = 'flex';
         }
 
         async function editUser() {
-            var errEl = document.getElementById('editUserError');
-            errEl.style.display = 'none';
-
-            var userId = parseInt(document.getElementById('editUserId').value);
-            var result = await postJSON('/api/mapping/users/edit', {
-                userId: userId,
+            const result = await postJSON('/api/mapping/users/edit', {
+                userId: parseInt(document.getElementById('editUserId').value),
                 username: document.getElementById('editUsername').value,
                 email: document.getElementById('editEmail').value,
                 role: document.getElementById('editRole').value,
                 department: document.getElementById('editDepartment').value
             });
-
             if (result.success) {
                 hideModal('editUserModal');
-                showToast(result.message, 'success');
-                window.location.reload();
+                showToast('Updated successfully.', 'success');
+                init();
             } else {
-                errEl.textContent = result.message;
-                errEl.style.display = 'block';
+                document.getElementById('editUserError').textContent = result.message;
+                document.getElementById('editUserError').style.display = 'block';
             }
         }
+
+        async function deleteUser(id, name, skipConfirm = false) {
+            if (!skipConfirm && !confirm(`Purge user "${name}"? This action is irreversible.`)) return;
+            const res = await postJSON('/api/mapping/users/delete', { userId: id });
+            if (res.requireReAuth) return handleReAuthRequired(() => deleteUser(id, name, true));
+            if (res.success) { showToast(res.message, 'success'); init(); }
+            else showToast(res.message, 'error');
+        }
+
+        async function showEditUser(id) {
+            const users = await(await fetch('/api/mapping/users')).json();
+            const u = users.find(x => x.id === id);
+            if (!u) return showToast('Resource not found.', 'error');
+            document.getElementById('editUserId').value = u.id;
+            document.getElementById('editUsername').value = u.username;
+            document.getElementById('editEmail').value = u.email || '';
+            document.getElementById('editRole').value = u.role;
+            document.getElementById('editDepartment').value = u.department || 'General';
+            document.getElementById('editUserError').style.display = 'none';
+            document.getElementById('editUserModal').style.display = 'flex';
+        }
+
+        // Action wrappers (standardized)
+        async function suspendUser(id) { const r = await postJSON('/api/mapping/users/suspend', {userId: id}); showToast(r.message, r.success?'success':'error'); if(r.success) init(); }
+        async function activateUser(id) { const r = await postJSON('/api/mapping/users/activate', {userId: id}); showToast(r.message, r.success?'success':'error'); if(r.success) init(); }
+        async function revokeSession(id) { if(!confirm('Force global kill-switch for this session?')) return; const r = await postJSON('/api/mapping/users/revoke-session', {userId: id}); showToast(r.message, r.success?'success':'error'); if(r.success) init(); }
+
+        // Security logic
+        function handleReAuthRequired(cb) { reAuthCallback = cb; document.getElementById('reAuthPassword').value=''; document.getElementById('reAuthError').style.display='none'; document.getElementById('reAuthModal').style.display='flex'; }
+        async function submitReAuth() {
+            const pwd = document.getElementById('reAuthPassword').value;
+            const res = await postJSON('/api/verify-reauth', {password: pwd});
+            if(res.success) { hideModal('reAuthModal'); if(reAuthCallback) reAuthCallback(); }
+            else { document.getElementById('reAuthError').textContent = res.message; document.getElementById('reAuthError').style.display='block'; }
+        }
+
+        function showCreateUser() { document.getElementById('createUserModal').style.display = 'flex'; }
+        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+        function showToast(m,t){ const el=document.getElementById('toast'); el.textContent=m; el.style.background=t==='success'?'var(--success)':'var(--danger)'; el.style.display='block'; setTimeout(()=>el.style.display='none',4000); }
 
         init();
     </script>
 </body>
-
 </html>
