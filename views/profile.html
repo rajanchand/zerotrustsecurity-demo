@@ -106,7 +106,7 @@
                 <div class="id-card">
                     <div class="id-card-head">Credential Management</div>
                     <div style="padding: 20px;">
-                        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="alert('In a real environment, this would start the Password Reset workflow.')"><i class="fas fa-key"></i> Update Credentials</button>
+                        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="showPasswordModal()"><i class="fas fa-key"></i> Update Credentials</button>
                         <p style="font-size: 0.65rem; color: var(--text-soft); margin-top: 8px;">Managed by Organization Identity Policy.</p>
                     </div>
                 </div>
@@ -114,8 +114,53 @@
         </div>
     </div>
 
-    <script src="/js/app.js?v=1.0.7"></script>
+    <!-- Password Change Modal -->
+    <div id="pwModal" style="position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);display:none;justify-content:center;align-items:center;z-index:2000;">
+        <div style="background:#fff;width:100%;max-width:440px;border-radius:24px;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+            <h3 style="margin:0 0 8px;font-size:1.5rem;font-weight:800;">Update Credentials</h3>
+            <p style="color:var(--text-soft);font-size:0.9rem;margin-bottom:24px;">Enter your current password and choose a new one.</p>
+            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">Current Password</label><input type="password" id="pw-current" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
+            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">New Password</label><input type="password" id="pw-new" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
+            <div style="margin-bottom:16px;"><label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-soft);margin-bottom:6px;">Confirm New Password</label><input type="password" id="pw-confirm" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;box-sizing:border-box;"></div>
+            <p id="pw-error" style="color:#dc2626;font-size:0.8rem;margin-bottom:12px;display:none;"></p>
+            <div style="display:flex;gap:12px;">
+                <button class="btn btn-primary" style="flex:1;padding:14px;border-radius:12px;" onclick="submitPasswordChange()">Update Password</button>
+                <button class="btn btn-outline" style="padding:14px;border-radius:12px;" onclick="document.getElementById('pwModal').style.display='none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Footer -->
+    <div class="zts-footer">
+        <div class="footer-brand">ZTS Enterprise Suite</div>
+        <div>Continuous Adaptive Risk and Trust Assessment Platform</div>
+        <div class="nist-badge"><i class="fas fa-shield-alt"></i> Compliant with NIST SP 800-207 Zero Trust Architecture</div>
+    </div>
+
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
+        function showPasswordModal() {
+            document.getElementById('pw-current').value = '';
+            document.getElementById('pw-new').value = '';
+            document.getElementById('pw-confirm').value = '';
+            document.getElementById('pw-error').style.display = 'none';
+            document.getElementById('pwModal').style.display = 'flex';
+        }
+
+        async function submitPasswordChange() {
+            var errEl = document.getElementById('pw-error');
+            errEl.style.display = 'none';
+            var current = document.getElementById('pw-current').value;
+            var newPw = document.getElementById('pw-new').value;
+            var confirm = document.getElementById('pw-confirm').value;
+            if (!current || !newPw) { errEl.textContent = 'All fields are required.'; errEl.style.display = 'block'; return; }
+            if (newPw !== confirm) { errEl.textContent = 'New passwords do not match.'; errEl.style.display = 'block'; return; }
+            if (newPw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
+            var res = await postJSON('/api/profile/update-password', { currentPassword: current, newPassword: newPw });
+            if (res.success) { document.getElementById('pwModal').style.display = 'none'; showToast('Password updated successfully', 'success'); }
+            else { errEl.textContent = res.message || 'Failed to update password.'; errEl.style.display = 'block'; }
+        }
+
         async function loadProfile() {
             try {
                 const s = await(await fetch('/api/session')).json();
@@ -127,21 +172,26 @@
                 document.getElementById('hero-name').textContent = s.user.username;
                 document.getElementById('hero-role').textContent = s.user.role;
                 
-                document.getElementById('f-id').textContent = 'ZTS-' + String(s.user.userId).padStart(5, '0');
+                document.getElementById('f-id').textContent = 'ZTS-' + String(s.user.id).padStart(5, '0');
                 document.getElementById('f-user').textContent = s.user.username;
                 document.getElementById('f-email').textContent = s.user.email || 'No email on record';
                 document.getElementById('f-dept').textContent = s.user.department || 'Enterprise General';
                 document.getElementById('f-role').textContent = s.user.role;
 
-                document.getElementById('riskScore').textContent = s.user.riskScore;
-                document.getElementById('riskLabel').textContent = s.user.riskLevel.toUpperCase() + ' RISK';
+                var riskScore = s.user.riskScore || s.risk && s.risk.score || 0;
+                var riskLevel = s.user.riskLevel || s.risk && s.risk.level || 'Low';
+                document.getElementById('riskScore').textContent = riskScore;
+                document.getElementById('riskLabel').textContent = riskLevel.toUpperCase() + ' RISK';
+                var rColor = riskScore >= 60 ? '#ef4444' : riskScore >= 30 ? '#f59e0b' : '#10b981';
+                document.getElementById('riskScore').style.color = rColor;
 
                 // Sessions
-                const d = await(await fetch('/api/admin/users/' + s.user.userId + '/details')).json();
+                var d = {};
+                try { d = await(await fetch('/api/admin/users/' + s.user.id + '/forensics')).json(); } catch(e) { d = {}; }
                 const sl = document.getElementById('sessionList');
                 sl.innerHTML = '';
-                if(d.sessions && d.sessions.length) {
-                    d.sessions.slice(0, 5).forEach(sess => {
+                if(d.inventory && d.inventory.sessions && d.inventory.sessions.length) {
+                    d.inventory.sessions.slice(0, 5).forEach(sess => {
                         const div = document.createElement('div');
                         div.className = 'session-item';
                         div.innerHTML = `
