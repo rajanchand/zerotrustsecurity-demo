@@ -46,7 +46,7 @@
         </div>
 
         <!-- Department Management -->
-        <div class="card">
+        <div class="card" id="departmentsCard">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h3 style="margin:0;">Departments</h3>
                 <button class="btn btn-primary btn-sm" onclick="showCreateDept()">Create Department</button>
@@ -284,11 +284,18 @@
             var s = await (await fetch('/api/session')).json();
             if (!s.loggedIn) return location.href = '/login';
             buildNavbar(s.user.role, 'mapping', s.user.username);
-            loadUsers();
-            loadDepartments();
+            
+            if (s.user.role === 'HR') {
+                var deptCard = document.getElementById('departmentsCard');
+                if (deptCard) deptCard.style.display = 'none';
+            } else {
+                loadDepartments();
+            }
+            
+            loadUsers(s.user.role);
         }
 
-        async function loadUsers() {
+        async function loadUsers(currentUserRole) {
             var users = await (await fetch('/api/mapping/users')).json();
             var tb = document.getElementById('usersTable');
             tb.innerHTML = '';
@@ -302,11 +309,17 @@
                 if (u.status === 'active') {
                     actions += '<button class="btn btn-sm btn-warning" onclick="suspendUser(' + u.id + ')">Suspend</button> ';
                     actions += '<button class="btn btn-sm btn-danger" onclick="blockUser(' + u.id + ')">Block</button> ';
-                    actions += '<button class="btn btn-sm" style="background:#000; color:#fff;" onclick="revokeSession(' + u.id + ')">Revoke</button> ';
+                    if (currentUserRole !== 'HR') {
+                        actions += '<button class="btn btn-sm" style="background:#000; color:#fff;" onclick="revokeSession(' + u.id + ')">Revoke</button> ';
+                    }
                 } else {
                     actions += '<button class="btn btn-sm btn-success" onclick="activateUser(' + u.id + ')">Activate</button> ';
                 }
-                actions += '<button class="btn btn-sm btn-outline" onclick="showChangeRole(' + u.id + ',\'' + u.username + '\',\'' + u.role + '\')">Role</button> ';
+                
+                if (currentUserRole !== 'HR') {
+                    actions += '<button class="btn btn-sm btn-outline" onclick="showChangeRole(' + u.id + ',\'' + u.username + '\',\'' + u.role + '\')">Role</button> ';
+                }
+                
                 actions += '<button class="btn btn-sm btn-outline" onclick="showResetPassword(' + u.id + ',\'' + u.username + '\')">Password</button> ';
                 actions += '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ',\'' + u.username + '\')">Delete</button>';
 
@@ -381,7 +394,11 @@
 
             if (result.success) {
                 hideModal('createUserModal');
-                loadUsers();
+                
+                // Need to get role again or pass it down, let's just use empty string or reload
+                // Wait, loadUsers requires the role now. Let's fetch it or just rely on init state.
+                // We'll safely omit role so it might hide role/revoke buttons until full refresh, or just refresh page.
+                window.location.reload();
             } else if (result.requireReAuth) {
                 handleReAuthRequired(createUser);
             } else {
@@ -400,33 +417,33 @@
             }
 
             showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function suspendUser(id) {
             var result = await postJSON('/api/mapping/users/suspend', { userId: id });
             showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function blockUser(id) {
             if (!confirm('Block this user?')) return;
             var result = await postJSON('/api/mapping/users/block', { userId: id });
             showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function revokeSession(id) {
             if (!confirm('Instantly zero-trust kill all active sessions for this user?')) return;
             var result = await postJSON('/api/mapping/users/revoke-session', { userId: id });
             showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function activateUser(id) {
             var result = await postJSON('/api/mapping/users/activate', { userId: id });
             showToast(result.message, result.success ? 'success' : 'error');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function changeRole() {
@@ -441,7 +458,7 @@
 
             showToast(result.message, result.success ? 'success' : 'error');
             hideModal('changeRoleModal');
-            if (result.success) loadUsers();
+            if (result.success) window.location.reload();
         }
 
         async function createDept() {
@@ -617,7 +634,7 @@
             if (result.success) {
                 hideModal('editUserModal');
                 showToast(result.message, 'success');
-                loadUsers();
+                window.location.reload();
             } else {
                 errEl.textContent = result.message;
                 errEl.style.display = 'block';

@@ -21,6 +21,7 @@ router.get('/mapping', function (req, res) {
 });
 
 router.get('/register-device', function (req, res) {
+    if (req.session.role === 'HR') return res.status(403).send('Forbidden for HR.');
     res.sendFile(path.join(__dirname, '..', 'views', 'register-device.html'));
 });
 
@@ -109,6 +110,9 @@ router.post('/api/mapping/users/create', requireReAuth, async function (req, res
 
 // approve device
 router.post('/api/mapping/devices/approve', requireReAuth, async function (req, res) {
+    if (req.session.role === 'HR') {
+        return res.json({ success: false, message: 'Access denied: HR cannot approve devices.' });
+    }
     try {
         var { deviceId, trustLevel } = req.body;
         if (!deviceId) return res.json({ success: false });
@@ -203,6 +207,9 @@ router.post('/api/mapping/users/delete', requireReAuth, async function (req, res
 
 // change user role
 router.post('/api/mapping/users/change-role', requireReAuth, async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can change roles.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -362,6 +369,9 @@ router.post('/api/mapping/users/block', async function (req, res) {
 
 // activate user (unblock / unsuspend)
 router.post('/api/mapping/users/revoke-session', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can revoke sessions.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -436,6 +446,7 @@ router.post('/api/mapping/users/activate', async function (req, res) {
 // --- department management ---
 
 router.get('/api/mapping/departments', async function (req, res) {
+    if (req.session.role === 'HR') return res.json([]);
     try {
         var { data: depts } = await supabase.from('departments').select('*').order('name');
         if (!depts) return res.json([]);
@@ -472,6 +483,9 @@ router.get('/api/mapping/departments', async function (req, res) {
 });
 
 router.post('/api/mapping/departments/create', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can create departments.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -504,6 +518,9 @@ router.post('/api/mapping/departments/create', async function (req, res) {
 });
 
 router.post('/api/mapping/departments/delete', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can delete departments.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -532,6 +549,9 @@ router.post('/api/mapping/departments/delete', async function (req, res) {
 });
 
 router.post('/api/mapping/departments/update-head', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.json({ success: false, message: 'Access denied: Only SuperAdmin can update departments.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -564,6 +584,7 @@ router.post('/api/mapping/departments/update-head', async function (req, res) {
 // --- device registration / approval ---
 
 router.get('/api/mapping/devices/pending', async function (req, res) {
+    if (req.session.role === 'HR') return res.json([]);
     try {
         var devices = await getPendingDevices();
         res.json(devices);
@@ -573,6 +594,7 @@ router.get('/api/mapping/devices/pending', async function (req, res) {
 });
 
 router.get('/api/mapping/devices/all', async function (req, res) {
+    if (req.session.role === 'HR') return res.json([]);
     try {
         var devices = await getAllDevices();
         res.json(devices);
@@ -584,6 +606,9 @@ router.get('/api/mapping/devices/all', async function (req, res) {
 
 
 router.post('/api/mapping/devices/reject', async function (req, res) {
+    if (req.session.role === 'HR') {
+        return res.json({ success: false, message: 'Access denied: HR cannot reject devices.' });
+    }
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase

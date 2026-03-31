@@ -126,7 +126,8 @@ app.use('/', profileRoutes);
 
 // Admin panel routes — SuperAdmin and IT both have access
 // IT needs access for device management and network tooling
-app.use('/', requireRole(['SuperAdmin', 'IT']), mappingRoutes);
+// HR needs access to mapping routes for user management
+app.use('/', requireRole(['SuperAdmin', 'HR', 'IT']), mappingRoutes);
 app.use('/', requireRole(['SuperAdmin', 'IT']), monitoringRoutes);
 app.use('/', requireRole(['SuperAdmin', 'IT']), networkRoutes);
 

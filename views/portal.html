@@ -322,6 +322,10 @@
             grid.innerHTML = '';
 
             roleDefinitions.forEach(function (role) {
+                if (currentRole !== 'SuperAdmin' && role.key !== currentRole) {
+                    return;
+                }
+
                 var isYours = role.key === currentRole;
 
                 var items = role.permissions.map(function (p) {
