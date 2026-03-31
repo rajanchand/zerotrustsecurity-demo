@@ -11,6 +11,7 @@ var { logSecurityEvent }                                                   = req
 var { getPendingDevices, approveDevice, rejectDevice, getAllDevices }      = require('../services/deviceService');
 var { validatePassword }                                                   = require('../middleware/passwordPolicy');
 var { requireReAuth }                                                      = require('../middleware/stepUpAuth');
+var { requirePermission }                                                  = require('../middleware/permissions');
 
 var router = express.Router();
 
@@ -25,10 +26,15 @@ router.get('/register-device', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'register-device.html'));
 });
 
+router.get('/admin/user-access', function (req, res) {
+    if (req.session.role !== 'SuperAdmin') return res.status(403).send('Forbidden.');
+    res.sendFile(path.join(__dirname, '..', 'views', 'user-access.html'));
+});
+
 // ── User Management API ──────────────────────────────────────
 
 // get all users
-router.get('/api/mapping/users', async function (req, res) {
+router.get('/api/mapping/users', requirePermission('user_view'), async function (req, res) {
     try {
         var { data: users } = await supabase
             .from('users')
@@ -42,7 +48,7 @@ router.get('/api/mapping/users', async function (req, res) {
 });
 
 // create new user
-router.post('/api/mapping/users/create', requireReAuth, async function (req, res) {
+router.post('/api/mapping/users/create', requirePermission('user_create'), requireReAuth, async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -109,7 +115,7 @@ router.post('/api/mapping/users/create', requireReAuth, async function (req, res
 });
 
 // approve device
-router.post('/api/mapping/devices/approve', requireReAuth, async function (req, res) {
+router.post('/api/mapping/devices/approve', requirePermission('device_approve'), requireReAuth, async function (req, res) {
     if (req.session.role === 'HR') {
         return res.json({ success: false, message: 'Access denied: HR cannot approve devices.' });
     }
@@ -141,7 +147,7 @@ router.post('/api/mapping/devices/approve', requireReAuth, async function (req, 
 });
 
 // delete user
-router.post('/api/mapping/users/delete', requireReAuth, async function (req, res) {
+router.post('/api/mapping/users/delete', requirePermission('user_delete'), requireReAuth, async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -245,7 +251,7 @@ router.post('/api/mapping/users/change-role', requireReAuth, async function (req
 });
 
 // edit user details (username, role, email, department)
-router.post('/api/mapping/users/edit', async function (req, res) {
+router.post('/api/mapping/users/edit', requirePermission('user_edit'), async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -296,7 +302,7 @@ router.post('/api/mapping/users/edit', async function (req, res) {
 });
 
 // suspend user
-router.post('/api/mapping/users/suspend', async function (req, res) {
+router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -332,7 +338,7 @@ router.post('/api/mapping/users/suspend', async function (req, res) {
 });
 
 // block user
-router.post('/api/mapping/users/block', async function (req, res) {
+router.post('/api/mapping/users/block', requirePermission('user_suspend'), async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -408,7 +414,7 @@ router.post('/api/mapping/users/revoke-session', async function (req, res) {
 });
 
 // activate user (unblock / unsuspend)
-router.post('/api/mapping/users/activate', async function (req, res) {
+router.post('/api/mapping/users/activate', requirePermission('user_approve'), async function (req, res) {
     try {
         // DEVICE POSTURE ENFORCEMENT
         var { data: currentDevice } = await supabase
@@ -629,6 +635,68 @@ router.post('/api/mapping/devices/reject', async function (req, res) {
         res.json({ success: true, message: 'Device rejected.' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Server error.' });
+    }
+});
+
+// ── Permission Management API (User Access Dashboard) ────────────────────
+
+// GET /api/mapping/permissions — Fetch users with their permissions (SuperAdmin ONLY)
+router.get('/api/mapping/permissions', async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    try {
+        var { data: users, error } = await supabase
+            .from('users')
+            .select('id, username, role, permissions')
+            .order('username', { ascending: true });
+
+        if (error) throw error;
+        res.json(users || []);
+    } catch (err) {
+        console.error('Fetch permissions error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch user permissions.' });
+    }
+});
+
+// POST /api/mapping/permissions/update — Update user granular permissions (SuperAdmin ONLY)
+router.post('/api/mapping/permissions/update', requireReAuth, async function (req, res) {
+    if (req.session.role !== 'SuperAdmin') {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+
+    try {
+        var { userId, permissions } = req.body;
+
+        if (!userId || !permissions) {
+            return res.json({ success: false, message: 'User ID and permissions object are required.' });
+        }
+
+        // Fetch target user to log their name
+        var { data: targetUser } = await supabase.from('users').select('username').eq('id', userId).single();
+        if (!targetUser) return res.json({ success: false, message: 'User not found.' });
+
+        var { error } = await supabase
+            .from('users')
+            .update({ permissions: permissions })
+            .eq('id', userId);
+
+        if (error) throw error;
+
+        await logEvent(req.session.userId, 'PERMISSIONS_UPDATED', 'Updated granular permissions for user: ' + targetUser.username, req.ip);
+        await logSecurityEvent({
+            event_type: 'PERMISSIONS_UPDATED',
+            user_id: req.session.userId,
+            username: req.session.username,
+            ip: req.ip,
+            details: { target_user: targetUser.username, target_user_id: userId, permissions: permissions }
+        });
+
+        res.json({ success: true, message: 'Permissions updated successfully for ' + targetUser.username });
+    } catch (err) {
+        console.error('Update permissions error:', err);
+        res.status(500).json({ success: false, message: 'Server error: ' + err.message });
     }
 });
 

@@ -78,7 +78,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         
-        # 🛡️ Fix: Forward the proto from Cloudflare (Flexible SSL)
+        #  Fix: Forward the proto from Cloudflare (Flexible SSL)
         # Standard $scheme is 'http' locally, which blocks 'Secure' cookies.
         # We must tell Node that the outer connection is 'https'.
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;

@@ -130,6 +130,10 @@ function buildNavbar(role, activePage, username) {
         html += '<div class="dropdown-menu">';
         html += '<a href="/mapping"' + (activePage === 'mapping' ? ' class="active"' : '') + '>User Management</a>';
         
+        if (role === 'SuperAdmin') {
+            html += '<a href="/admin/user-access"' + (activePage === 'user-access' ? ' class="active"' : '') + '>User Access Dashboard</a>';
+        }
+        
         // HR doesn't have access to Device Management
         if (role !== 'HR') {
             html += '<a href="/register-device"' + (activePage === 'register-device' ? ' class="active"' : '') + '>Register Device</a>';

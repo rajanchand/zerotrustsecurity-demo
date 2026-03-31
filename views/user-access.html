@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Access Dashboard - ZTS</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 80px 20px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .username {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .role-superadmin { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .role-it { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .role-hr { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .role-user { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+        /* Custom Checkbox Styling */
+        .perm-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-save:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(99, 102, 241, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1001;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-shield-halved"></i> User Access Dashboard</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Granular Zero-Trust Permissions Management</p>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th title="Create Users">Create</th>
+                        <th title="Edit Users">Edit</th>
+                        <th title="Delete Users">Del</th>
+                        <th title="Suspend/Block Users">Susp</th>
+                        <th title="Approve Users">Appr</th>
+                        <th title="Approve Devices">Device</th>
+                        <th title="Manage Network / IP Rules">Net</th>
+                        <th title="Live Monitoring">Mon</th>
+                        <th title="Department CRUD">Dept</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        const PERM_KEYS = [
+            'user_create', 'user_edit', 'user_delete', 'user_suspend', 'user_approve',
+            'device_approve', 'network_manage', 'monitor_live', 'dept_manage'
+        ];
+
+        async function loadPermissions() {
+            try {
+                const res = await fetch('/api/mapping/permissions');
+                const users = await res.json();
+                renderTable(users);
+            } catch (err) {
+                showToast('Failed to load users', 'error');
+            }
+        }
+
+        function renderTable(users) {
+            const body = document.getElementById('userTableBody');
+            body.innerHTML = '';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                const perms = user.permissions || {};
+                
+                // Disable checkboxes for SuperAdmins (they have all by default)
+                const isSuper = user.role === 'SuperAdmin';
+                const disabledAttr = isSuper ? 'disabled checked' : '';
+
+                let html = `
+                    <td>
+                        <div class="user-info">
+                            <span class="username">${user.username}</span>
+                            <span class="role-badge role-${user.role.toLowerCase()}">${user.role}</span>
+                        </div>
+                    </td>
+                `;
+
+                PERM_KEYS.forEach(key => {
+                    const checked = perms[key] === true ? 'checked' : '';
+                    html += `
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="perm-checkbox" 
+                                data-user-id="${user.id}" 
+                                data-perm="${key}" 
+                                ${checked} ${disabledAttr}>
+                        </td>
+                    `;
+                });
+
+                html += `
+                    <td style="text-align: right;">
+                        <button class="btn-save" onclick="saveUserPermissions(${user.id})" ${isSuper ? 'disabled' : ''}>
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </td>
+                `;
+
+                tr.innerHTML = html;
+                body.appendChild(tr);
+            });
+        }
+
+        async function saveUserPermissions(userId) {
+            const checkboxes = document.querySelectorAll(`.perm-checkbox[data-user-id="${userId}"]`);
+            const permissions = {};
+            
+            checkboxes.forEach(cb => {
+                permissions[cb.dataset.perm] = cb.checked;
+            });
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                // Ensure CSRF token is handled if required by the system
+                const csrfRes = await fetch('/api/csrf-token');
+                const { csrfToken } = await csrfRes.json();
+
+                const res = await fetch('/api/mapping/permissions/update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
+                    },
+                    body: JSON.stringify({ userId, permissions })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    showToast(result.message, 'success');
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (err) {
+                showToast('Failed to update permissions', 'error');
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.background = type === 'success' ? 'var(--success)' : 'var(--danger)';
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof buildNavbar === 'function') {
+                buildNavbar();
+            }
+            loadPermissions();
+        });
+    </script>
+</body>
+</html>

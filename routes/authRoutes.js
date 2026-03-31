@@ -330,6 +330,7 @@ router.post('/login', loginLimiter, async function (req, res) {
         req.session.username        = user.username;
         req.session.role            = user.role;
         req.session.department      = user.department;
+        req.session.permissions     = user.permissions || {}; // Store granular permissions
         req.session.riskScore       = risk.score;
         req.session.riskLevel       = risk.level;
         req.session.riskFactors     = risk.factors;
