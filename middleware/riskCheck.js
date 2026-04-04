@@ -40,10 +40,9 @@ function flagHighRisk(req, res, next) {
 
     // Check: request velocity anomaly (>200 requests in 2 minutes = genuine automation/attack)
     if (tracker.requests.length > 200) {
-        var now2 = Date.now();
         // only log once per 60 seconds per user to prevent flooding
-        if (!tracker.lastAnomalyLog || (now2 - tracker.lastAnomalyLog) > 60000) {
-            tracker.lastAnomalyLog = now2;
+        if (!tracker.lastAnomalyLog || (now - tracker.lastAnomalyLog) > 60000) {
+            tracker.lastAnomalyLog = now;
             tracker.riskDelta = Math.min(tracker.riskDelta + 10, 40);
             logSecurityEvent({
                 event_type: 'BEHAVIORAL_ANOMALY',

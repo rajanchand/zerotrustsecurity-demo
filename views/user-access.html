@@ -8,7 +8,67 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --border: #e2e8f0;
+            --text-bold: #0f172a;
+            --text-soft: #64748b;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 140px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header-panel { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .header-panel h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .header-panel p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
+
+        .access-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 16px 20px; background: #f8fafc; color: var(--text-soft); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); text-align: left; }
+        td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
+        tr:hover td { background: #fbfcfd; }
+        tr.modified td { background: #fffbeb; }
+
+        .id-tag { display: flex; align-items: center; gap: 12px; }
+        .avatar-box { width: 36px; height: 36px; background: #e0e7ff; color: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
+        .role-pill { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: var(--text-soft); }
+
+        /* Modern Switch */
+        .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; transition: .2s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background: #16a34a; }
+        input:checked + .slider:before { transform: translateX(16px); }
+        input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+
+        /* floating action board */
+        .action-board {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; padding: 16px 32px; border-radius: 100px;
+            display: flex; align-items: center; gap: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            z-index: 1001; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(40px);
+        }
+        .action-board.active { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        .action-board span { color: #fff; font-size: 0.9rem; font-weight: 600; }
+        .btn-deploy { background: #fff; color: #0f172a; border: none; padding: 10px 24px; border-radius: 50px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+        .btn-deploy:hover { background: #f8fafc; transform: scale(1.05); }
+
+        /* Identity Challenge Modal */
+        .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: #fff; width: 440px; border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; }
+        .modal i { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
+        .modal h3 { margin: 0 0 12px; font-size: 1.5rem; font-weight: 800; }
+        .modal p { color: var(--text-soft); font-size: 0.9rem; margin-bottom: 24px; }
+        .form-input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 1rem; text-align: center; box-sizing: border-box; }
+        
+        #toast-box { position: fixed; top: 24px; right: 24px; z-index: 3010; }
+    </style>
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">

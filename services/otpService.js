@@ -33,6 +33,11 @@ async function generateOTP(userId) {
         .single();
 
     if (user && user.email) {
+        console.log(`\n========================================`);
+        console.log(`🔑 DEV / TERMINAL OTP: ${code}`);
+        console.log(`👤 User: ${user.username} (${user.email})`);
+        console.log(`========================================\n`);
+
         sendOTPEmail(user.email, user.username, code).catch(function () {
             console.error('  [otp] Failed to send OTP email for user ' + userId);
         });

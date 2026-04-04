@@ -7,13 +7,12 @@ var { supabase } = require('../db');
 
 // paths that don't need authentication
 var PUBLIC_PATHS = [
-    '/login', '/logout', '/otp', '/verify-otp', 
+    '/login', '/logout', '/otp', '/verify-otp',
     '/api/login', '/api/verify-otp', '/api/session',
     '/css', '/js', '/api/csrf-token'
 ];
 
-// how often to re-validate the session token against the database (ms)
-// this drives the real-time account kill-switch and concurrent session revocation
+//  real-time account kill-switch and concurrent session revocation
 var SESSION_CHECK_INTERVAL = 10 * 1000; // 10 seconds
 
 async function requireLogin(req, res, next) {
@@ -124,12 +123,11 @@ async function requireLogin(req, res, next) {
 
                 // 2. REAL-TIME ROLE & PERMISSION SYNC ──
                 // If an admin changed the user's role or granular permissions, 
-                // update the session immediately without requiring a logout.
                 if (result.role !== req.session.role) {
                     console.log(`[AUTH] Syncing role for ${req.session.username}: ${req.session.role} -> ${result.role}`);
                     req.session.role = result.role;
                 }
-                
+
                 var currentPermsStr = JSON.stringify(req.session.permissions || {});
                 var dbPermsStr = JSON.stringify(result.permissions || {});
                 if (currentPermsStr !== dbPermsStr) {

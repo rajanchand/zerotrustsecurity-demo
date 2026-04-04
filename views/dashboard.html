@@ -8,7 +8,83 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f1f5f9;
+            --card-root: #ffffff;
+            --border-panel: #e2e8f0;
+            --text-strong: #0f172a;
+            --text-soft: #475569;
+            --accent-glow: #3b82f6;
+            --danger-glow: #ef4444;
+            --warning-glow: #f59e0b;
+            --success-glow: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-strong);
+            margin: 0;
+            padding: 90px 24px 40px;
+        }
+
+        .soc-layout { max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+        
+        .welcome-panel { 
+            grid-column: span 2; 
+            background: #ffffff;
+            border-radius: 20px; padding: 32px; color: #0f172a;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); margin-bottom: 24px;
+        }
+        .welcome-panel h1 { font-size: 1.75rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .welcome-panel p { opacity: 0.7; margin: 4px 0 0; font-size: 0.9rem; }
+
+        .kpi-row { grid-column: span 2; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
+        .kpi-box { 
+            background: var(--card-root); padding: 20px; border-radius: 16px; 
+            border: 1px solid var(--border-panel); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .kpi-box .lab { font-size: 0.7rem; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; }
+        .kpi-box .val { font-size: 1.5rem; font-weight: 800; color: var(--text-strong); }
+        .kpi-box .sub { font-size: 0.65rem; color: var(--text-soft); font-weight: 600; }
+
+        /* Dashboard Cards */
+        .dash-card { background: var(--card-root); border-radius: 20px; border: 1px solid var(--border-panel); overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .card-head { padding: 16px 24px; border-bottom: 1px solid var(--border-panel); display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .card-head h3 { margin: 0; font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-strong); }
+
+        /* Quick Tools */
+        .tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 24px; }
+        .tool-link { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 12px; padding: 20px; background: #fafafa; border: 1px solid var(--border-panel); border-radius: 16px;
+            text-decoration: none; color: var(--text-strong); transition: all 0.2s;
+        }
+        .tool-link i { font-size: 1.25rem; color: var(--primary); }
+        .tool-link span { font-size: 0.8rem; font-weight: 700; }
+        .tool-link:hover { border-color: var(--primary); background: #f5f3ff; color: var(--primary); transform: translateY(-2px); }
+
+        /* Event Log */
+        .evt-list { padding: 0; margin: 0; list-style: none; }
+        .evt-item { padding: 14px 24px; border-bottom: 1px solid var(--border-panel); display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
+        .evt-item:last-child { border-bottom: none; }
+        .evt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .evt-info { flex: 1; font-weight: 500; }
+        .evt-time { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+
+        /* Side Panel */
+        .side-panel { display: flex; flex-direction: column; gap: 24px; }
+        .risk-circle { width: 100px; height: 100px; border-radius: 50%; border: 8px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 20px auto; position: relative; }
+        .risk-circle::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 8px solid transparent; border-top-color: var(--accent-glow); transform: rotate(45deg); }
+
+        .alert-toast { background: #fff2f2; border-left: 4px solid var(--danger-glow); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; color: #991b1b; border-radius: 4px; display: none; }
+
+        @media (max-width: 1000px) { .soc-layout { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: repeat(3, 1fr); } .welcome-panel { grid-column: span 1; } }
+    </style>
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-panel);">
@@ -18,8 +94,8 @@
         <div class="user-menu" id="userMenu"></div>
     </nav>
 
-    <div class="container">
-        <div class="card">
+    <div class="soc-layout">
+        <div class="welcome-panel">
             <div>
                 <h1 id="greetTitle">Secure Enclave Initialized</h1>
                 <p id="greetSub">Synchronizing with NIST SP 800-207 Policy Engine...</p>
@@ -35,47 +111,48 @@
             </div>
         </div>
 
-        <div class="stats-grid" id="kpiArea">
-            <div class="card stat-card"><div class="stat-label">Identity Pool</div><div class="stat-value" id="k-users">--</div><div class="meta-text">Total Managed Clients</div></div>
-            <div class="card stat-card"><div class="stat-label">Hardware Trust</div><div class="stat-value" id="k-dev">--</div><div class="meta-text">Approved Company Assets</div></div>
-            <div class="card stat-card"><div class="stat-label">24h Telemetry</div><div class="stat-value" id="k-evt">--</div><div class="meta-text">Security Events Capture</div></div>
-            <div class="card stat-card"><div class="stat-label">Quarantined</div><div class="stat-value" id="k-block" style="color:var(--danger-glow)">--</div><div class="meta-text">Policy Violations</div></div>
-            <div class="card stat-card"><div class="stat-label">MFA Rate</div><div class="stat-value" id="k-mfa">99.8%</div><div class="meta-text">Identity Protection Layer</div></div>
-            <div class="card stat-card"><div class="stat-label">SOC Pulse</div><div class="stat-value" id="k-health" style="color:var(--success-glow)">Healthy</div><div class="meta-text">Platform Status</div></div>
+        <div class="kpi-row" id="kpiArea">
+            <div class="kpi-box"><div class="lab">Identity Pool</div><div class="val" id="k-users">--</div><div class="sub">Total Managed Clients</div></div>
+            <div class="kpi-box"><div class="lab">Hardware Trust</div><div class="val" id="k-dev">--</div><div class="sub">Approved Company Assets</div></div>
+            <div class="kpi-box"><div class="lab">24h Telemetry</div><div class="val" id="k-evt">--</div><div class="sub">Security Events Capture</div></div>
+            <div class="kpi-box"><div class="lab">Quarantined</div><div class="val" id="k-block" style="color:var(--danger-glow)">--</div><div class="sub">Policy Violations</div></div>
+            <!-- Note: k-mfa and k-health are statically presented as placeholders -->
+            <div class="kpi-box"><div class="lab">MFA Rate</div><div class="val" id="k-mfa">99.8%</div><div class="sub">Identity Protection Layer</div></div>
+            <div class="kpi-box"><div class="lab">SOC Pulse</div><div class="val" id="k-health" style="color:var(--success-glow)">Healthy</div><div class="sub">Platform Status</div></div>
         </div>
 
         <div class="main-content">
             <div id="offHoursAlert" class="alert-toast" style="margin-bottom: 24px; background: #fffbeb; border-color: #f59e0b; color: #92400e; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);"></div>
             <div id="mainAlert" class="alert-toast" style="margin-bottom: 24px;"></div>
 
-            <div class="card">
-                <div class="card-header-row">
+            <div class="dash-card">
+                <div class="card-head">
                     <h3>Administrative Control Tower</h3>
                 </div>
-                <div class="card-grid">
-                    <a href="/mapping" class="feature-card"><i class="fas fa-users-cog"></i><span>Identity Hub</span></a>
-                    <a href="/admin/live-monitoring" class="feature-card"><i class="fas fa-radar"></i><span>Live Monitor</span></a>
-                    <a href="/network" class="feature-card"><i class="fas fa-shield-halved"></i><span>Firewall Policies</span></a>
-                    <a href="/risk" class="feature-card"><i class="fas fa-biohazard"></i><span>Threat Intel</span></a>
-                    <a href="/admin/user-log" class="feature-card"><i class="fas fa-user-secret"></i><span>Audit Trails</span></a>
-                    <a href="/profile" class="feature-card"><i class="fas fa-id-card"></i><span>My Profile</span></a>
+                <div class="tool-grid">
+                    <a href="/mapping" class="tool-link"><i class="fas fa-users-cog"></i><span>Identity Hub</span></a>
+                    <a href="/admin/live-monitoring" class="tool-link"><i class="fas fa-satellite-dish"></i><span>Live Monitor</span></a>
+                    <a href="/network" class="tool-link"><i class="fas fa-shield-halved"></i><span>Firewall Policies</span></a>
+                    <a href="/risk" class="tool-link"><i class="fas fa-biohazard"></i><span>Threat Intel</span></a>
+                    <a href="/admin/user-log" class="tool-link"><i class="fas fa-user-secret"></i><span>Audit Trails</span></a>
+                    <a href="/profile" class="tool-link"><i class="fas fa-id-card"></i><span>My Profile</span></a>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header-row">
+            <div class="dash-card">
+                <div class="card-head">
                     <h3>Real-Time Security Activity</h3>
                     <a href="/admin/live-monitoring" style="font-size: 0.75rem; color: var(--primary); text-decoration: none; font-weight: 700;">Open Sentinel <i class="fas fa-external-link-alt"></i></a>
                 </div>
-                <div class="factor-list" id="eventArea">
+                <div class="evt-list" id="eventArea">
                     <div style="padding: 40px; text-align: center; color: var(--text-soft); font-size: 0.9rem;">Polling Security Stream...</div>
                 </div>
             </div>
         </div>
 
         <div class="side-panel">
-            <div class="card">
-                <div class="card-header-row"><h3>Trust Perimeter</h3></div>
+            <div class="dash-card">
+                <div class="card-head"><h3>Trust Perimeter</h3></div>
                 <div style="padding: 24px; text-align: center;">
                     <div id="myRiskRing" class="risk-circle">--</div>
                     <div style="font-size: 0.85rem; font-weight: 700;" id="myRiskLabel">CALCULATING...</div>
@@ -83,8 +160,8 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header-row"><h3>Active Session Context</h3></div>
+            <div class="dash-card">
+                <div class="card-head"><h3>Active Session Context</h3></div>
                 <div style="padding: 20px" id="sessionData">
                     <p style="font-size: 0.8rem; color: var(--text-soft);">Attaching Identity Context...</p>
                 </div>

@@ -8,7 +8,125 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <style>
+        :root {
+            --primary: #3730a3;
+            --primary-light: #4f46e5;
+            --bg-forensic: #f8fafc;
+            --card-forensic: #ffffff;
+            --border-forensic: #e2e8f0;
+            --text-forensic: #0f172a;
+            --text-forensic-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            background-color: var(--bg-forensic);
+            color: var(--text-forensic);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 100px 24px 40px;
+        }
+
+        .forensic-container { max-width: 1540px; margin: 0 auto; }
+
+        .forensic-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .forensic-header h1 { font-size: 2.2rem; font-weight: 850; margin: 0; letter-spacing: -0.04em; }
+        .forensic-header p { color: var(--text-forensic-muted); font-weight: 500; margin-top: 4px; }
+
+        /* Filtration Matrix */
+        .filter-matrix { 
+            background: var(--card-forensic); 
+            padding: 24px 32px; 
+            border-radius: 20px; 
+            border: 1px solid var(--border-forensic); 
+            margin-bottom: 24px; 
+            display: flex; 
+            gap: 16px; 
+            align-items: center; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .filter-input { flex: 1; padding: 12px 18px; border: 1px solid var(--border-forensic); border-radius: 12px; font-size: 0.95rem; font-weight: 500; outline: none; transition: border-color 0.2s; }
+        .filter-input:focus { border-color: var(--primary); }
+        .filter-select { padding: 12px 18px; border: 1px solid var(--border-forensic); border-radius: 12px; font-size: 0.85rem; font-weight: 700; background: #fff; cursor: pointer; }
+
+        /* Ledger Table */
+        .ledger-card { 
+            background: var(--card-forensic); 
+            border-radius: 24px; 
+            border: 1px solid var(--border-forensic); 
+            overflow: hidden; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05);
+        }
+        .ledger-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .ledger-table thead th { 
+            padding: 18px 24px; 
+            background: #f8fafc; 
+            color: var(--text-forensic-muted); 
+            font-size: 0.65rem; 
+            font-weight: 850; 
+            text-transform: uppercase; 
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border-forensic);
+        }
+        .ledger-row td { padding: 18px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; transition: background 0.1s; }
+        .ledger-row:hover td { background: #fbfcfd; cursor: pointer; }
+
+        /* Data Badges */
+        .event-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; }
+        .badge-sec { background: #fee2e2; color: #991b1b; }
+        .badge-act { background: #f1f5f9; color: #475569; }
+        .badge-auth { background: #e0e7ff; color: #4338ca; }
+
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-forensic-muted); font-weight: 500; }
+        .principal-tag { font-weight: 750; color: var(--text-forensic); display: flex; align-items: center; gap: 10px; }
+        .principal-tag .avatar { width: 30px; height: 30px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 850; }
+
+        /* Side Investigation Panel */
+        .investigation-overlay { position: fixed; top: 0; right: -650px; width: 600px; height: 100%; background: #fff; border-left: 1px solid var(--border-forensic); box-shadow: -20px 0 50px rgba(0,0,0,0.1); z-index: 2000; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .investigation-overlay.open { right: 0; }
+        .inv-header { padding: 40px; border-bottom: 1px solid var(--border-forensic); display: flex; justify-content: space-between; align-items: flex-start; }
+        .inv-header h2 { margin: 0; font-size: 1.8rem; font-weight: 850; letter-spacing: -0.03em; }
+        .inv-content { flex: 1; overflow-y: auto; padding: 40px; }
+
+        .report-section { margin-bottom: 40px; }
+        .report-section h3 { font-size: 0.7rem; font-weight: 850; color: var(--text-forensic-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        
+        .kv-pair { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; font-size: 0.85rem; }
+        .kv-pair .key { color: var(--text-forensic-muted); font-weight: 600; }
+        .kv-pair .val { font-weight: 700; color: var(--text-forensic); }
+
+        .tag-pill { display: inline-block; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; font-size: 0.7rem; font-weight: 700; margin-right: 4px; margin-bottom: 4px; }
+
+        .inv-tabs { display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid var(--border-forensic); }
+        .inv-tab { padding: 10px 0; font-size: 0.8rem; font-weight: 800; color: var(--text-forensic-muted); cursor: pointer; position: relative; }
+        .inv-tab.active { color: var(--primary); }
+        .inv-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--primary); }
+
+        /* Forensic Report Styles */
+        .forensic-report-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 32px; }
+        .forensic-stat-card { background: #f8fafc; border: 1px solid var(--border-forensic); border-radius: 16px; padding: 20px; transition: transform 0.2s; }
+        .forensic-stat-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .forensic-stat-card i { color: var(--text-forensic-muted); font-size: 0.9rem; margin-bottom: 8px; display: block; }
+        .forensic-stat-card .val { font-size: 1.5rem; font-weight: 850; color: var(--text-forensic); line-height: 1.2; }
+        .forensic-stat-card .label { font-size: 0.7rem; font-weight: 700; color: var(--text-forensic-muted); text-transform: uppercase; margin-top: 4px; }
+
+        .session-item { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .session-item:last-child { border-bottom: none; }
+        .session-item .time { font-size: 0.8rem; font-weight: 750; color: var(--text-forensic); margin-bottom: 4px; }
+        .session-item .details { font-size: 0.72rem; color: var(--text-forensic-muted); display: flex; gap: 12px; }
+        .session-item .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 850; text-transform: uppercase; }
+        .badge-vpn { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+        .badge-geo { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+
+        .user-select-box { position: relative; width: 280px; }
+        #userSearchList { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid var(--border-forensic); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); max-height: 300px; overflow-y: auto; display: none; z-index: 1002; }
+        .user-option { padding: 10px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .user-option:hover { background: #f8fafc; color: var(--primary); }
+        .user-option .tiny-avatar { width: 20px; height: 20px; border-radius: 4px; background: #e2e8f0; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; }
+    </style>
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: rgba(255,255,255,0.8); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-forensic);">
@@ -222,22 +340,22 @@
                 <div class="forensic-report-grid">
                     <div class="forensic-stat-card">
                         <i class="fas fa-history"></i>
-                        <div class="stat-value">${report.total_sessions || 0}</div>
+                        <div class="val">${report.total_sessions || 0}</div>
                         <div class="label">Total Sessions</div>
                     </div>
                     <div class="forensic-stat-card">
                         <i class="fas fa-user-shield"></i>
-                        <div class="stat-value">${report.risk_summary ? report.risk_summary.last_risk : 0}</div>
+                        <div class="val">${report.risk_summary ? report.risk_summary.last_risk : 0}</div>
                         <div class="label">Last Risk Score</div>
                     </div>
                     <div class="forensic-stat-card">
                         <i class="fas fa-user-secret"></i>
-                        <div class="stat-value">${report.vpn_sessions || 0}</div>
+                        <div class="val">${report.vpn_sessions || 0}</div>
                         <div class="label">VPN Affinity</div>
                     </div>
                     <div class="forensic-stat-card">
                         <i class="fas fa-moon"></i>
-                        <div class="stat-value">${report.off_hour_logins || 0}</div>
+                        <div class="val">${report.off_hour_logins || 0}</div>
                         <div class="label">Off-Hours Logins</div>
                     </div>
                 </div>
@@ -250,12 +368,12 @@
 
                 <div id="inv-snapshot" class="report-section">
                     <h3>Principal Governance Report</h3>
-                    <div class="kv-pair"><span class="key">Identity ID</span><span class="stat-value">${identity.id}</span></div>
-                    <div class="kv-pair"><span class="key">User Role</span><span class="stat-value"><span class="role-badge">${identity.role}</span></span></div>
-                    <div class="kv-pair"><span class="key">Department</span><span class="stat-value">${identity.department || 'General'}</span></div>
-                    <div class="kv-pair"><span class="key">Account Status</span><span class="stat-value"><span class="tag-pill">${identity.status.toUpperCase()}</span></span></div>
-                    <div class="kv-pair"><span class="key">Auth Failure Count</span><span class="stat-value">${identity.failed_attempts}</span></div>
-                    <div class="kv-pair"><span class="key">Identity Provisioned</span><span class="stat-value">${formatDate(identity.created_at)}</span></div>
+                    <div class="kv-pair"><span class="key">Identity ID</span><span class="val">${identity.id}</span></div>
+                    <div class="kv-pair"><span class="key">User Role</span><span class="val"><span class="role-badge">${identity.role}</span></span></div>
+                    <div class="kv-pair"><span class="key">Department</span><span class="val">${identity.department || 'General'}</span></div>
+                    <div class="kv-pair"><span class="key">Account Status</span><span class="val"><span class="tag-pill">${identity.status.toUpperCase()}</span></span></div>
+                    <div class="kv-pair"><span class="key">Auth Failure Count</span><span class="val">${identity.failed_attempts}</span></div>
+                    <div class="kv-pair"><span class="key">Identity Provisioned</span><span class="val">${formatDate(identity.created_at)}</span></div>
                 </div>
 
                 <div id="inv-sessions" class="report-section" style="display:none;">
@@ -281,7 +399,7 @@
                     <h3>Managed Device Inventory</h3>
                     <div style="margin-top:20px;">
                         ${(inventory.devices || []).map(d => `
-                            <div class="kv-pair"><span class="key">${d.label || 'Inventory Asset'}</span><span class="stat-value">${d.os} (${d.browser})</span></div>
+                            <div class="kv-pair"><span class="key">${d.label || 'Inventory Asset'}</span><span class="val">${d.os} (${d.browser})</span></div>
                         `).join('')}
                     </div>
                 </div>

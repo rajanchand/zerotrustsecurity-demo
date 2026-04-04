@@ -9,7 +9,59 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <style>
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border-ui: #e2e8f0;
+            --text-bold: #0f172a;
+            --text-soft: #64748b;
+            --low: #10b981;
+            --medium: #f59e0b;
+            --high: #ef4444;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-bold); margin: 0; padding: 100px 24px 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .header-box { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+        .header-box h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+        .header-box p { color: var(--text-soft); font-weight: 500; margin-top: 4px; }
+
+        /* Scoring Master Panel */
+        .risk-master { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; margin-bottom: 32px; }
+        .score-card { background: #fff; padding: 40px; border-radius: 24px; border: 1px solid var(--border-ui); text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .score-val { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; }
+        .score-label { font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 10px; }
+        
+        .progress-track { background: #f1f5f9; border-radius: 50px; height: 12px; margin: 24px auto; max-width: 300px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 50px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .factor-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .factor-card h3 { margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 800; color: var(--text-bold); }
+        
+        .factor-list { list-style: none; padding: 0; margin: 0; }
+        .factor-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .factor-item:last-child { border-bottom: none; }
+        .factor-name { font-weight: 600; font-size: 0.95rem; }
+        .factor-pts { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--high); background: #fee2e2; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+
+        /* Analytic Tables */
+        .analytics-card { background: #fff; border-radius: 20px; border: 1px solid var(--border-ui); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 32px; }
+        .card-top { padding: 16px 24px; border-bottom: 1px solid var(--border-ui); background: #fff; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-soft); letter-spacing: 0.05em; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 12px 24px; background: #f8fafc; color: var(--text-soft); font-size: 0.7rem; font-weight: 700; border-bottom: 1px solid var(--border-ui); text-align: left; }
+        td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        tr:hover td { background: #fbfcfd; }
+
+        .time-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soft); }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .b-low { background: #dcfce7; color: #166534; }
+        .b-medium { background: #fef9c3; color: #854d0e; }
+        .b-high { background: #fee2e2; color: #991b1b; }
+    </style>
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border-ui);">
@@ -30,7 +82,7 @@
 
         <div class="risk-master">
             <div class="score-card">
-                <div id="sc-val" class="score-stat-value">--</div>
+                <div id="sc-val" class="score-val">--</div>
                 <div id="sc-lab" class="score-label">CALCULATING...</div>
                 <div class="progress-track"><div id="sc-fill" class="progress-fill"></div></div>
                 <p style="font-size: 0.85rem; color: var(--text-soft);">Composite Risk Index (CRI) based on behavioral signals, geography, and asset integrity.</p>

@@ -1,21 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — ZTS</title>
-    <meta name="description" content="Sign in to the ZTS Zero Trust Security platform.">
+    <title>Enterprise Login - ZTS Secure Gateway</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: var(--c-bg);
+        :root {
+            --primary: #3730a3;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-soft: #64748b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f8fafc;
+            margin: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
             padding: 20px;
         }
+
+        .login-box {
+            background: #fff; width: 100%; max-width: 440px;
+            padding: 48px; border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .login-head { text-align: center; margin-bottom: 32px; }
+        .login-head .logo { font-size: 2.5rem; font-weight: 900; color: var(--primary); letter-spacing: -0.05em; margin-bottom: 8px; }
+        .login-head h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main); }
+        .login-head p { margin: 8px 0 0; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; }
+
+        .form-row { margin-bottom: 20px; }
+        .form-row label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: var(--text-soft); }
+        .form-row input { 
+            width: 100%; padding: 14px 18px; border: 1px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; font-weight: 500; box-sizing: border-box; transition: all 0.2s;
+        }
+        .form-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.1); }
+
+        .login-btn { 
+            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
+            color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s;
+            margin-top: 12px;
+        }
+        .login-btn:active { transform: scale(0.98); }
+
+        .footer-note { text-align: center; margin-top: 32px; font-size: 0.75rem; color: var(--text-soft); line-height: 1.6; }
+        .footer-note strong { color: var(--text-main); }
+
+        #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+        #infoArea { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 20px; display: none; }
+
+        .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; vertical-align: middle; margin-right: 8px; animation: spin 0.7s linear infinite; }
     </style>
 </head>
 <body>
@@ -31,70 +76,77 @@
 
         <form id="loginForm">
             <div class="form-row">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Your username" required autofocus autocomplete="username">
+                <label>Corporate Account</label>
+                <input type="text" id="username" placeholder="Username" required autofocus>
             </div>
             <div class="form-row">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Your password" required autocomplete="current-password">
+                <label>Security Credential</label>
+                <input type="password" id="password" placeholder="Password" required>
             </div>
-            <button type="submit" class="login-btn" id="loginBtn">Sign in</button>
+            <button type="submit" class="login-btn">Authenticate</button>
         </form>
 
         <div class="footer-note">
-            Authorised personnel only. All access is audited under<br>
-            <strong>NIST SP 800-207 Zero Trust Architecture</strong>.
+            This system is restricted to <strong>Authorized Personnel Only</strong>.<br>
+            All access and authentication attempts are audited under NIST SP 800-207 guidelines.
         </div>
     </div>
 
-    <script src="/js/app.js?v=2.1.0"></script>
+    <script src="/js/app.js?v=2.0.0"></script>
     <script>
         // Show redirect messages
         (function() {
             var params = new URLSearchParams(window.location.search);
             var msg = params.get('msg');
             var messages = {
-                'session_expired':  'Your session expired due to inactivity. Please sign in again.',
-                'account_blocked':  'Your account has been blocked. Contact your administrator.',
-                'off_hours':        'Access is restricted outside business hours. Try again later.',
-                'session_invalid':  'Your session was ended — this may be due to a login from another device.',
-                'password_changed': 'Password updated. Please sign in with your new credentials.'
+                'session_expired': 'Your session has expired due to inactivity. Please log in again.',
+                'account_blocked': 'Your account has been blocked by an administrator.',
+                'off_hours':       'Access is restricted during off-hours. Please try again during business hours.',
+                'session_invalid': 'Your session was invalidated. This may be due to a login from another device.',
+                'password_changed': 'Password updated successfully. Please log in with your new credentials.'
             };
             if (msg && messages[msg]) {
-                var el = document.getElementById('infoArea');
-                el.textContent = messages[msg];
-                el.style.display = 'block';
+                var info = document.getElementById('infoArea');
+                info.textContent = messages[msg];
+                info.style.display = 'block';
             }
         })();
 
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            var errEl  = document.getElementById('errorArea');
-            var infoEl = document.getElementById('infoArea');
-            var btn    = document.getElementById('loginBtn');
+            var err = document.getElementById('errorArea');
+            var info = document.getElementById('infoArea');
+            err.style.display = 'none';
+            info.style.display = 'none';
 
-            errEl.style.display  = 'none';
-            infoEl.style.display = 'none';
+            var btn = document.querySelector('.login-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Authenticating...';
 
-            btn.disabled   = true;
-            btn.innerHTML  = '<span class="spinner"></span> Signing in…';
+            try {
+                // Gather fingerprint from app.js helper
+                var fp = getFingerprint();
+                
+                var res = await postJSON('/api/login', {
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    fingerprint: fp
+                });
 
-            var fp = typeof getFingerprint === 'function' ? getFingerprint() : 'unknown';
-
-            var res = await postJSON('/api/login', {
-                username:    document.getElementById('username').value,
-                password:    document.getElementById('password').value,
-                fingerprint: fp
-            });
-
-            if (res.success) {
-                btn.innerHTML = '✓ Redirecting…';
-                location.href = res.redirect || '/dashboard';
-            } else {
-                btn.disabled  = false;
-                btn.innerHTML = 'Sign in';
-                errEl.textContent   = res.message;
-                errEl.style.display = 'block';
+                if (res.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Redirecting...';
+                    location.href = res.redirect || '/dashboard';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Authenticate';
+                    err.textContent = res.message;
+                    err.style.display = 'block';
+                }
+            } catch (ex) {
+                btn.disabled = false;
+                btn.innerHTML = 'Authenticate';
+                err.textContent = 'Unable to connect. Please try again.';
+                err.style.display = 'block';
             }
         });
     </script>

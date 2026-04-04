@@ -17,14 +17,15 @@ async function findDevice(userId, fingerprint, browser, os) {
 
   // fallback: match by browser and OS (same device, fingerprint may have changed)
   if (browser && os) {
-    var { data: fallback } = await supabase
+    var { data: fallbackRows } = await supabase
       .from('devices')
       .select('*')
       .eq('user_id', userId)
       .eq('browser', browser)
       .eq('os', os)
-      .limit(1)
-      .single();
+      .limit(1);
+
+    var fallback = fallbackRows && fallbackRows.length ? fallbackRows[0] : null;
 
     if (fallback) {
       // update the fingerprint to the new one so it matches next time
