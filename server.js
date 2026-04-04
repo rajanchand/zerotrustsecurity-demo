@@ -39,7 +39,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 3. SESSION — secure, HttpOnly, SameSite=Strict cookies
+// 3. SESSION ,secure, HttpOnly, SameSite=Strict cookies
 app.use(session({
     secret: process.env.SESSION_SECRET || 'zts-default-secret',
     resave: false,
@@ -77,9 +77,9 @@ const { requireRole } = require('./middleware/rbac');
 const { flagHighRisk } = require('./middleware/riskCheck');
 const { handleReAuth } = require('./middleware/stepUpAuth');
 
-// ── Prometheus metrics endpoint ──
+//  Prometheus metrics endpoint ──
 // Registered BEFORE requireLogin — Prometheus scrapes with no session.
-// Blocked to external IPs in production (localhost only).
+// Blocked to external IPs in production .
 const { register } = require('./services/metricservice');
 app.get('/metrics', async function (req, res) {
     var clientIP = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
@@ -91,33 +91,33 @@ app.get('/metrics', async function (req, res) {
     res.end(await register.metrics());
 });
 
-// ── Global middleware chain ──
+// Global middleware chain 
 app.use(requireLogin);   // must be logged in
 app.use(flagHighRisk);   // continuous behavioural risk check
 app.use(csrfProtection); // CSRF validation on POST/PUT/DELETE
 app.use(verifyHMAC);     // HMAC request integrity check
 
-// CSRF token endpoint — frontend fetches this on page load
+// CSRF token endpoint frontend fetches this on page load
 app.get('/api/csrf-token', function (req, res) {
     var token = generateCSRFToken(req);
     res.json({ csrfToken: token });
 });
 
-// Step-up re-authentication endpoint
+// Step up re authentication endpoint
 app.post('/api/verify-reauth', handleReAuth);
 
 // General API rate limiter
 app.use('/api', apiLimiter);
 
-// ── Route mounting ──
+// Route mounting 
 // Auth routes are public (login / logout / otp)
 app.use('/', authRoutes);
 
-// Dashboard and profile — available to all authenticated users
+// Dashboard and profile 
 app.use('/', dashboardRoutes);
 app.use('/', profileRoutes);
 
-// Admin panel routes — SuperAdmin and IT both have access
+// Admin panel routes
 // IT needs access for device management and network tooling
 // HR needs access to mapping routes for user management
 app.use('/', requireRole(['SuperAdmin', 'HR', 'IT']), mappingRoutes);
@@ -137,21 +137,20 @@ app.get('/security-block', function (req, res) {
     res.sendFile(path.join(__dirname, 'views', 'security-block.html'));
 });
 
-// Branded 404 handler — must be after all routes
+// Branded 404 handler  must be after all routes
 app.use(function (req, res) {
     res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', function () {
-    console.log('\n  ZTS - Zero Trust Security Demo');
+    console.log('\n  Zero Trust Security Demo');
     console.log('  NIST SP 800-207 Continuous Verification');
     console.log('  Security: Helmet, Rate-Limit, CSRF, HMAC, AES-256-GCM');
     console.log('  Environment: ' + (isProduction ? 'PRODUCTION' : 'DEVELOPMENT'));
     console.log('  Listening on 0.0.0.0:' + PORT + '\n');
 });
 
-// ── Global safety net ──
 // Prevent a single unhandled promise rejection from crashing the process.
 // PM2 will still restart on an uncaughtException, but logging here gives
 // a useful stack trace in the PM2 log before it does.
