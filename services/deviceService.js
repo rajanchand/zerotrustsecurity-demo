@@ -161,19 +161,21 @@ async function getPendingDevices() {
 }
 
 // Approve a pending device with a specific trust level
-async function approveDevice(deviceId, approvedBy, trustLevel = 'Managed') {
+async function approveDevice(deviceId, approvedBy, trustLevel) {
+    trustLevel = trustLevel || 'Managed';
+
     const { data: device } = await supabase
         .from('devices')
-        .select('*')
+        .select('id')
         .eq('id', deviceId)
         .single();
-        
+
     if (!device) return { success: false, message: 'Device not found' };
-    
+
     const { data, error } = await supabase
         .from('devices')
-        .update({ 
-            approved: true, 
+        .update({
+            approved:    true,
             approved_by: approvedBy,
             trust_level: trustLevel
         })
@@ -181,7 +183,8 @@ async function approveDevice(deviceId, approvedBy, trustLevel = 'Managed') {
         .select()
         .single();
 
-  return data;
+    if (error) return { success: false, message: error.message };
+    return { success: true, device: data };
 }
 
 // reject (delete) a device

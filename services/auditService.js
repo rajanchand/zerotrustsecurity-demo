@@ -12,12 +12,19 @@ const { supabase } = require('../db');
  * @param {string}      ip      - Originating IP address
  */
 async function logEvent(userId, action, detail, ip) {
-  await supabase.from('audit_log').insert({
-    user_id: userId,
-    action: action,
-    detail: detail || '',
-    ip: ip || ''
-  });
+  try {
+    const { data, error } = await supabase.from('audit_log').insert({
+      user_id: userId,
+      action:  action,
+      detail:  detail || '',
+      ip:      ip     || ''
+    }).select().single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    // Never let an audit failure crash the caller — log to stderr only
+    console.error('[audit] Failed to write log entry:', action, err && err.message);
+  }
 }
 
 async function getUserAuditLog(userId, limit = 30) {

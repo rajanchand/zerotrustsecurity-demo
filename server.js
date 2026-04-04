@@ -143,10 +143,23 @@ app.use(function (req, res) {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, function () {
+app.listen(PORT, '0.0.0.0', function () {
     console.log('\n  ZTS - Zero Trust Security Demo');
-    console.log('  NIST SP 800-207 Implementation');
-    console.log('  Security: Helmet, Rate-Limit, CSRF, HMAC, AES-256');
+    console.log('  NIST SP 800-207 Continuous Verification');
+    console.log('  Security: Helmet, Rate-Limit, CSRF, HMAC, AES-256-GCM');
     console.log('  Environment: ' + (isProduction ? 'PRODUCTION' : 'DEVELOPMENT'));
-    console.log('  Running on http://localhost:' + PORT + '\n');
+    console.log('  Listening on 0.0.0.0:' + PORT + '\n');
+});
+
+// ── Global safety net ──
+// Prevent a single unhandled promise rejection from crashing the process.
+// PM2 will still restart on an uncaughtException, but logging here gives
+// a useful stack trace in the PM2 log before it does.
+process.on('unhandledRejection', function (reason, promise) {
+    console.error('[FATAL] Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', function (err) {
+    console.error('[FATAL] Uncaught exception — process will exit:', err);
+    process.exit(1);
 });

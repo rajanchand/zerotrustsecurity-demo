@@ -34,6 +34,10 @@ function flagHighRisk(req, res, next) {
     var twoMinAgo = now - 2 * 60 * 1000;
     tracker.requests = tracker.requests.filter(function (t) { return t > twoMinAgo; });
 
+    // Normalise the client IP once — used for velocity logging and IP-change detection
+    var rawIp    = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
+    var currentIP = rawIp.split(',')[0].trim().replace('::ffff:', '');
+
     // Check: request velocity anomaly (>200 requests in 2 minutes = genuine automation/attack)
     if (tracker.requests.length > 200) {
         var now2 = Date.now();
@@ -51,11 +55,8 @@ function flagHighRisk(req, res, next) {
         }
     }
 
-    // Check: IP changed mid-session
-    var rawIp = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
-    var currentIP = rawIp.split(',')[0].trim().replace('::ffff:', '');
-
-    if (tracker.lastIP && tracker.lastIP !== currentIP && tracker.lastIP !== req.ip) {
+    // Check: IP changed mid-session (use the same normalised currentIP throughout)
+    if (tracker.lastIP && tracker.lastIP !== currentIP) {
         tracker.riskDelta = Math.min(tracker.riskDelta + 20, 40);
         logSecurityEvent({
             event_type: 'IP_CHANGE_MIDSESSION',
@@ -80,15 +81,17 @@ function flagHighRisk(req, res, next) {
     next();
 }
 
-// cleanup stale trackers every 10 minutes
+// Cleanup stale trackers every 10 minutes.
+// Remove entries that have had no requests in the last 10 minutes OR have an empty request list.
 setInterval(function () {
     var cutoff = Date.now() - 10 * 60 * 1000;
     Object.keys(requestTracker).forEach(function (uid) {
         var t = requestTracker[uid];
-        if (!t.requests.length || t.requests[t.requests.length - 1] < cutoff) {
+        var lastSeen = t.requests.length ? t.requests[t.requests.length - 1] : 0;
+        if (lastSeen < cutoff) {
             delete requestTracker[uid];
         }
     });
-}, 10 * 60 * 1000);
+}, 10 * 60 * 1000).unref(); // .unref() so this timer doesn't prevent process from exiting cleanly
 
 module.exports = { flagHighRisk };

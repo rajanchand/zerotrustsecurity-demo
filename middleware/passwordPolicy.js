@@ -1,11 +1,11 @@
 // middleware/passwordPolicy.js
-// As per as  NIST guidelines password  requirement
+// Password strength enforcement per NIST SP 800-63B guidelines.
 
 function validatePassword(password) {
     var errors = [];
 
-    if (!password || password.length < 8) {
-        errors.push('Password must be at least 8 characters long.');
+    if (!password || password.length < 12) {
+        errors.push('Password must be at least 12 characters long.');
     }
     if (!/[A-Z]/.test(password)) {
         errors.push('Password must contain at least one uppercase letter.');

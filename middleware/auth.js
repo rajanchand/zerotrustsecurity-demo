@@ -26,7 +26,6 @@ async function requireLogin(req, res, next) {
     }
 
     if (!req.session || !req.session.userId) {
-        console.log('[DEBUG] Auth middleware: missing session or userId. Path:', req.path, 'Session:', req.session ? Object.keys(req.session) : 'null');
         return res.redirect('/login');
     }
 
@@ -171,6 +170,8 @@ async function requireLogin(req, res, next) {
     }
 
     // ── PASSWORD EXPIRY REDIRECT ──
+    // Allow the profile page and ALL /api/profile/* calls (so the user can
+    // actually change their password), plus logout. Block everything else.
     if (
         req.session.passwordExpired &&
         req.path !== '/profile' &&
@@ -181,7 +182,7 @@ async function requireLogin(req, res, next) {
             return res.status(403).json({
                 success: false,
                 passwordExpired: true,
-                message: 'Your password has expired. Please change it in your profile.'
+                message: 'Your password has expired. Please update it in your profile.'
             });
         }
         return res.redirect('/profile?msg=password_expired');
