@@ -1,164 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Factor Authentication - ZTS</title>
+    <title>Authentication — ZTS</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #3730a3;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text-main: #0f172a;
-            --text-soft: #64748b;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: radial-gradient(circle at bottom left, #e0e7ff, #f8fafc);
-            margin: 0; min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--c-bg);
             padding: 20px;
         }
-
-        .otp-box {
-            background: #fff; width: 100%; max-width: 440px;
-            padding: 48px; border-radius: 28px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-            text-align: center;
-        }
-
-        .otp-head { margin-bottom: 32px; }
-        .otp-head i { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
-        .otp-head h1 { font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--text-main); }
-        .otp-head p { margin: 8px 0 0; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; }
-
-        .otp-input-area { margin: 32px 0; }
-        .otp-input-area input { 
-            width: 100%; padding: 18px; border: 2px solid #e2e8f0; border-radius: 12px;
-            font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 800; 
-            text-align: center; letter-spacing: 0.5em; box-sizing: border-box; transition: all 0.2s;
-            color: var(--primary);
-        }
-        .otp-input-area input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.1); }
-
-        .verify-btn { 
-            width: 100%; padding: 16px; background: var(--primary); border: none; border-radius: 12px;
-            color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.1s;
-        }
-        .verify-btn:active { transform: scale(0.98); }
-
-        .risk-warning { 
-            margin-top: 24px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; 
-            border-radius: 10px; font-size: 0.8rem; color: #92400e; font-weight: 600; 
-            display: none; align-items: center; gap: 8px; text-align: left;
-        }
-
-        #errorArea { background: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 20px; display: none; }
     </style>
 </head>
 <body>
-    <div class="otp-box">
-        <div class="otp-head">
-            <i class="fas fa-shield-check"></i>
-            <h1>Identity Verification</h1>
-            <p>Verification code issued to your registered device.</p>
+    <div class="login-box">
+        <div class="login-head" style="margin-bottom: 24px;">
+            <i class="fas fa-shield-check" style="font-size: 2rem; color: var(--c-primary); margin-bottom: 16px;"></i>
+            <h1>Verify your identity</h1>
+            <p>Enter the code sent to your device</p>
         </div>
 
-        <div id="offHoursAlert" class="risk-warning">
-            <i class="fas fa-clock"></i>
-            <span>Policy Alert: Identity challenge triggered by Off-Hours access request. Your risk score will be elevated.</span>
+        <div id="offHoursAlert" class="error-msg" style="display:none; background: var(--c-warning-soft); color: var(--c-warning); border-color: #fef08a;">
+            <i class="fas fa-clock"></i> <span id="offHoursText"></span>
         </div>
 
-        <div id="vpnAlert" class="risk-warning" style="display:none; background:#fef2f2; border-color:#fee2e2; color:#991b1b;">
-            <i class="fas fa-shield-alt"></i>
-            <span>VPN Connection Detected: Your connection is routed through a virtual tunnel. This elevates your risk profile.</span>
+        <div id="vpnAlert" class="error-msg" style="display:none;">
+            <i class="fas fa-shield-alt"></i> VPN detected. Your risk profile is elevated.
         </div>
 
-        <div id="riskContextBox" style="display:none; margin-top:16px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left; font-size:0.8rem;">
-            <div style="font-weight:800; font-size:0.7rem; text-transform:uppercase; color:#64748b; letter-spacing:0.05em; margin-bottom:10px;">
-                <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> Why verification is required
+        <div id="riskContextBox" class="card" style="display:none; margin: 16px 0; padding: 12px;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--c-text-secondary); margin-bottom: 12px; text-transform: uppercase;">
+                Verification context
             </div>
-            <div id="riskFactorsList"></div>
-            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8;">
-                <span>IP: <strong id="ctxIP" style="color:#0f172a;">—</strong></span>
-                <span>Location: <strong id="ctxCountry" style="color:#0f172a;">—</strong></span>
+            <div id="riskFactorsList" class="factor-list"></div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--c-border); display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--c-text-secondary);">
+                <span>IP: <strong id="ctxIP" style="color: var(--c-text);">—</strong></span>
+                <span>Location: <strong id="ctxCountry" style="color: var(--c-text);">—</strong></span>
             </div>
         </div>
 
         <div id="errorArea"></div>
 
         <form id="otpForm">
-            <div class="otp-input-area">
-                <input type="text" id="otpCode" placeholder="000000" maxlength="6" required autofocus autocomplete="one-time-code">
+            <div class="form-row text-center" style="margin: 24px 0;">
+                <input type="text" id="otpCode" placeholder="000 000" maxlength="6" required autofocus autocomplete="one-time-code" style="font-family: inherit; font-size: 2rem; font-weight: 600; text-align: center; letter-spacing: 0.25em; padding: 12px;">
             </div>
-            <button type="submit" class="verify-btn">Verify Identity</button>
+            <button type="submit" class="login-btn" id="verifyBtn">Verify</button>
         </form>
 
-        <p style="margin-top: 24px; font-size: 0.75rem; color: var(--text-soft);">
-            The code expires in <span id="timer">5:00</span>.
+        <p style="text-align: center; margin-top: 24px; font-size: 0.8125rem; color: var(--c-text-secondary);">
+            Code expires in <strong id="timer" style="font-variant-numeric: tabular-nums;">5:00</strong>
         </p>
     </div>
 
-    <script src="/js/app.js?v=2.0.0"></script>
+    <script src="/js/app.js?v=2.1.0"></script>
     <script>
         async function checkRisk() {
-            const res = await fetch('/api/session');
-            const s = await res.json();
+            try {
+                const res = await fetch('/api/session');
+                const s = await res.json();
 
-            // Off-hours warning
-            if (s.offHoursLogin || s.isUnusualHours) {
-                const offAlert = document.getElementById('offHoursAlert');
-                offAlert.style.display = 'flex';
-                offAlert.querySelector('span').innerHTML = `Alert: You are working off-hours from <strong style="color:#b45309">${s.loginCountry || 'Unknown Location'}</strong>. Your risk score is <strong style="color:#b45309">${s.risk ? s.risk.score : 0}</strong> as per the off-hour login penalty.`;
-            }
+                if (s.offHoursLogin || s.isUnusualHours) {
+                    const offAlert = document.getElementById('offHoursAlert');
+                    offAlert.style.display = 'block';
+                    document.getElementById('offHoursText').textContent = `Off-hours access from ${s.loginCountry || 'Unknown Location'}. Risk score adjusted to ${s.risk ? s.risk.score : 0}.`;
+                }
 
-            // VPN warning
-            if (s.vpn) {
-                document.getElementById('vpnAlert').style.display = 'flex';
-            }
+                if (s.vpn) {
+                    document.getElementById('vpnAlert').style.display = 'block';
+                }
 
-            // Show IP & Country context
-            if (s.loginIP || s.loginCountry) {
-                document.getElementById('ctxIP').textContent = s.loginIP || '—';
-                document.getElementById('ctxCountry').textContent = s.loginCountry || '—';
-            }
+                if (s.loginIP || s.loginCountry) {
+                    document.getElementById('ctxIP').textContent = s.loginIP || '—';
+                    document.getElementById('ctxCountry').textContent = s.loginCountry || '—';
+                }
 
-            // Show risk factors
-            const factors = s.risk && s.risk.factors ? s.risk.factors : [];
-            if (factors.length > 0) {
-                const box = document.getElementById('riskContextBox');
-                box.style.display = 'block';
-                const list = document.getElementById('riskFactorsList');
-                list.innerHTML = factors.map(f =>
-                    `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
-                        <span style="font-weight:600; color:#334155;"><i class="fas fa-exclamation-circle" style="color:#ef4444; margin-right:6px; font-size:0.7rem;"></i>${f.factor}</span>
-                        <span style="font-family:'JetBrains Mono',monospace; font-weight:800; color:#ef4444; background:#fee2e2; padding:2px 8px; border-radius:4px; font-size:0.7rem;">+${f.points} PTS</span>
-                    </div>`
-                ).join('');
-            }
+                const factors = s.risk && s.risk.factors ? s.risk.factors : [];
+                if (factors.length > 0) {
+                    document.getElementById('riskContextBox').style.display = 'block';
+                    document.getElementById('riskFactorsList').innerHTML = factors.map(f =>
+                        `<div class="factor-item">
+                            <span>${f.factor}</span>
+                            <span class="factor-points">+${f.points}</span>
+                        </div>`
+                    ).join('');
+                }
+            } catch(e) {}
         }
         checkRisk();
 
         document.getElementById('otpForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const err = document.getElementById('errorArea');
+            const btn = document.getElementById('verifyBtn');
             err.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Verifying…';
 
             const res = await postJSON('/api/verify-otp', {
                 code: document.getElementById('otpCode').value
             });
 
             if (res.success) {
+                btn.innerHTML = '✓ Redirecting…';
                 location.href = res.redirect || '/dashboard';
             } else {
                 err.textContent = res.message;
                 err.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = 'Verify';
             }
         });
 
@@ -168,20 +124,22 @@
                 timeLeft--;
                 var m = Math.floor(timeLeft / 60);
                 var sec = timeLeft % 60;
-                document.getElementById('timer').textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
+                const tel = document.getElementById('timer');
+                tel.textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
                 if (timeLeft <= 30) {
-                    document.getElementById('timer').style.color = '#ef4444';
-                    document.getElementById('timer').style.fontWeight = '700';
+                    tel.style.color = 'var(--c-danger)';
                 }
             } else {
                 clearInterval(timerInterval);
-                document.getElementById('timer').textContent = 'EXPIRED';
-                document.getElementById('timer').style.color = '#ef4444';
-                document.querySelector('.verify-btn').disabled = true;
-                document.querySelector('.verify-btn').style.opacity = '0.5';
-                document.querySelector('.verify-btn').style.cursor = 'not-allowed';
+                const tel = document.getElementById('timer');
+                tel.textContent = '0:00';
+                tel.style.color = 'var(--c-danger)';
+                const btn = document.getElementById('verifyBtn');
+                btn.disabled = true;
+                btn.innerHTML = 'Expired';
+                
                 var err = document.getElementById('errorArea');
-                err.textContent = 'Verification code has expired. Please log in again to receive a new code.';
+                err.textContent = 'Code expired. Please sign in again.';
                 err.style.display = 'block';
             }
         }, 1000);

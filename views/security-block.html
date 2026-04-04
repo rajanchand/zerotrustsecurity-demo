@@ -7,112 +7,7 @@
     <title>Policy Violation - ZTS Access Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --danger: #ef4444;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --text-main: #f8fafc;
-            --text-soft: #94a3b8;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg); color: var(--text-main);
-            margin: 0; min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            padding: 24px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Ambient threat glow */
-        body::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.08) 0%, transparent 60%);
-            animation: pulse-bg 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulse-bg {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.5); opacity: 1; }
-        }
-
-        /* Scanning radar line */
-        .radar-scan {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), transparent);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-            animation: scan 3s linear infinite;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        @keyframes scan {
-            0% { top: -10%; }
-            100% { top: 110%; }
-        }
-
-        .block-card {
-            background: var(--card); width: 100%; max-width: 500px;
-            padding: 48px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1);
-            text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-        }
-
-        .warning-icon { 
-            position: relative;
-            width: 80px; height: 80px; background: rgba(239, 68, 68, 0.1); 
-            color: var(--danger); border-radius: 24px; display: flex; 
-            align-items: center; justify-content: center; font-size: 2.5rem; 
-            margin: 0 auto 32px; border: 1px solid rgba(239, 68, 68, 0.3);
-            animation: blink 2s infinite;
-        }
-
-        .warning-icon::after {
-            content: '';
-            position: absolute;
-            inset: -10px;
-            border: 2px solid rgba(239, 68, 68, 0.2);
-            border-radius: 30px;
-            animation: ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-            50% { box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.4); }
-        }
-
-        @keyframes ripple {
-            0% { transform: scale(0.9); opacity: 1; }
-            100% { transform: scale(1.5); opacity: 0; }
-        }
-
-        h1 { margin: 0 0 16px; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
-        p { color: var(--text-soft); font-size: 0.95rem; line-height: 1.6; margin-bottom: 32px; }
-
-        .context-pane { 
-            background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.05);
-            padding: 20px; border-radius: 16px; text-align: left; margin-bottom: 32px;
-        }
-        .context-pane h4 { margin: 0 0 12px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--danger); letter-spacing: 0.05em; }
-        .context-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; }
-        .context-row:last-child { margin-bottom: 0; }
-        .context-row .lab { color: var(--text-soft); }
-        .context-row .val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
-
-        .btn-exit { 
-            display: inline-block; width: 100%; padding: 16px; background: #fff; color: #000;
-            text-decoration: none; border-radius: 12px; font-weight: 800; font-size: 1rem;
-            transition: all 0.2s;
-        }
-        .btn-exit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
-
-        .footer { margin-top: 32px; font-size: 0.75rem; color: var(--text-soft); }
-    </style>
+    
 </head>
 <body>
     <div class="radar-scan"></div>
@@ -126,9 +21,9 @@
         
         <div class="context-pane">
             <h4>Security Context Report</h4>
-            <div class="context-row"><span class="lab">Enforcement Agent</span><span class="val">ZTS Sentinel v2.0.0</span></div>
-            <div class="context-row"><span class="lab">Violation Logic</span><span class="val">ADAPTIVE_RISK_THRESHOLD</span></div>
-            <div class="context-row"><span class="lab">Action taken</span><span class="val" style="color:var(--danger)">SESSION_TERMINATED</span></div>
+            <div class="context-row"><span class="stat-label">Enforcement Agent</span><span class="stat-value">ZTS Sentinel v2.0.0</span></div>
+            <div class="context-row"><span class="stat-label">Violation Logic</span><span class="stat-value">ADAPTIVE_RISK_THRESHOLD</span></div>
+            <div class="context-row"><span class="stat-label">Action taken</span><span class="stat-value" style="color:var(--danger)">SESSION_TERMINATED</span></div>
         </div>
 
         <p style="font-size: 0.8rem;">To restore access, please contact the Security Operations Center (SOC) with your employee credentials and current terminal IP.</p>

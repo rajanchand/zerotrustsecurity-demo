@@ -9,106 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #3730a3;
-            --primary-light: #4f46e5;
-            --bg-soc: #f8fafc;
-            --card-soc: #ffffff;
-            --border-soc: #e2e8f0;
-            --text-soc: #0f172a;
-            --text-soc-muted: #64748b;
-            --accent-soc: #3b82f6;
-            --danger-soc: #ef4444;
-            --success-soc: #10b981;
-            --warning-soc: #f59e0b;
-        }
-
-        body {
-            background-color: var(--bg-soc);
-            color: var(--text-soc);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 100px 24px 40px;
-            overflow-x: hidden;
-        }
-
-        .soc-container { max-width: 1540px; margin: 0 auto; }
-
-        .soc-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .soc-header h1 { font-size: 2.2rem; font-weight: 850; margin: 0; letter-spacing: -0.04em; color: var(--text-soc); }
-        .soc-header p { color: var(--text-soc-muted); margin-top: 4px; font-weight: 500; }
-
-        .live-pulse { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 800; color: var(--success-soc); background: #f0fdf4; padding: 6px 14px; border-radius: 50px; border: 1px solid #dcfce7; text-transform: uppercase; letter-spacing: 0.05em; }
-        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success-soc); animation: soc-pulse 1.5s infinite; }
-        @keyframes soc-pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-
-        /* KPI Dashboard */
-        .soc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; margin-bottom: 32px; }
-        .soc-stat-card { background: var(--card-soc); padding: 24px; border-radius: 20px; border: 1px solid var(--border-soc); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
-        .soc-stat-card .val { font-size: 2.4rem; font-weight: 850; margin-bottom: 4px; line-height: 1; letter-spacing: -0.02em; }
-        .soc-stat-card .lab { font-size: 0.7rem; font-weight: 800; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-
-        /* Main Log Grid */
-        .log-section { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        .log-card { background: var(--card-soc); border-radius: 24px; border: 1px solid var(--border-soc); overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02); }
-
-        .log-toolbar { padding: 20px 32px; border-bottom: 1px solid var(--border-soc); display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .log-toolbar .count { font-size: 0.8rem; font-weight: 700; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-
-        /* Table Design — FIXED ALIGNMENT */
-        .log-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .log-table thead th { 
-            padding: 16px 24px; 
-            background: #f8fafc; 
-            color: var(--text-soc-muted); 
-            font-size: 0.65rem; 
-            font-weight: 850; 
-            text-transform: uppercase; 
-            letter-spacing: 0.1em;
-            border-bottom: 1px solid var(--border-soc);
-        }
-        
-        /* Grid-like behavior for rows */
-        .log-row td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; vertical-align: middle; }
-        .log-row:hover td { background: #fbfcfd; cursor: pointer; }
-
-        .severity-pill { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; min-width: 75px; text-align: center; display: inline-block; }
-        .sev-CRITICAL { background: #fee2e2; color: #991b1b; }
-        .sev-HIGH { background: #ffedd5; color: #9a3412; }
-        .sev-MEDIUM { background: #dbeafe; color: #1e40af; }
-        .sev-INFO { background: #f1f5f9; color: #475569; }
-
-        .evt-type { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--text-soc); background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
-        .usr-tag { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-soc); }
-        .usr-tag .icon { width: 32px; height: 32px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: #fff; font-weight: 800; }
-
-        .meta-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-soc-muted); font-weight: 500; }
-        
-        /* Inspection Panel */
-        .inspect-row { display: none; background: #fdfdfe; }
-        .inspect-row.open { display: table-row; }
-        .inspect-content { padding: 32px; border-bottom: 1px solid var(--border-soc); }
-        .inspect-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 40px; }
-        .inspect-box h4 { margin: 0 0 16px 0; font-size: 0.7rem; color: var(--text-soc-muted); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 800; }
-        
-        .kv-group { margin-bottom: 10px; display: flex; align-items: flex-start; font-size: 0.85rem; }
-        .kv-group .key { color: var(--text-soc-muted); width: 140px; font-weight: 600; }
-        .kv-group .val { color: var(--text-soc); font-family: 'JetBrains Mono', monospace; word-break: break-all; flex: 1; font-weight: 500; }
-
-        .raw-json { background: #0f172a; color: #38bdf8; padding: 20px; border-radius: 12px; font-size: 0.75rem; margin: 0; max-height: 400px; overflow-y: auto; line-height: 1.6; }
-
-        .risk-meter { width: 100px; height: 8px; background: #e2e8f0; border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 12px; }
-        .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-soc); }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
+    
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; border-bottom: 1px solid var(--border-soc); background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(16px); z-index: 1000;">
@@ -132,20 +33,20 @@
 
         <div class="soc-stats">
             <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('TOTAL')" onmouseover="this.style.boxShadow='0 0 0 2px var(--primary-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statTotal">0</div><div class="lab">Ingested Signals <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+                <div class="stat-value" id="statTotal">0</div><div class="stat-label">Ingested Signals <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
             </div>
             <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('CRITICAL')" onmouseover="this.style.boxShadow='0 0 0 2px var(--danger-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statCritical" style="color:var(--danger-soc)">0</div><div class="lab">Critical Alerts <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+                <div class="stat-value" id="statCritical" style="color:var(--danger-soc)">0</div><div class="stat-label">Critical Alerts <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
             </div>
             <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('HIGH')" onmouseover="this.style.boxShadow='0 0 0 2px var(--warning-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statHigh" style="color:var(--warning-soc)">0</div><div class="lab">High Risk Vectors <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+                <div class="stat-value" id="statHigh" style="color:var(--warning-soc)">0</div><div class="stat-label">High Risk Vectors <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
             </div>
             <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showKpiModal('FAILURES')" onmouseover="this.style.boxShadow='0 0 0 2px var(--text-soc-muted)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statLoginFailed">0</div><div class="lab">Auth Failures <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+                <div class="stat-value" id="statLoginFailed">0</div><div class="stat-label">Auth Failures <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
             </div>
             <div class="soc-stat-card" style="cursor:pointer; transition: box-shadow 0.2s;" onclick="showVpnModal()" onmouseover="this.style.boxShadow='0 0 0 2px var(--accent-soc)'" onmouseout="this.style.boxShadow=''">
-                <div class="val" id="statVpn" style="color:var(--accent-soc)">0</div>
-                <div class="lab">VPN Detections <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
+                <div class="stat-value" id="statVpn" style="color:var(--accent-soc)">0</div>
+                <div class="stat-label">VPN Detections <i class="fas fa-external-link-alt" style="font-size:0.5rem; margin-left:4px;"></i></div>
             </div>
         </div>
 
@@ -329,20 +230,20 @@
                         <div class="inspect-grid">
                             <div class="inspect-box">
                                 <h4>Entity Intel</h4>
-                                <div class="kv-group"><span class="key">Internal ID</span><span class="val">${evt.user_id || 'N/A'}</span></div>
-                                <div class="kv-group"><span class="key">Source IP</span><span class="val">${evt.ip || '0.0.0.0'}</span></div>
-                                <div class="kv-group"><span class="key">Geo Context</span><span class="val">${evt.location || 'Unknown'}</span>${isVPN ? ' <span class="severity-pill sev-HIGH" style="font-size:0.5rem; margin-left:8px;">VPN detected</span>' : ''}</div>
-                                <div class="kv-group"><span class="key">Access Window</span><span class="val">${accessWindow}</span></div>
-                                <div class="kv-group"><span class="key">Role</span><span class="val">${roleInfo}</span></div>
+                                <div class="kv-group"><span class="key">Internal ID</span><span class="stat-value">${evt.user_id || 'N/A'}</span></div>
+                                <div class="kv-group"><span class="key">Source IP</span><span class="stat-value">${evt.ip || '0.0.0.0'}</span></div>
+                                <div class="kv-group"><span class="key">Geo Context</span><span class="stat-value">${evt.location || 'Unknown'}</span>${isVPN ? ' <span class="severity-pill sev-HIGH" style="font-size:0.5rem; margin-left:8px;">VPN detected</span>' : ''}</div>
+                                <div class="kv-group"><span class="key">Access Window</span><span class="stat-value">${accessWindow}</span></div>
+                                <div class="kv-group"><span class="key">Role</span><span class="stat-value">${roleInfo}</span></div>
                             </div>
                             <div class="inspect-box">
                                 <h4>Policy Audit</h4>
-                                <div class="kv-group"><span class="key">Signal ID</span><span class="val">${uId}</span></div>
-                                <div class="kv-group"><span class="key">Event Class</span><span class="val">${evt.event_type}</span></div>
-                                <div class="kv-group"><span class="key">Trust Score</span><span class="val">${evt.risk_score}</span></div>
-                                <div class="kv-group"><span class="key">Device</span><span class="val" style="font-size:0.7rem;">${deviceInfo}</span></div>
-                                ${isVPN ? '<div class="kv-group"><span class="key">VPN Status</span><span class="val" style="color:var(--danger-soc); font-weight:800;">\u26A0 TUNNEL ACTIVE</span></div>' : ''}
-                                ${isOffHours ? '<div class="kv-group"><span class="key">Time Alert</span><span class="val" style="color:var(--warning-soc); font-weight:800;">\u23F0 OFF-HOURS ACCESS</span></div>' : ''}
+                                <div class="kv-group"><span class="key">Signal ID</span><span class="stat-value">${uId}</span></div>
+                                <div class="kv-group"><span class="key">Event Class</span><span class="stat-value">${evt.event_type}</span></div>
+                                <div class="kv-group"><span class="key">Trust Score</span><span class="stat-value">${evt.risk_score}</span></div>
+                                <div class="kv-group"><span class="key">Device</span><span class="stat-value" style="font-size:0.7rem;">${deviceInfo}</span></div>
+                                ${isVPN ? '<div class="kv-group"><span class="key">VPN Status</span><span class="stat-value" style="color:var(--danger-soc); font-weight:800;">\u26A0 TUNNEL ACTIVE</span></div>' : ''}
+                                ${isOffHours ? '<div class="kv-group"><span class="key">Time Alert</span><span class="stat-value" style="color:var(--warning-soc); font-weight:800;">\u23F0 OFF-HOURS ACCESS</span></div>' : ''}
                             </div>
                             <div class="inspect-box">
                                 <h4>Telemetry Hash</h4>

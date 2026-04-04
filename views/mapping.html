@@ -8,76 +8,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #3730a3;
-            --primary-hover: #312e81;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --warning: #ca8a04;
-        }
-
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 100px 24px 40px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-
-        .header-box { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .header-box h1 { font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-        .header-box p { color: var(--text-muted); margin-top: 6px; font-weight: 500; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
-        .stat-card { background: #fff; padding: 24px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .stat-card h4 { margin: 0 0 8px 0; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
-        .stat-card .val { font-size: 2rem; font-weight: 800; color: var(--text-main); line-height: 1; }
-
-        .admin-card { background: #fff; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        .card-header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .card-header h3 { margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
-
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 16px 32px; background: #f8fafc; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        td { padding: 18px 32px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        tr:hover td { background: #fbfcfd; }
-
-        .usr-ident { display: flex; align-items: center; gap: 14px; }
-        .usr-avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--bg); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; border: 1px solid var(--border); }
-        .usr-info { display: flex; flex-direction: column; }
-        .usr-name { font-weight: 700; color: var(--text-main); font-size: 0.95rem; }
-        .usr-email { font-size: 0.75rem; color: var(--text-muted); }
-
-        .tag { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em; }
-        .tag-active { background: #dcfce7; color: #166534; }
-        .tag-suspended { background: #fefce8; color: #854d0e; }
-        .tag-blocked { background: #fee2e2; color: #991b1b; }
-
-        .role-badge { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; color: var(--primary); background: #eef2ff; padding: 2px 8px; border-radius: 4px; }
-
-        /* Governance Toolbar */
-        .gov-tools { display: flex; gap: 8px; justify-content: flex-end; }
-        .tool-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
-        .tool-btn:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
-        .tool-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
-        .tool-btn.success:hover { border-color: var(--success); color: var(--success); background: #f0fdf4; }
-
-        /* Modals */
-        .modal-overlay { position: fixed; top: 0; left:0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-content { background: #fff; width: 100%; max-width: 450px; border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
-        .modal-content h3 { margin: 0 0 12px 0; font-size: 1.5rem; font-weight: 800; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
-        .form-group input, .form-group select { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 0.9rem; transition: border-color 0.2s; box-sizing: border-box; }
-        .form-group input:focus { border-color: var(--primary); outline: none; }
-
-        .btn-full { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        
-        #toast-box { position: fixed; top: 24px; right: 24px; z-index: 3000; }
-    </style>
+    
 </head>
 <body>
     <nav class="navbar" style="position: fixed; top: 0; width: 100%; z-index: 1001; background: #fff; border-bottom: 1px solid var(--border);">
@@ -100,10 +31,10 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card"><h4>Active Humans</h4><div class="val" id="stat-active">-</div></div>
-            <div class="stat-card"><h4>Trusted Devices</h4><div class="val" id="stat-devices">-</div></div>
-            <div class="stat-card"><h4>Access Units</h4><div class="val" id="stat-depts">-</div></div>
-            <div class="stat-card"><h4>Risk Quarantine</h4><div class="val" id="stat-quarantine" style="color:var(--danger)">-</div></div>
+            <div class="stat-card"><h4>Active Humans</h4><div class="stat-value" id="stat-active">-</div></div>
+            <div class="stat-card"><h4>Trusted Devices</h4><div class="stat-value" id="stat-devices">-</div></div>
+            <div class="stat-card"><h4>Access Units</h4><div class="stat-value" id="stat-depts">-</div></div>
+            <div class="stat-card"><h4>Risk Quarantine</h4><div class="stat-value" id="stat-quarantine" style="color:var(--danger)">-</div></div>
         </div>
 
         <div class="admin-card">
