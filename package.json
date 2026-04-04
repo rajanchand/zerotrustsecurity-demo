@@ -1,5 +1,5 @@
 {
-  "name": "zts-zero-trust-security-demo",
+  "name": "zts-zero-trust-security-demo version",
   "version": "2.1.0",
   "description": "Zero Trust Security Demo for MSc Dissertation",
   "main": "server.js",
