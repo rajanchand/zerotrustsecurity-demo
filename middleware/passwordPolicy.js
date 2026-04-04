@@ -1,5 +1,4 @@
 // middleware/passwordPolicy.js
-// Password strength enforcement per NIST SP 800-63B guidelines.
 
 function validatePassword(password) {
     var errors = [];

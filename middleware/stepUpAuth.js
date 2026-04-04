@@ -1,5 +1,4 @@
 // middleware/stepUpAuth.js
-// re-authentication for sensitive operations (step-up auth)
 
 const bcrypt = require('bcryptjs');
 const { supabase } = require('../db');

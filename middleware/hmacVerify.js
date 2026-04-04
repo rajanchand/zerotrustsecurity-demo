@@ -1,5 +1,4 @@
 // middleware/hmacVerify.js
-// API request integrity verification using HMAC-SHA256 signatures
 
 const crypto = require('crypto');
 

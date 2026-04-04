@@ -1,6 +1,4 @@
 // middleware/rateLimiter.js
-// brute-force protection using sliding window rate limiting
-// Production: strict limits | Development: relaxed for testing
 
 const rateLimit = require('express-rate-limit');
 

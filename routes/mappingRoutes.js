@@ -1,17 +1,16 @@
 // routes/mappingRoutes.js
 // Admin panel routes: user management, department management, device approval.
-// All endpoints in this file require SuperAdmin or IT role (enforced in server.js).
 
-var express  = require('express');
-var bcrypt   = require('bcryptjs');
-var path     = require('path');
-var { supabase }                                                           = require('../db');
-var { logEvent }                                                           = require('../services/auditService');
-var { logSecurityEvent }                                                   = require('../services/monitorService');
-var { getPendingDevices, approveDevice, rejectDevice, getAllDevices }      = require('../services/deviceService');
-var { validatePassword }                                                   = require('../middleware/passwordPolicy');
-var { requireReAuth }                                                      = require('../middleware/stepUpAuth');
-var { requirePermission }                                                  = require('../middleware/permissions');
+var express = require('express');
+var bcrypt = require('bcryptjs');
+var path = require('path');
+var { supabase } = require('../db');
+var { logEvent } = require('../services/auditService');
+var { logSecurityEvent } = require('../services/monitorService');
+var { getPendingDevices, approveDevice, rejectDevice, getAllDevices } = require('../services/deviceService');
+var { validatePassword } = require('../middleware/passwordPolicy');
+var { requireReAuth } = require('../middleware/stepUpAuth');
+var { requirePermission } = require('../middleware/permissions');
 
 var router = express.Router();
 
@@ -26,7 +25,7 @@ function validatePermissions(perms) {
     return keys.every(k => ALLOWED_PERMISSIONS.includes(k));
 }
 
-// ── Page Routes ─────────────────────────────────────────────
+// Page Routes 
 
 router.get('/mapping', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'mapping.html'));
@@ -42,8 +41,7 @@ router.get('/admin/user-access', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'user-access.html'));
 });
 
-// ── User Management API ──────────────────────────────────────
-
+// ── User Management API 
 // get all users
 router.get('/api/mapping/users', requirePermission('user_view'), async function (req, res) {
     try {
@@ -449,10 +447,10 @@ router.post('/api/mapping/users/reset-password', requirePermission('user_edit'),
         if (!user) return res.json({ success: false, message: 'User not found' });
 
         var hash = bcrypt.hashSync(newPassword, 10);
-        await supabase.from('users').update({ 
-            password_hash: hash, 
+        await supabase.from('users').update({
+            password_hash: hash,
             active_session_token: null, // Kill sessions on password change
-            password_changed_at: new Date().toISOString() 
+            password_changed_at: new Date().toISOString()
         }).eq('id', userId);
 
         await logEvent(req.session.userId, 'PASSWORD_RESET', 'Emergency password reset for: ' + user.username, req.ip);
@@ -507,7 +505,7 @@ router.post('/api/mapping/users/activate', requirePermission('user_approve'), as
     }
 });
 
-// --- department management ---
+// department management 
 
 router.get('/api/mapping/departments', async function (req, res) {
     if (req.session.role === 'HR') return res.json([]);
@@ -645,7 +643,7 @@ router.post('/api/mapping/departments/update-head', async function (req, res) {
     }
 });
 
-// --- device registration / approval ---
+// device registration / approval 
 
 router.get('/api/mapping/devices/pending', async function (req, res) {
     if (req.session.role === 'HR') return res.json([]);
@@ -696,7 +694,7 @@ router.post('/api/mapping/devices/reject', async function (req, res) {
     }
 });
 
-// ── Permission Management API (User Access Dashboard) ────────────────────
+//  Permission Management API (User Access Dashboard) 
 
 // GET /api/mapping/permissions — Fetch users with their permissions (SuperAdmin ONLY)
 router.get('/api/mapping/permissions', async function (req, res) {
@@ -789,7 +787,7 @@ router.post('/api/mapping/permissions/bulk-update', requireReAuth, async functio
                 .from('users')
                 .update({ permissions: update.permissions })
                 .eq('id', update.userId);
-            
+
             if (error) {
                 console.error(`Bulk update failed for user ${update.userId}:`, error);
                 results.push({ userId: update.userId, success: false });
@@ -799,9 +797,9 @@ router.post('/api/mapping/permissions/bulk-update', requireReAuth, async functio
         }
 
         await logEvent(req.session.userId, 'PERMISSIONS_BULK_UPDATED', `Performed bulk permission update for ${updates.length} users`, req.ip);
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: `Processed ${updates.length} updates.`,
             results: results
         });

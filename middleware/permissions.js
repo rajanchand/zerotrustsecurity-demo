@@ -1,6 +1,4 @@
 // middleware/permissions.js
-// Granular permission check middleware for Zero Trust Access Control.
-// Checks req.session.permissions (JSONB from DB) for specific access rights.
 
 function requirePermission(permName) {
     return function (req, res, next) {

@@ -1,5 +1,4 @@
 // middleware/rbac.js
-// role-based access control — enforced at the route level
 
 function requireRole(allowedRoles) {
     return function (req, res, next) {

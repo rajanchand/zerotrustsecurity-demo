@@ -1,5 +1,5 @@
 // middleware/auth.js
-// authentication guard with session-device binding, concurrent session control,
+// authentication guard with session device binding, concurrent session control,
 // password expiry check, and continuous risk assessment
 
 var { logSecurityEvent } = require('../services/monitorService');
@@ -107,7 +107,7 @@ async function requireLogin(req, res, next) {
 
             if (result) {
                 // 1. KILL SWITCH — account was blocked or suspended by an admin
-                // SuperAdmin bypass: prevent total system lockout (they must be able to login to fix it)
+                // SuperAdmin bypass: prevent total system lockout 
                 if (result.status !== 'active' && result.role !== 'SuperAdmin') {
                     await logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
@@ -121,7 +121,7 @@ async function requireLogin(req, res, next) {
                     });
                 }
 
-                // 2. REAL-TIME ROLE & PERMISSION SYNC ──
+                // 2. REAL TIME ROLE & PERMISSION SYNC ──
                 // If an admin changed the user's role or granular permissions, 
                 if (result.role !== req.session.role) {
                     console.log(`[AUTH] Syncing role for ${req.session.username}: ${req.session.role} -> ${result.role}`);
@@ -135,7 +135,7 @@ async function requireLogin(req, res, next) {
                     req.session.permissions = result.permissions || {};
                 }
 
-                // 3. CONCURRENT LOGIN REVOCATION — a newer login was made elsewhere
+                // 3. CONCURRENT LOGIN REVOCATION  a newer login was made elsewhere
                 if (
                     result.active_session_token &&
                     result.active_session_token !== req.session.sessionToken
@@ -153,7 +153,7 @@ async function requireLogin(req, res, next) {
                     });
                 }
 
-                // 4. PASSWORD EXPIRY — flag if password older than 90 days
+                // 4. PASSWORD EXPIRY flag if password older than 90 days
                 if (result.password_changed_at) {
                     var changedAt = new Date(result.password_changed_at).getTime();
                     var ninetyDays = 90 * 24 * 60 * 60 * 1000;

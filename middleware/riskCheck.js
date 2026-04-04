@@ -1,9 +1,8 @@
 // middleware/riskCheck.js
-// continuous risk assessment — evaluates risk on every request
 
 var { logSecurityEvent } = require('../services/monitorService');
 
-// per-user request tracking for behavioral anomaly detection
+// per user request tracking for behavioral anomaly detection
 var requestTracker = {};
 
 function flagHighRisk(req, res, next) {
@@ -35,7 +34,7 @@ function flagHighRisk(req, res, next) {
     tracker.requests = tracker.requests.filter(function (t) { return t > twoMinAgo; });
 
     // Normalise the client IP once — used for velocity logging and IP-change detection
-    var rawIp    = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
+    var rawIp = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
     var currentIP = rawIp.split(',')[0].trim().replace('::ffff:', '');
 
     // Check: request velocity anomaly (>200 requests in 2 minutes = genuine automation/attack)
