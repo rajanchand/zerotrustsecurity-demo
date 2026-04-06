@@ -42,7 +42,7 @@
         .stats-row {
             grid-column: span 2;
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 12px;
             margin-bottom: 16px;
         }
@@ -130,7 +130,7 @@
         @media (max-width: 1000px) {
             .layout { grid-template-columns: 1fr; }
             .welcome, .stats-row { grid-column: span 1; }
-            .stats-row { grid-template-columns: repeat(3, 1fr); }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -165,9 +165,7 @@
             <div class="stat-box"><div class="label">Events (24h)</div><div class="value" id="stat-events-24h">--</div><div class="sub">Recent logs</div></div>
             <div class="stat-box"><div class="label">Blocked</div><div class="value" id="stat-policy-violations" style="color:#dc2626">--</div><div class="sub">Access denied</div></div>
             <div class="stat-box"><div class="label">MFA Rate</div><div class="value" id="stat-mfa-protection-rate">99.8%</div><div class="sub">Two-factor usage</div></div>
-            <div class="stat-box"><div class="label">Status</div><div class="value" id="stat-platform-health" style="color:#16a34a">OK</div><div class="sub">System health</div></div>
-            <div class="stat-box" style="cursor:pointer;" onclick="showOffHoursModal()"><div class="label" style="color:#dc2626">Off-Hours</div><div class="value" id="stat-off-hours-logins" style="color:#dc2626">--</div><div class="sub">Unusual logins</div></div>
-            <div class="stat-box" style="cursor:pointer;" onclick="showUniqueUsersModal()"><div class="label" style="color:#d97706">Off-Hour Users</div><div class="value" id="stat-unique-off-hours-users" style="color:#d97706">--</div><div class="sub">Unique accounts</div></div>
+            <div class="stat-box" style="cursor:pointer;" onclick="showOffHoursModal()"><div class="label" style="color:#dc2626">Off-Hours</div><div class="value"><span id="stat-off-hours-logins" style="color:#dc2626">--</span> / <span id="stat-unique-off-hours-users" style="color:#d97706; font-size:0.9rem;">--</span></div><div class="sub">Logins / Unique users</div></div>
         </div>
 
         <!-- Main content -->
@@ -265,7 +263,7 @@
         <div class="footer-brand">ZTS Admin Portal</div>
     </div>
 
-    <script src="/js/app.js?v=2.2.0"></script>
+    <script src="/js/app.js?v=2.2.1"></script>
     <script>
         // Clock
         function updateClock() {
@@ -355,7 +353,6 @@
                 document.getElementById('stat-events-24h').textContent = stats.activity.events24h;
                 document.getElementById('stat-policy-violations').textContent = stats.users.blocked;
                 document.getElementById('stat-mfa-protection-rate').textContent = (stats.activity.mfaRate || 99.8) + '%';
-                document.getElementById('stat-platform-health').textContent = simplifyHealth(stats.activity.health || 'OK');
 
                 await loadDeviceCount(stats.devices.pendingApproval);
                 showRecentEvents(stats.recentEvents);
@@ -471,15 +468,6 @@
             hideLockdownModal();
         }
 
-        // Simplify complex health status text
-        function simplifyHealth(text) {
-            if (!text) return 'OK';
-            var t = text.toLowerCase();
-            if (t.indexOf('stable') >= 0 || t.indexOf('operational') >= 0 || t.indexOf('integrity') >= 0) return 'OK';
-            if (t.indexOf('degrade') >= 0 || t.indexOf('partial') >= 0) return 'Slow';
-            if (t.indexOf('down') >= 0 || t.indexOf('fail') >= 0) return 'Down';
-            return text;
-        }
 
         // Simplify network/location labels
         function simplifyNetwork(text) {
