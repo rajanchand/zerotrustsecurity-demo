@@ -269,7 +269,10 @@
                 <div class="card">
                     <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Recent Sessions</span>
-                        <button class="simple-btn" style="padding: 4px 8px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width:auto;" onclick="endAllSessions()">End All Sessions</button>
+                        <button class="simple-
+                        btn"
+                            style="padding: 4px 8px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width:auto;"
+                            onclick="endAllSessions()">End All Sessions</button>
                     </div>
                     <div id="sessionList">
                         <div style="padding:20px; text-align:center; color:#aaa;">Loading...</div>
@@ -356,7 +359,7 @@
 
     <div id="toast-box" style="position:fixed; top:20px; right:20px; z-index:3000;"></div>
 
-    <script src="/js/app.js?v=2.2.0"></script>
+    <script src="/js/app.js?v=2.2.1"></script>
     <script>
         function showPasswordModal() {
             document.getElementById('pw-current').value = '';
@@ -477,7 +480,7 @@
         }
 
         async function endAllSessions() {
-            if(!confirm('Are you sure you want to end all active sessions? You will be logged out immediately.')) return;
+            if (!confirm('Are you sure you want to end all active sessions? You will be logged out immediately.')) return;
             var res = await postJSON('/api/profile/end-sessions', {});
             if (res.success) {
                 alert('All sessions ended.');
