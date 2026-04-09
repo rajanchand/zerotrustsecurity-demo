@@ -12,8 +12,8 @@ jobs:
       - name: SSH into VPS and Run Deploy Script
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
+          host: 212.227.39.216
+          username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/zts-web
