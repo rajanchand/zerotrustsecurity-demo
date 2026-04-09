@@ -1,0 +1,20 @@
+name: Deploy ZTS to VPS
+
+on:
+  push:
+    branches:
+      - main  # Whenever you push to the 'main' branch, this pipeline activates
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into VPS and Run Deploy Script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/zts-web
+            bash deploy.sh
