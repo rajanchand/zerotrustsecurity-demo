@@ -147,7 +147,7 @@ echo ""
 # ─── Step 8: Send Slack Notification ──────────────────────────
 if [ -f "$APP_DIR/.env" ]; then
     # Manually extract SLACK_WEBHOOK_URL to avoid side effects of blindly sourcing
-    SLACK_URL=$(grep "SLACK_WEBHOOK_URL" "$APP_DIR/.env" | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+    SLACK_URL=$(grep "SLACK_WEBHOOK_URL" "$APP_DIR/.env" | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d '\r')
     if [ -n "$SLACK_URL" ]; then
         echo "  → Sending Slack deployment alert..."
         curl -s -X POST -H 'Content-type: application/json' \
