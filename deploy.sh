@@ -147,15 +147,17 @@ echo ""
 # ─── Step 8: Send Slack Notification ──────────────────────────
 if [ -f "$APP_DIR/.env" ]; then
     # Manually extract SLACK_WEBHOOK_URL to avoid side effects of blindly sourcing
-    SLACK_URL=$(grep "^SLACK_WEBHOOK_URL=" "$APP_DIR/.env" | cut -d '=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r' | tr -d ' ' | xargs)
+    SLACK_URL=$(grep "^SLACK_DEPLOY_WEBHOOK_URL=" "$APP_DIR/.env" | cut -d '=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r' | tr -d ' ' | xargs)
+    
+    # If a specific deploy webhook doesn't exist, fall back to the global security one
+    if [ -z "$SLACK_URL" ]; then
+        SLACK_URL=$(grep "^SLACK_WEBHOOK_URL=" "$APP_DIR/.env" | cut -d '=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r' | tr -d ' ' | xargs)
+    fi
+
     if [ -n "$SLACK_URL" ]; then
         echo "  → Sending Slack deployment alert..."
-        
-        # Test basic Slack Webhook without any variables just to be bulletproof
-        curl -s -v -X POST -H 'Content-type: application/json' \
-        --data '{"text":"🚀 *ZTS Deployed Successfully* via VPS Action."}' \
-        "$SLACK_URL" > "$APP_DIR/slack_out.log" 2>&1 || true
-        
-        cat "$APP_DIR/slack_out.log"
+        curl -s -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"🚀 *ZTS Deployed Successfully*\nNew code (Commit: \`$GIT_COMMIT\`) was just pulled to the VPS and is now live!\"}" \
+        "$SLACK_URL" > /dev/null || true
     fi
 fi
