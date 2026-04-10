@@ -259,4 +259,26 @@ router.post('/api/profile/trusted-locations/request', async (req, res) => {
     }
 });
 
+// End All Sessions for User
+router.post('/api/profile/end-sessions', async function(req, res) {
+    try {
+        var { error } = await supabase
+            .from('sessions_log')
+            .update({ active: false })
+            .eq('user_id', req.session.userId);
+
+        if (error) throw error;
+        
+        await logEvent(req.session.userId, 'USER_ENDED_SESSIONS', 'User terminated all their active sessions', req.ip);
+        
+        // Destroy active express session as well
+        req.session.destroy();
+        
+        res.json({ success: true, message: 'All your sessions have been ended. You will be logged out.' });
+    } catch (err) {
+        console.error('[Profile] End sessions error:', err);
+        res.status(500).json({ success: false, message: 'Could not end sessions.' });
+    }
+});
+
 module.exports = router;

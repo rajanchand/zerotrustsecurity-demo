@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,49 +8,232 @@
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
-        .container { max-width: 900px; margin: 0 auto; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 80px 24px 40px;
+        }
 
-        .profile-top { background: #fff; border-radius: 10px; padding: 28px; display: flex; align-items: center; gap: 24px; margin-bottom: 20px; border: 1px solid #e0e0e0; }
-        .avatar { width: 70px; height: 70px; background: #2563eb; color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 700; }
-        .profile-top h1 { margin: 0; font-size: 1.3rem; font-weight: 700; }
-        .profile-top p { margin: 4px 0 0; color: #888; font-size: 0.85rem; }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
 
-        .two-col { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
-        .card { background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 16px; }
-        .card-head { padding: 12px 18px; border-bottom: 1px solid #eee; font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; }
+        .profile-top {
+            background: #fff;
+            border-radius: 10px;
+            padding: 28px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
 
-        .field { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; }
-        .field:last-child { border-bottom: none; }
-        .field .label { color: #888; font-size: 0.85rem; }
-        .field .value { font-weight: 600; font-size: 0.85rem; }
+        .avatar {
+            width: 70px;
+            height: 70px;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
 
-        .session-row { padding: 10px 18px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; font-size: 0.82rem; }
-        .session-row:last-child { border-bottom: none; }
+        .profile-top h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
 
-        .risk-display { text-align: center; padding: 20px; }
-        .risk-num { font-size: 2.2rem; font-weight: 700; }
-        .risk-label { font-size: 0.8rem; font-weight: 600; margin-top: 4px; }
+        .profile-top p {
+            margin: 4px 0 0;
+            color: #888;
+            font-size: 0.85rem;
+        }
 
-        .card-body { padding: 14px 18px; }
-        .simple-btn { width: 100%; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
-        .simple-btn:hover { background: #eee; }
-        .primary-btn { width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
-        .primary-btn:hover { background: #1d4ed8; }
+        .two-col {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+        }
 
-        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal { background: #fff; width: 100%; max-width: 400px; border-radius: 12px; padding: 28px; }
-        .modal h3 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 700; }
-        .modal p { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
-        .modal label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
-        .modal input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box; margin-bottom: 12px; }
-        .modal input:focus { outline: none; border-color: #2563eb; }
-        .modal-error { color: #dc2626; font-size: 0.8rem; margin-bottom: 10px; display: none; }
-        .modal-buttons { display: flex; gap: 10px; }
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .card-head {
+            padding: 12px 18px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .field {
+            padding: 12px 18px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .field:last-child {
+            border-bottom: none;
+        }
+
+        .field .label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .field .value {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .session-row {
+            padding: 10px 18px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+        }
+
+        .session-row:last-child {
+            border-bottom: none;
+        }
+
+        .risk-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .risk-num {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+
+        .risk-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .card-body {
+            padding: 14px 18px;
+        }
+
+        .simple-btn {
+            width: 100%;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .simple-btn:hover {
+            background: #eee;
+        }
+
+        .primary-btn {
+            width: 100%;
+            padding: 10px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .primary-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal {
+            background: #fff;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            padding: 28px;
+        }
+
+        .modal h3 {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .modal p {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .modal label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .modal-error {
+            color: #dc2626;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
+
 <body>
-    <nav class="navbar" style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
+    <nav class="navbar"
+        style="position:fixed; top:0; width:100%; z-index:1001; background:#fff; border-bottom:1px solid #e0e0e0;">
         <button class="menu-toggle">Menu</button>
         <a href="/dashboard" class="navbar-brand"><span>ZTS</span> Admin</a>
         <div class="nav-menu" id="mainNav"></div>
@@ -70,18 +254,26 @@
                 <div class="card">
                     <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Account Details</span>
-                        <button class="simple-btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="showEditProfileModal()">Edit</button>
+                        <button class="simple-btn" style="padding: 4px 8px; font-size: 0.8rem;"
+                            onclick="showEditProfileModal()">Edit</button>
                     </div>
                     <div class="field"><span class="label">User ID</span><span class="value" id="f-id">--</span></div>
-                    <div class="field"><span class="label">Username</span><span class="value" id="f-user">--</span></div>
+                    <div class="field"><span class="label">Username</span><span class="value" id="f-user">--</span>
+                    </div>
                     <div class="field"><span class="label">Email</span><span class="value" id="f-email">--</span></div>
                     <div class="field"><span class="label">Phone</span><span class="value" id="f-phone">--</span></div>
-                    <div class="field"><span class="label">Department</span><span class="value" id="f-dept">--</span></div>
+                    <div class="field"><span class="label">Department</span><span class="value" id="f-dept">--</span>
+                    </div>
                     <div class="field"><span class="label">Role</span><span class="value" id="f-role">--</span></div>
                 </div>
                 <div class="card">
-                    <div class="card-head">Recent Logins</div>
-                    <div id="sessionList"><div style="padding:20px; text-align:center; color:#aaa;">Loading...</div></div>
+                    <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Recent Sessions</span>
+                        <button class="simple-btn" style="padding: 4px 8px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width:auto;" onclick="endAllSessions()">End All Sessions</button>
+                    </div>
+                    <div id="sessionList">
+                        <div style="padding:20px; text-align:center; color:#aaa;">Loading...</div>
+                    </div>
                 </div>
             </div>
             <div>
@@ -89,9 +281,11 @@
                     <div class="card-head">Risk Score</div>
                     <div class="risk-display">
                         <div id="riskScore" class="risk-num">--</div>
-                        <div id="riskLabel" class="risk-label">LOW RISK</div>
+                        <div id="riskLabel" class="risk-label">--</div>
                         <p style="font-size:0.7rem; color:#aaa; margin-top:8px;">Based on your recent logins.</p>
-                        <a href="/risk" class="simple-btn" style="display:inline-block; margin-top:8px; text-decoration:none; color:#333; text-align:center;">View Details</a>
+                        <a href="/risk" class="simple-btn"
+                            style="display:inline-block; margin-top:8px; text-decoration:none; color:#333; text-align:center;">View
+                            Details</a>
                     </div>
                 </div>
                 <div class="card">
@@ -104,7 +298,8 @@
                     <div class="card-head">Home Office</div>
                     <div class="card-body">
                         <button class="primary-btn" onclick="showLocationModal()">Save Current Location</button>
-                        <p style="font-size:0.65rem; color:#aaa; margin-top:6px;">Save your current network so it is not flagged as suspicious.</p>
+                        <p style="font-size:0.65rem; color:#aaa; margin-top:6px;">Save your current network so it is not
+                            flagged as suspicious.</p>
                     </div>
                 </div>
             </div>
@@ -122,7 +317,8 @@
             <p id="pw-error" class="modal-error"></p>
             <div class="modal-buttons">
                 <button class="primary-btn" style="flex:1;" onclick="updatePassword()">Update</button>
-                <button class="simple-btn" onclick="document.getElementById('pwModal').style.display='none'">Cancel</button>
+                <button class="simple-btn"
+                    onclick="document.getElementById('pwModal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
@@ -136,7 +332,8 @@
             <p id="loc-error" class="modal-error"></p>
             <div class="modal-buttons">
                 <button class="primary-btn" style="flex:1;" onclick="saveLocation()">Save</button>
-                <button class="simple-btn" onclick="document.getElementById('locModal').style.display='none'">Cancel</button>
+                <button class="simple-btn"
+                    onclick="document.getElementById('locModal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
@@ -151,7 +348,8 @@
             <p id="edit-profile-error" class="modal-error"></p>
             <div class="modal-buttons">
                 <button class="primary-btn" style="flex:1;" onclick="saveProfileEdit()">Save</button>
-                <button class="simple-btn" onclick="document.getElementById('editProfileModal').style.display='none'">Cancel</button>
+                <button class="simple-btn"
+                    onclick="document.getElementById('editProfileModal').style.display='none'">Cancel</button>
             </div>
         </div>
     </div>
@@ -240,7 +438,7 @@
                 container.innerHTML = '';
                 var sessions = (data.inventory && data.inventory.sessions) || [];
                 if (sessions.length > 0) {
-                    sessions.slice(0, 5).forEach(function(s) {
+                    sessions.slice(0, 5).forEach(function (s) {
                         var div = document.createElement('div');
                         div.className = 'session-row';
                         div.innerHTML = '<div><div style="font-weight:600;">' + s.browser + ' on ' + s.os + '</div><div style="font-size:0.75rem; color:#aaa;">' + s.ip + ' · ' + s.country + '</div></div><div style="font-size:0.75rem; color:#aaa;">' + formatDate(s.login_at) + '</div>';
@@ -268,17 +466,29 @@
             var phone = document.getElementById('edit-profile-phone').value;
 
             var res = await postJSON('/api/profile/update', { email: email, phone: phone });
-            if (res.success) { 
-                document.getElementById('editProfileModal').style.display = 'none'; 
-                showToast('Profile updated', 'success'); 
-                loadProfile(); 
-            } else { 
-                err.textContent = res.message || 'Error updating profile.'; 
-                err.style.display = 'block'; 
+            if (res.success) {
+                document.getElementById('editProfileModal').style.display = 'none';
+                showToast('Profile updated', 'success');
+                loadProfile();
+            } else {
+                err.textContent = res.message || 'Error updating profile.';
+                err.style.display = 'block';
+            }
+        }
+
+        async function endAllSessions() {
+            if(!confirm('Are you sure you want to end all active sessions? You will be logged out immediately.')) return;
+            var res = await postJSON('/api/profile/end-sessions', {});
+            if (res.success) {
+                alert('All sessions ended.');
+                window.location.href = '/login';
+            } else {
+                alert(res.message || 'Error ending sessions.');
             }
         }
 
         loadProfile();
     </script>
 </body>
+
 </html>

@@ -2,6 +2,7 @@ require('dotenv').config();
 
 var express = require('express');
 var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 var helmet = require('helmet');
 var path = require('path');
 var crypto = require('crypto');
@@ -21,10 +22,10 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'", process.env.GRAFANA_URL || "*"],
             frameSrc: ["'self'", process.env.GRAFANA_URL || "*"],
@@ -39,8 +40,8 @@ app.use(helmet({
 app.set('trust proxy', 1);
 
 // Body parsing and static files
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Add a unique ID to each request for tracking
@@ -57,8 +58,9 @@ app.use(function(req, res, next) {
     next();
 });
 
-// Session setup
+// Session setup (persistent file store)
 app.use(session({
+    store: new FileStore({ path: './sessions', retries: 0 }),
     secret: process.env.SESSION_SECRET || 'zts-default-secret',
     resave: false,
     saveUninitialized: false,
@@ -103,24 +105,29 @@ app.get('/metrics', async function(req, res) {
     res.end(await register.metrics());
 });
 
-// Apply security middleware to all routes below
-app.use(requireLogin);
-app.use(flagHighRisk);
-app.use(csrfProtection);
-app.use(verifyHMAC);
+// Rate limiting for APIs
+app.use('/api', apiLimiter);
 
-// CSRF token endpoint
+// CSRF configuration (must be above public routes since login uses CSRF)
+app.use(csrfProtection);
 app.get('/api/csrf-token', function(req, res) {
     var token = generateCSRFToken(req);
     res.json({ csrfToken: token });
 });
 
-// Re-auth and rate limiting
-app.post('/api/verify-reauth', handleReAuth);
-app.use('/api', apiLimiter);
-
-// Routes - open to all logged-in users
+// Authentication and Public Routes
+// Mounted BEFORE requireLogin so they are never blocked in an infinite loop
 app.use('/', authRoutes);
+
+// Apply Security Middleware to all Sub-Routes
+app.use(requireLogin);
+app.use(flagHighRisk);
+app.use(verifyHMAC);
+
+// Re-auth endpoint
+app.post('/api/verify-reauth', handleReAuth);
+
+// Routes - open to logged-in users
 app.use('/', dashboardRoutes);
 app.use('/', profileRoutes);
 
