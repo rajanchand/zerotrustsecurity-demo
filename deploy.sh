@@ -152,6 +152,6 @@ if [ -f "$APP_DIR/.env" ]; then
         echo "  → Sending Slack deployment alert..."
         curl -s -X POST -H 'Content-type: application/json' \
         --data "{\"text\":\"🚀 *ZTS Deployed Successfully*\nNew code (Commit: \`$GIT_COMMIT\`) was just pulled to the VPS and is now live!\"}" \
-        "$SLACK_URL" > /dev/null
+        "$SLACK_URL" > /dev/null || true
     fi
 fi
