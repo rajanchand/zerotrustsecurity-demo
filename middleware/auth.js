@@ -28,10 +28,13 @@ async function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
-    // Check working hours (0-24 means always open)
+    // Check working hours, defaults to 0-24 if not configured
     var currentHour = new Date().getUTCHours();
-    var START_HOUR = 0;
-    var END_HOUR = 24;
+    var START_HOUR = parseInt(process.env.WORK_HOURS_START, 10);
+    if (isNaN(START_HOUR)) START_HOUR = 0;
+    
+    var END_HOUR = parseInt(process.env.WORK_HOURS_END, 10);
+    if (isNaN(END_HOUR)) END_HOUR = 24;
 
     if (currentHour < START_HOUR || currentHour >= END_HOUR) {
         if (req.session) {

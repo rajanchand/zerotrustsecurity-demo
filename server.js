@@ -2,7 +2,6 @@ require('dotenv').config();
 
 var express = require('express');
 var session = require('express-session');
-var FileStore = require('session-file-store')(session);
 var helmet = require('helmet');
 var path = require('path');
 var crypto = require('crypto');
@@ -58,9 +57,8 @@ app.use(function(req, res, next) {
     next();
 });
 
-// Session setup (persistent file store)
-app.use(session({
-    store: new FileStore({ path: './sessions', retries: 0 }),
+// Session setup (persistent PostgreSQL store)
+var sessionOptions = {
     secret: process.env.SESSION_SECRET || 'zts-default-secret',
     resave: false,
     saveUninitialized: false,
@@ -71,7 +69,21 @@ app.use(session({
         sameSite: 'strict'
     },
     rolling: true
-}));
+};
+
+if (process.env.DATABASE_URL) {
+    var pgSession = require('connect-pg-simple')(session);
+    var pg = require('pg');
+    var pgPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    sessionOptions.store = new pgSession({
+        pool: pgPool,
+        tableName: 'session'
+    });
+} else {
+    console.warn('WARNING: DATABASE_URL not set. Falling back to MemoryStore for sessions.');
+}
+
+app.use(session(sessionOptions));
 
 // Middleware imports
 var { csrfProtection, generateCSRFToken } = require('./middleware/csrf');

@@ -31,27 +31,27 @@ async function sendSlackAlert(params) {
     var time = new Date().toUTCString();
 
     // Build a simple text message instead of a fancy table
-    var msg = 'User:' + (params.username || 'System') + 
-              ',Role' + (params.role || 'N/A') + 
-              ',IP' + (params.ip || 'Unknown') + 
-              'Location' + (params.country || 'Unknown') + 
-              'Risk' + (params.riskScore || 0) + ' (' + (params.riskLevel || 'Low') + ')' +
-              'Time' + time;
+    var msg = 'User: ' + (params.username || 'System') + 
+              ', Role: ' + (params.role || 'N/A') + 
+              ', IP: ' + (params.ip || 'Unknown') + 
+              ', Location: ' + (params.country || 'Unknown') + 
+              ', Risk: ' + (params.riskScore || 0) + ' (' + (params.riskLevel || 'Low') + ')' +
+              ', Time: ' + time;
 
     if (params.device) {
-        msg += 'Device' + params.device;
+        msg += ', Device: ' + params.device;
     }
 
     if (params.loginReasons) {
-        msg += 'Flags' + params.loginReasons;
+        msg += ', Flags: ' + params.loginReasons;
     }
 
     if (type === 'VPN_ALERT' && params.previousCountry) {
-        msg += 'Previous Location' + params.previousCountry;
+        msg += ', Previous Location: ' + params.previousCountry;
     }
 
     if (params.reason) {
-        msg += 'Details' + params.reason;
+        msg += ', Details: ' + params.reason;
     }
 
     var payload = {

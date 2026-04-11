@@ -27,7 +27,7 @@ const getClientIP = (req) => {
     return ipHeader.split(',')[0].trim().replace('::ffff:', '');
 };
 
-router.get('/login', (req, res) => {
+router.get('/login', loginLimiter, (req, res) => {
     res.sendFile('login.html', { root: 'views' });
 });
 
@@ -433,7 +433,7 @@ router.post('/api/login', loginLimiter, async (req, res) => {
     }
 });
 
-router.get('/otp', (req, res) => {
+router.get('/otp', otpLimiter, (req, res) => {
     if (!req.session.userId) return res.redirect('/login');
     res.sendFile('otp.html', { root: 'views' });
 });

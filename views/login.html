@@ -115,6 +115,12 @@
             btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
             try {
+                if (!csrfToken) {
+                    var csrfRes = await fetch('/api/csrf-token');
+                    var csrfData = await csrfRes.json();
+                    if (csrfData && csrfData.csrfToken) csrfToken = csrfData.csrfToken;
+                }
+
                 var result = await postJSON('/api/login', {
                     username: document.getElementById('username').value,
                     password: document.getElementById('password').value,

@@ -65,24 +65,26 @@ fi
 NGINX_CONF="/etc/nginx/sites-available/zts"
 TEMP_CONF="/tmp/zts_nginx.conf"
 
-cat > "$TEMP_CONF" << 'EOF'
+DOMAIN="${DOMAIN:-zero-trust-security.org}"
+
+cat > "$TEMP_CONF" << EOF
 server {
     listen 80;
-    server_name zero-trust-security.org www.zero-trust-security.org;
+    server_name $DOMAIN www.$DOMAIN;
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         
         #  Fix: Forward the proto from Cloudflare (Flexible SSL)
-        # Standard $scheme is 'http' locally, which blocks 'Secure' cookies.
+        # Standard \$scheme is 'http' locally, which blocks 'Secure' cookies.
         # We must tell Node that the outer connection is 'https'.
-        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
@@ -107,10 +109,9 @@ if ! command -v certbot &> /dev/null; then
   sudo apt-get install -y certbot python3-certbot-nginx
 fi
 
-DOMAIN="zero-trust-security.org"
 if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
     echo "[6.6/7] Requesting Let's Encrypt SSL certificate for $DOMAIN..."
-    certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m admin@zero-trust-security.org || true
+    certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos -m admin@$DOMAIN || true
 else
     echo "[6.6/7] SSL Certificates already exist. Ensuring Nginx is configured..."
     # If deploy.sh overwrote the nginx file with the base HTTP config, re-inject the SSL block automatically

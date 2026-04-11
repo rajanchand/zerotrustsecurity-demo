@@ -1,8 +1,5 @@
 var { logSecurityEvent } = require('../services/monitorService');
 
-// Track request patterns per user
-var requestTracker = {};
-
 /**
  * Middleware: monitor user behaviour and flag high-risk activity.
  * Checks for too many requests or IP address changes.
@@ -21,15 +18,15 @@ function flagHighRisk(req, res, next) {
     }
 
     // Set up tracking for this user
-    if (!requestTracker[userId]) {
-        requestTracker[userId] = {
+    if (!req.session.requestTracker) {
+        req.session.requestTracker = {
             requests: [],
             lastIP: req.ip,
             riskBoost: 0
         };
     }
 
-    var tracker = requestTracker[userId];
+    var tracker = req.session.requestTracker;
     tracker.requests.push(now);
 
     // Only keep requests from the last 2 minutes
@@ -85,20 +82,5 @@ function flagHighRisk(req, res, next) {
 
     next();
 }
-
-// Clean up old trackers every 10 minutes
-setInterval(function() {
-    var cutoff = Date.now() - 10 * 60 * 1000;
-    Object.keys(requestTracker).forEach(function(userId) {
-        var tracker = requestTracker[userId];
-        var lastRequest = tracker.requests.length
-            ? tracker.requests[tracker.requests.length - 1]
-            : 0;
-
-        if (lastRequest < cutoff) {
-            delete requestTracker[userId];
-        }
-    });
-}, 10 * 60 * 1000).unref();
 
 module.exports = { flagHighRisk: flagHighRisk };

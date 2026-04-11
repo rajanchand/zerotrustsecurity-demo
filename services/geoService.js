@@ -5,7 +5,7 @@ var CACHE_TTL = 30 * 60 * 1000;
 var geoCache = {};
 
 /**
- * Clean up IPv6-mapped IPv4 addresses (e.g., "::ffff:1.2.3.4" -> "1.2.3.4").
+ * IPv6-mapped IPv4 addresses (e.g., "::ffff:1.2.3.4" -> "1.2.3.4").
  */
 function cleanIP(ip) {
     if (!ip) return ip;
@@ -28,11 +28,11 @@ function isLocalIP(ip) {
 }
 
 /**
- * Look up the country, city, ISP, and proxy status for an IP address.
- * Uses ip-api.com with a local cache.
+ *  country, city, ISP, and proxy status for an IP address.
+ *  ip-api.com .
  */
 function getGeoFromIP(ip) {
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
         var clean = cleanIP(ip);
 
         // Local IPs don't need lookup
@@ -54,10 +54,10 @@ function getGeoFromIP(ip) {
         // Look up the IP
         var url = 'http://ip-api.com/json/' + clean + '?fields=status,country,city,isp,proxy';
 
-        var req = http.get(url, function(res) {
+        var req = http.get(url, function (res) {
             var body = '';
-            res.on('data', function(chunk) { body += chunk; });
-            res.on('end', function() {
+            res.on('data', function (chunk) { body += chunk; });
+            res.on('end', function () {
                 try {
                     var result = JSON.parse(body);
                     if (result.status === 'success') {
@@ -81,12 +81,12 @@ function getGeoFromIP(ip) {
             });
         });
 
-        req.setTimeout(5000, function() {
+        req.setTimeout(5000, function () {
             req.destroy();
             resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
         });
 
-        req.on('error', function() {
+        req.on('error', function () {
             resolve({ country: 'Unknown', city: 'Unknown', isp: 'Unknown', isProxy: false });
         });
     });
@@ -115,7 +115,7 @@ function isVPNConnection(ip) {
 
     // Known VPN IP ranges
     var vpnRanges = ['10.8.', '10.9.', '172.20.', '172.29.', '100.64.'];
-    return vpnRanges.some(function(range) { return clean.startsWith(range); });
+    return vpnRanges.some(function (range) { return clean.startsWith(range); });
 }
 
 /**
@@ -129,9 +129,9 @@ function checkImpossibleTravel(currentCountry, previousCountry, minutesBetween) 
 }
 
 // Clean up expired cache entries every 15 minutes
-setInterval(function() {
+setInterval(function () {
     var now = Date.now();
-    Object.keys(geoCache).forEach(function(key) {
+    Object.keys(geoCache).forEach(function (key) {
         if (geoCache[key].expiresAt < now) {
             delete geoCache[key];
         }

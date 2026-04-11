@@ -21,7 +21,7 @@ function generateCSRFToken(req) {
 }
 
 // Pages that don't need CSRF checking
-var SKIP_PATHS = ['/login', '/logout', '/verify-otp', '/otp', '/api/login', '/api/verify-otp'];
+var SKIP_PATHS = ['/logout'];
 
 /**
  * Middleware: validate CSRF token on POST/PUT/DELETE requests.
@@ -32,13 +32,8 @@ function csrfProtection(req, res, next) {
         return next();
     }
 
-    // Skip for login/OTP pages
+    // Skip for specifically excluded paths
     if (SKIP_PATHS.includes(req.path)) {
-        return next();
-    }
-
-    // Not logged in? Skip
-    if (!req.session?.userId) {
         return next();
     }
 
