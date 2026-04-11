@@ -30,39 +30,32 @@ async function sendSlackAlert(params) {
     var color = ALERT_COLORS[type] || '#64748b';
     var time = new Date().toUTCString();
 
-    var fields = [
-        { title: 'User', value: params.username || 'System', short: true },
-        { title: 'Role', value: params.role || 'N/A', short: true },
-        { title: 'IP', value: params.ip || 'Unknown', short: true },
-        { title: 'Location', value: params.country || 'Unknown', short: true },
-        { title: 'Risk', value: (params.riskScore || 0) + ' (' + (params.riskLevel || 'Low') + ')', short: true },
-        { title: 'Time', value: time, short: true }
-    ];
+    // Build a simple text message instead of a fancy table
+    var msg = 'User:' + (params.username || 'System') + 
+              ',Role' + (params.role || 'N/A') + 
+              ',IP' + (params.ip || 'Unknown') + 
+              'Location' + (params.country || 'Unknown') + 
+              'Risk' + (params.riskScore || 0) + ' (' + (params.riskLevel || 'Low') + ')' +
+              'Time' + time;
 
     if (params.device) {
-        fields.push({ title: 'Device', value: params.device, short: true });
+        msg += 'Device' + params.device;
     }
 
     if (params.loginReasons) {
-        fields.push({ title: 'Flags', value: params.loginReasons, short: false });
+        msg += 'Flags' + params.loginReasons;
     }
 
     if (type === 'VPN_ALERT' && params.previousCountry) {
-        fields.push({ title: 'Previous Location', value: params.previousCountry, short: true });
+        msg += 'Previous Location' + params.previousCountry;
     }
 
     if (params.reason) {
-        fields.push({ title: 'Details', value: params.reason, short: false });
+        msg += 'Details' + params.reason;
     }
 
     var payload = {
-        text: 'ZTS Alert - ' + title,
-        attachments: [{
-            color: color,
-            fields: fields,
-            footer: 'ZTS Admin Portal',
-            ts: Math.floor(Date.now() / 1000)
-        }]
+        text: 'ZTS Alert (' + title + ')\n' + msg
     };
 
     try {
