@@ -238,7 +238,9 @@
             var devicesHtml = '';
             if (inventory.devices && inventory.devices.length > 0) {
                 inventory.devices.forEach(function(d) {
-                    devicesHtml += '<div class="info-row"><span class="label">' + (d.label || 'Device') + '</span><span class="value">' + (d.os || '') + ' / ' + (d.browser || '') + '</span></div>';
+                    var statusBadge = d.approved ? '<span class="badge-safe">Approved</span>' : '<span class="badge-vpn" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">Pending</span>';
+                    var regTime = d.created_at ? fmtTime(d.created_at) : 'Unknown time';
+                    devicesHtml += '<div class="info-row" style="flex-direction:column; gap:4px; padding:12px 0;"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="label" style="color:#333; font-size:0.85rem;">' + (d.label || 'Device') + ' &nbsp;' + statusBadge + '</span><span class="value" style="color:#888; font-size:0.75rem;">Registered: ' + regTime + '</span></div><div style="font-size:0.75rem; color:#666; font-family:monospace;">' + (d.os || '') + ' / ' + (d.browser || '') + '</div></div>';
                 });
             } else { devicesHtml = '<p style="color:#aaa;">No devices.</p>'; }
 

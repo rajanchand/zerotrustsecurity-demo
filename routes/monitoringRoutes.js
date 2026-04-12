@@ -2,6 +2,7 @@ var express = require('express');
 var path = require('path');
 var { addClient, getRecentEvents, getStats24h } = require('../services/monitorService');
 var { supabase } = require('../db');
+var { isOffHours } = require('../services/policyService');
 
 var router = express.Router();
 
@@ -90,8 +91,7 @@ router.get('/api/admin/users/:userId/forensics', async function(req, res) {
         var vpnSessions = sessions.filter(function(s) { return s.vpn; }).length;
 
         var offHourLogins = sessions.filter(function(s) {
-            var hour = new Date(s.login_at).getHours();
-            return hour >= 18 || hour < 9;
+            return isOffHours(new Date(s.login_at));
         }).length;
 
         var lastRisk = totalSessions > 0 ? (sessions[0].risk_score || 0) : 0;
