@@ -1,14 +1,16 @@
 var { supabase } = require('../db');
 
-// Active live-monitoring connections
+// active sse connections for live monitoring
 var liveClients = [];
 
-// Severity levels for each event type
+// severity levels for different event types
 var SEVERITY = {
     LOGIN_SUCCESS: 'INFO',
     LOGIN_FAILED: 'HIGH',
     LOGIN_BLOCKED: 'CRITICAL',
     LOGIN_LOCKED: 'HIGH',
+    LOGIN_PASSWORD_OK: 'INFO',
+    LOGIN_SUSPENDED: 'MEDIUM',
     OTP_SENT: 'INFO',
     OTP_SUCCESS: 'INFO',
     OTP_FAILED: 'HIGH',
@@ -17,22 +19,36 @@ var SEVERITY = {
     USER_CREATED: 'MEDIUM',
     USER_DELETED: 'CRITICAL',
     USER_EDITED: 'MEDIUM',
+    USER_ACTIVATED: 'MEDIUM',
     DEVICE_NEW: 'MEDIUM',
     DEVICE_APPROVED: 'MEDIUM',
     DEVICE_REJECTED: 'MEDIUM',
+    DEVICE_AUTO_APPROVED: 'MEDIUM',
+    DEVICE_PENDING: 'MEDIUM',
     LOCATION_NEW: 'MEDIUM',
     LOCATION_ALERT: 'HIGH',
+    LOCATION_APPROVED: 'MEDIUM',
+    LOCATION_REJECTED: 'MEDIUM',
+    LOCATION_REQUEST: 'INFO',
     VPN_DETECTED: 'HIGH',
     IMPOSSIBLE_TRAVEL: 'CRITICAL',
     GEO_FENCE_VIOLATION: 'CRITICAL',
     RISK_SCORE_CHANGED: 'MEDIUM',
+    RISK_SCORE_THRESHOLD_ADJUSTED: 'MEDIUM',
     USER_BLOCKED: 'HIGH',
     USER_UNBLOCKED: 'MEDIUM',
     USER_SUSPENDED: 'HIGH',
+    AUTO_BLOCK: 'CRITICAL',
     FORCE_LOGOUT: 'HIGH',
     PASSWORD_RESET: 'HIGH',
     PASSWORD_CHANGED: 'MEDIUM',
+    PROFILE_UPDATED: 'INFO',
     SESSION_REVOKED: 'CRITICAL',
+    STEP_UP_CHALLENGE: 'MEDIUM',
+    NETWORK_CHANGE: 'MEDIUM',
+    NETWORK_POLICY_MODIFIED: 'HIGH',
+    NETWORK_POLICY_ESTABLISHED: 'HIGH',
+    NETWORK_POLICY_RESCINDED: 'HIGH',
     CSRF_VIOLATION: 'CRITICAL',
     HMAC_VIOLATION: 'CRITICAL',
     SESSION_HIJACK_ATTEMPT: 'CRITICAL',
@@ -46,16 +62,11 @@ var SEVERITY = {
     SEGMENTATION_VIOLATION: 'CRITICAL'
 };
 
-/**
- * Get severity level for an event type.
- */
 function getSeverity(eventType) {
     return SEVERITY[eventType] || 'INFO';
 }
 
-/**
- * Add a new client for live event streaming (SSE).
- */
+// add a client to the live event stream
 function addClient(res) {
     liveClients.push(res);
     res.on('close', function() {
@@ -63,23 +74,19 @@ function addClient(res) {
     });
 }
 
-/**
- * Send an event to all live monitoring clients.
- */
+// send event to all connected live monitoring clients
 function broadcast(event) {
     var data = 'data: ' + JSON.stringify(event) + '\n\n';
     liveClients.forEach(function(client) {
         try {
             client.write(data);
         } catch (err) {
-            // Client disconnected, ignore
+            // client disconnected
         }
     });
 }
 
-/**
- * Log a security event to the database and broadcast to live clients.
- */
+// log a security event to the db and send to live clients
 async function logSecurityEvent(params) {
     var correlationId = params.correlation_id || (params.req ? params.req.correlationId : null) || null;
 
@@ -97,14 +104,14 @@ async function logSecurityEvent(params) {
         timestamp: new Date().toISOString()
     };
 
-    // Save to security_events table
+    // save to security_events table
     var { data: saved, error: saveError } = await supabase
         .from('security_events')
         .insert(event)
         .select()
         .single();
 
-    // If column doesn't exist, try without correlation_id
+    // fallback if correlation_id column doesnt exist yet
     if (saveError && saveError.code === '42703') {
         var fallback = Object.assign({}, event);
         delete fallback.correlation_id;
@@ -123,7 +130,7 @@ async function logSecurityEvent(params) {
         event.timestamp = saved.timestamp;
     }
 
-    // Also save to audit_log table
+    // also save to audit_log
     try {
         var auditRecord = {
             user_id: event.user_id,
@@ -140,17 +147,15 @@ async function logSecurityEvent(params) {
             await supabase.from('audit_log').insert(auditRecord);
         }
     } catch (err) {
-        // Audit log save failed - not critical
+        // audit save failed, not critical
     }
 
-    // Send to live monitoring clients
+    // send to live monitoring
     broadcast(event);
     return event;
 }
 
-/**
- * Get recent security events for the live monitoring page.
- */
+// get recent security events for the monitoring page
 async function getRecentEvents(limit) {
     limit = limit || 100;
     try {
@@ -162,7 +167,7 @@ async function getRecentEvents(limit) {
 
         if (!error && events && events.length > 0) return events;
     } catch (err) {
-        // Fall back to audit log
+        // fall through to audit log
     }
 
     try {
@@ -174,7 +179,7 @@ async function getRecentEvents(limit) {
 
         if (!auditLogs) return [];
 
-        // Get usernames
+        // get usernames
         var userIds = [];
         auditLogs.forEach(function(log) {
             if (log.user_id && userIds.indexOf(log.user_id) === -1) {
@@ -215,9 +220,7 @@ async function getRecentEvents(limit) {
     }
 }
 
-/**
- * Get stats for the last 24 hours.
- */
+// get stats for the last 24 hours
 async function getStats24h() {
     var since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     var rows = [];
@@ -230,7 +233,7 @@ async function getStats24h() {
 
         if (events && events.length > 0) rows = events;
     } catch (err) {
-        // Fall back to audit log
+        // fall through to audit log
     }
 
     if (rows.length === 0) {
@@ -248,7 +251,7 @@ async function getStats24h() {
                 };
             });
         } catch (err) {
-            // Stats unavailable
+            // stats not available
         }
     }
 
