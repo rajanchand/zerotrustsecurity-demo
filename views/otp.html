@@ -91,7 +91,7 @@
 
         <form id="verify-form">
             <div style="margin: 20px 0;">
-                <input type="text" id="token-input" class="code-input" placeholder="000000" maxlength="6" required autofocus autocomplete="one-time-code">
+                <input type="text" id="token-input" class="code-input" placeholder="0 0 0 | 0 0 0" maxlength="13" required autofocus autocomplete="one-time-code">
             </div>
             <button type="submit" class="verify-btn">Verify</button>
         </form>
@@ -153,8 +153,10 @@
                     if (csrfData && csrfData.csrfToken) csrfToken = csrfData.csrfToken;
                 }
 
+                var tokenVal = document.getElementById('token-input').value.replace(/[^0-9]/g, '');
+
                 var result = await postJSON('/api/verify-otp', {
-                    code: document.getElementById('token-input').value
+                    code: tokenVal
                 });
 
                 if (result.success) {
@@ -195,6 +197,19 @@
 
         loadSessionInfo();
         startTimer();
+
+        // format visual input
+        document.getElementById('token-input').addEventListener('input', function(e) {
+            var raw = e.target.value.replace(/[^0-9]/g, '');
+            var formatted = '';
+            for (var i = 0; i < raw.length; i++) {
+                if (i === 3) formatted += ' | ';
+                else if (i > 0 && i !== 3) formatted += ' ';
+                formatted += raw[i];
+            }
+            e.target.value = formatted;
+        });
+
         document.getElementById('verify-form').addEventListener('submit', verifyCode);
     </script>
 </body>

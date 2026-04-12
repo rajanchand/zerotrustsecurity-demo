@@ -17,7 +17,7 @@ function generateCSRFToken(req) {
 }
 
 // paths that skip csrf checking
-var SKIP_PATHS = ['/logout'];
+var SKIP_PATHS = ['/logout', '/mcp'];
 
 // check csrf token on POST/PUT/DELETE requests
 function csrfProtection(req, res, next) {

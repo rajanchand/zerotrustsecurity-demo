@@ -386,9 +386,29 @@
                 var div = document.createElement('div');
                 div.className = 'event-item';
                 var color = (evt.action.includes('FAIL') || evt.action.includes('BLOCK')) ? '#dc2626' : evt.action.includes('SUCCESS') ? '#16a34a' : '#2563eb';
-                div.innerHTML = '<div class="event-dot" style="background:' + color + '"></div>' +
-                    '<div class="event-text">' + evt.action.replace(/_/g, ' ') + (evt.detail ? ': ' + evt.detail : '') + '</div>' +
-                    '<div class="event-time">' + formatDate(evt.created_at) + '</div>';
+                
+                var detailHtml = '';
+                var isJson = false;
+                if (evt.detail) {
+                    var prettyStr = evt.detail;
+                    try { 
+                        if (typeof evt.detail === 'object') { 
+                            prettyStr = JSON.stringify(evt.detail, null, 2); isJson = true; 
+                        } else if (typeof evt.detail === 'string' && evt.detail.trim().startsWith('{')) { 
+                            prettyStr = JSON.stringify(JSON.parse(evt.detail), null, 2); isJson = true; 
+                        } 
+                    } catch(e) { isJson = false; }
+                    
+                    if (isJson) {
+                         detailHtml = '<div style="margin-top:4px;"><details><summary style="font-size:0.7rem; color:#2563eb; cursor:pointer; font-weight:600;">View technical details</summary><pre style="margin-top:8px; padding:10px; background:#f5f5f5; border:1px solid #ddd; border-radius:6px; font-family:monospace; font-size:0.7rem; overflow-x:auto;">' + prettyStr + '</pre></details></div>';
+                    } else {
+                         detailHtml = ': ' + evt.detail;
+                    }
+                }
+
+                div.innerHTML = '<div class="event-dot" style="background:' + color + '; margin-top:6px; align-self:flex-start;"></div>' +
+                    '<div class="event-text"><div><strong>' + evt.action.replace(/_/g, ' ') + '</strong>' + (isJson ? '' : detailHtml) + '</div>' + (isJson ? detailHtml : '') + '</div>' +
+                    '<div class="event-time" style="align-self:flex-start;">' + formatDate(evt.created_at) + '</div>';
                 container.appendChild(div);
             });
         }

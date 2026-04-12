@@ -134,7 +134,8 @@
         async function loadHistory() {
             try {
                 var res = await fetch('/api/monitor/events?limit=300');
-                events = await res.json();
+                var raw = await res.json();
+                events = raw.filter(function(e) { return !(e.details && e.details.path === '/mcp'); });
                 renderEvents();
                 updateStats();
             } catch (err) { console.error(err); }
@@ -203,6 +204,10 @@
                 try {
                     var data = JSON.parse(msg.data);
                     if (data.type === 'ping' || data.type === 'connected') return;
+                    
+                    // Filter out noisy system test pings
+                    if (data.details && data.details.path === '/mcp') return;
+
                     if (!isPaused) {
                         events.unshift(data);
                         if (events.length > MAX_EVENTS) events.pop();

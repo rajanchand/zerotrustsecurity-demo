@@ -182,29 +182,37 @@
 
         function drawLocations(data) {
             var el = document.getElementById('locationList');
-            if (data.length === 0) { el.innerHTML = '<div style="padding:32px; text-align:center; color:#aaa;">No data</div>'; return; }
+            if (!data || data.length === 0) { el.innerHTML = '<div style="padding:32px; text-align:center; color:#aaa;">No connection type data yet.</div>'; return; }
             var max = data[0].count || 1;
             var html = '';
+            var totalSum = data.reduce(function(acc, loc) { return acc + (loc.count || 0); }, 0) || 1;
             data.forEach(function(loc) {
                 var pct = Math.round((loc.count / max) * 100);
+                var pctTotal = Math.round((loc.count / totalSum) * 100);
                 var name = (loc.country || 'Unknown').replace('Infrastructure Internal', 'Local Network').replace('Infrastructure Segment', 'Local Network');
-                html += '<div class="loc-row"><div class="loc-name">' + name + '</div><div style="display:flex; align-items:center; gap:10px;"><div class="loc-bar"><div class="loc-bar-fill" style="width:' + pct + '%"></div></div><div class="loc-count">' + loc.count + '</div></div></div>';
+                html += '<div class="loc-row" title="' + name + ' — ' + loc.count + ' logins (' + pctTotal + '%)"><div class="loc-name">' + name + '</div><div style="display:flex; align-items:center; gap:10px;"><div class="loc-bar"><div class="loc-bar-fill" style="width:' + pct + '%"></div></div><div class="loc-count">' + loc.count + '</div></div></div>';
             });
             el.innerHTML = html;
         }
 
         function drawConnections(data) {
-            var total = (data.corporate || 0) + (data.home || 0) + (data.public || 0) + (data.vpn || 0) || 1;
-            ['corporate', 'home', 'public', 'vpn'].forEach(function(key) {
+            var total = (data.office || 0) + (data.secure_remote || 0) + (data.untrusted || 0) + (data.anonymized || 0);
+            if (total === 0) {
+                document.querySelector('.conn-grid').innerHTML = '<div style="grid-column: span 4; padding:32px; text-align:center; color:#aaa; font-size:0.85rem;">No connection type data yet. Waiting for classification engine.</div>';
+                return;
+            }
+            var mapping = { 'office': 'corporate', 'secure_remote': 'home', 'untrusted': 'public', 'anonymized': 'vpn' };
+            ['office', 'secure_remote', 'untrusted', 'anonymized'].forEach(function(key) {
                 var v = data[key] || 0;
-                document.getElementById('trust-' + key).textContent = v;
-                document.getElementById('trust-' + key + '-pct').textContent = Math.round(v / total * 100) + '%';
+                var domId = mapping[key];
+                document.getElementById('trust-' + domId).textContent = v;
+                document.getElementById('trust-' + domId + '-pct').textContent = Math.round(v / total * 100) + '%';
             });
         }
 
         function drawSessions(sessions) {
             var tbody = document.getElementById('sessionsBody');
-            if (sessions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#aaa;">No sessions.</td></tr>'; return; }
+            if (!sessions || sessions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:32px; color:#aaa;">No recent sessions in the selected period.</td></tr>'; return; }
             tbody.innerHTML = '';
             sessions.forEach(function(s) {
                 var risk = s.risk_score || 0;
