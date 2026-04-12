@@ -3,7 +3,7 @@ var geoService = require('../services/geoService');
 
 // track user behaviour and flag risky activity
 // looks at request rate and ip changes
-function flagHighRisk(req, res, next) {
+async function flagHighRisk(req, res, next) {
     if (!req.session?.userId) {
         return next();
     }
@@ -44,7 +44,8 @@ function flagHighRisk(req, res, next) {
 
     // too many requests in 2 minutes, add risk
     if (tracker.count > 200) {
-        var country = geoService.getCountryFromIP(ip) || 'Unknown';
+        var geoData1 = await geoService.getGeoFromIP(ip);
+        var country1 = geoData1.country || 'Unknown';
 
         if (!tracker.lastWarning || (now - tracker.lastWarning) > 60000) {
             tracker.lastWarning = now;
@@ -55,14 +56,15 @@ function flagHighRisk(req, res, next) {
                 user_id: userId,
                 username: req.session.username || 'System',
                 ip: ip,
-                location: country,
+                location: country1,
                 details: { reason: 'Too many requests', count: tracker.count }
             }).catch(function() {});
         }
     }
 
     if (tracker.lastIP && tracker.lastIP !== ip) {
-        var country = geoService.getCountryFromIP(ip) || 'Unknown';
+        var geoData2 = await geoService.getGeoFromIP(ip);
+        var country2 = geoData2.country || 'Unknown';
 
         tracker.riskBoost = Math.min(tracker.riskBoost + 20, 40);
 
@@ -71,7 +73,7 @@ function flagHighRisk(req, res, next) {
             user_id: userId,
             username: req.session.username || 'System',
             ip: ip,
-            location: country,
+            location: country2,
             details: { previous_ip: tracker.lastIP, current_ip: ip }
         }).catch(function() {});
 

@@ -88,6 +88,8 @@ function broadcast(event) {
 
 // log a security event to the db and send to live clients
 async function logSecurityEvent(params) {
+    if (params.username === 'System' && params.event_type === 'CSRF_STATE_VIOLATION') return null;
+
     var correlationId = params.correlation_id || (params.req ? params.req.correlationId : null) || null;
 
     var event = {

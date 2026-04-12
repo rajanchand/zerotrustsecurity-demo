@@ -79,6 +79,10 @@ if (process.env.DATABASE_URL) {
         tableName: 'session'
     });
 } else {
+    if (isProduction) {
+        console.error('ERROR: DATABASE_URL is missing. Postgres session store is required in production.');
+        process.exit(1);
+    }
     console.warn('WARNING: DATABASE_URL not set. Falling back to MemoryStore for sessions.');
 }
 
