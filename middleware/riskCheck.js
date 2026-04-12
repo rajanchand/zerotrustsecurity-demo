@@ -44,8 +44,7 @@ function flagHighRisk(req, res, next) {
 
     // too many requests in 2 minutes, add risk
     if (tracker.count > 200) {
-        var locationData = geoService.getLocation(ip);
-        var country = locationData ? locationData.country : 'Unknown';
+        var country = geoService.getCountryFromIP(ip) || 'Unknown';
 
         if (!tracker.lastWarning || (now - tracker.lastWarning) > 60000) {
             tracker.lastWarning = now;
@@ -63,8 +62,7 @@ function flagHighRisk(req, res, next) {
     }
 
     if (tracker.lastIP && tracker.lastIP !== ip) {
-        var locationData = geoService.getLocation(ip);
-        var country = locationData ? locationData.country : 'Unknown';
+        var country = geoService.getCountryFromIP(ip) || 'Unknown';
 
         tracker.riskBoost = Math.min(tracker.riskBoost + 20, 40);
 
