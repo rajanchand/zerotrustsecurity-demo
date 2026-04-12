@@ -1,9 +1,7 @@
 var { logSecurityEvent } = require('../services/monitorService');
 
-/**
- * Middleware: restrict access to specific departments.
- * SuperAdmin always passes.
- */
+// restrict access to specific departments
+// superadmin always gets through
 function requireDepartmentAccess(allowedDepartments) {
     return function(req, res, next) {
         if (req.session.role === 'SuperAdmin') {

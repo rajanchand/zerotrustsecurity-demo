@@ -2,33 +2,30 @@ var { logSecurityEvent } = require('../services/monitorService');
 var { supabase } = require('../db');
 var { generateOTP } = require('../services/otpService');
 
-// Pages that don't need login
+// pages that dont need login
 var PUBLIC_PATHS = [
     '/login', '/logout', '/otp', '/verify-otp',
     '/api/login', '/api/verify-otp', '/api/session',
     '/css', '/js', '/api/csrf-token'
 ];
 
-// How often to check the database for user status changes (10 seconds)
+// check user status from db every 10 seconds
 var SESSION_CHECK_INTERVAL = 10 * 1000;
 
-/**
- * Main login check middleware.
- * Makes sure the user is logged in and their session is still valid.
- */
+// main login check, runs on every request
 async function requireLogin(req, res, next) {
 
-    // Skip login check for public pages
+    // skip check for public pages
     if (PUBLIC_PATHS.some(function(p) { return req.path === p || req.path.startsWith(p + '/'); })) {
         return next();
     }
 
-    // Not logged in? Go to login page
+    // not logged in, send to login
     if (!req.session || !req.session.userId) {
         return res.redirect('/login');
     }
 
-    // Check working hours, defaults to 0-24 if not configured
+    // check working hours from env
     var currentHour = new Date().getUTCHours();
     var START_HOUR = parseInt(process.env.WORK_HOURS_START, 10);
     if (isNaN(START_HOUR)) START_HOUR = 0;
@@ -45,12 +42,12 @@ async function requireLogin(req, res, next) {
         return;
     }
 
-    // High risk users go to security block page
+    // high risk users go to security block page
     if (req.session.highRisk && req.path !== '/security-block' && req.path !== '/logout') {
         return res.redirect('/security-block');
     }
 
-    // Check for inactivity (15 minutes)
+    // timeout after 15 mins of no activity
     var now = Date.now();
     var lastActive = req.session.lastActive || now;
     var TIMEOUT = 15 * 60 * 1000;
@@ -74,21 +71,22 @@ async function requireLogin(req, res, next) {
 
     req.session.lastActive = now;
 
-    // Check if user needs to re-verify (IP changed or off-hours)
+    // if user already verified otp, check if they need to reverify
     if (req.session.otpVerified) {
         var needsReVerify = false;
         var reason = '';
 
-        // IP address changed since last OTP
+        // get client ip
         var rawIP = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
         var currentIP = rawIP.split(',')[0].trim().replace('::ffff:', '');
 
+        // ip changed since last otp verification
         if (req.session.mfaVerifiedIp && currentIP !== req.session.mfaVerifiedIp) {
             needsReVerify = true;
             reason = 'IP address changed';
         }
 
-        // Off-hours access
+        // check if currently off hours
         var { isOffHours } = require('../services/policyService');
         var offHours = isOffHours(new Date(), req.session.timezoneOffset || 0);
 
@@ -117,7 +115,7 @@ async function requireLogin(req, res, next) {
         }
     }
 
-    // Check device fingerprint matches
+    // device fingerprint check
     var deviceFP = req.headers['x-device-fingerprint'];
     if (deviceFP && req.session.deviceFingerprint && deviceFP !== req.session.deviceFingerprint) {
         logSecurityEvent({
@@ -138,7 +136,7 @@ async function requireLogin(req, res, next) {
         return;
     }
 
-    // Periodically check database for account status changes
+    // periodically check db for account status changes
     var lastCheck = req.session.lastSessionCheck || 0;
     if (now - lastCheck > SESSION_CHECK_INTERVAL && req.session.sessionToken) {
         req.session.lastSessionCheck = now;
@@ -150,9 +148,9 @@ async function requireLogin(req, res, next) {
                 .single();
 
             if (user) {
-                // Account blocked or suspended
+                // account blocked or suspended
                 if (user.status !== 'active' && user.role !== 'SuperAdmin') {
-                    await logSecurityEvent({
+                    logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
                         user_id: req.session.userId,
                         username: req.session.username || 'unknown',
@@ -165,21 +163,21 @@ async function requireLogin(req, res, next) {
                     });
                 }
 
-                // Sync role if changed by admin
+                // sync role if admin changed it
                 if (user.role !== req.session.role) {
                     req.session.role = user.role;
                 }
 
-                // Sync permissions if changed
+                // sync permissions if changed
                 var currentPerms = JSON.stringify(req.session.permissions || {});
                 var dbPerms = JSON.stringify(user.permissions || {});
                 if (currentPerms !== dbPerms) {
                     req.session.permissions = user.permissions || {};
                 }
 
-                // Logged in from another device - kick this session
+                // kick session if user logged in from another device
                 if (user.active_session_token && user.active_session_token !== req.session.sessionToken) {
-                    await logSecurityEvent({
+                    logSecurityEvent({
                         event_type: 'FORCE_LOGOUT',
                         user_id: req.session.userId,
                         username: req.session.username || 'unknown',
@@ -193,7 +191,7 @@ async function requireLogin(req, res, next) {
                     });
                 }
 
-                // Password expired (90 days)
+                // password expired after 90 days
                 if (user.password_changed_at) {
                     var lastChanged = new Date(user.password_changed_at).getTime();
                     var ninetyDays = 90 * 24 * 60 * 60 * 1000;
@@ -203,11 +201,11 @@ async function requireLogin(req, res, next) {
                 }
             }
         } catch (err) {
-            // Database check failed - not critical, skip
+            // db check failed, not critical so just skip
         }
     }
 
-    // Force password change if expired
+    // force password change if expired
     if (
         req.session.passwordExpired &&
         req.path !== '/profile' &&
@@ -224,7 +222,7 @@ async function requireLogin(req, res, next) {
         return res.redirect('/profile?msg=password_expired');
     }
 
-    // Must complete OTP before accessing other pages
+    // must finish otp before accessing other pages
     if (req.path !== '/otp' && req.path !== '/verify-otp' && !req.session.otpVerified) {
         return res.redirect('/otp');
     }

@@ -1,7 +1,5 @@
-/**
- * Middleware: check if the user's role is allowed to access a route.
- * SuperAdmin always passes.
- */
+// check if user role is allowed for this route
+// superadmin always gets through
 function requireRole(allowedRoles) {
     return function(req, res, next) {
         var userRole = req.session.role;

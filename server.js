@@ -6,17 +6,16 @@ var helmet = require('helmet');
 var path = require('path');
 var crypto = require('crypto');
 
-// Create the app
 var app = express();
 var isProduction = process.env.NODE_ENV === 'production';
 
-// Check session secret in production
+// make sure session secret is set in production
 if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'zts-default-secret')) {
     console.error('ERROR: Session secret is missing. Set SESSION_SECRET in your .env file.');
     process.exit(1);
 }
 
-// Security headers
+// security headers using helmet
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -28,36 +27,36 @@ app.use(helmet({
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'", process.env.GRAFANA_URL || "*"],
             frameSrc: ["'self'", process.env.GRAFANA_URL || "*"],
-            upgradeInsecureRequests: null
+            upgradeInsecureRequests: isProduction ? [] : null
         }
     },
     crossOriginEmbedderPolicy: false,
     hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false
 }));
 
-// Trust proxy (for Cloudflare)
+// trust proxy for cloudflare
 app.set('trust proxy', 1);
 
-// Body parsing and static files
+// body parsing + static files
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Add a unique ID to each request for tracking
+// add a unique id to each request for tracking
 app.use(function(req, res, next) {
     req.correlationId = crypto.randomUUID();
     res.setHeader('X-Correlation-ID', req.correlationId);
     next();
 });
 
-// Disable caching for security
+// no caching for security pages
 app.use(function(req, res, next) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     next();
 });
 
-// Session setup (persistent PostgreSQL store)
+// session config (postgres backed via connect-pg-simple)
 var sessionOptions = {
     secret: process.env.SESSION_SECRET || 'zts-default-secret',
     resave: false,
@@ -65,7 +64,7 @@ var sessionOptions = {
     cookie: {
         secure: isProduction,
         httpOnly: true,
-        maxAge: 30 * 60 * 1000, // 30 mins
+        maxAge: 30 * 60 * 1000,
         sameSite: 'strict'
     },
     rolling: true
@@ -85,12 +84,12 @@ if (process.env.DATABASE_URL) {
 
 app.use(session(sessionOptions));
 
-// Middleware imports
+// middleware
 var { csrfProtection, generateCSRFToken } = require('./middleware/csrf');
 var { apiLimiter } = require('./middleware/rateLimiter');
 var { verifyHMAC } = require('./middleware/hmacVerify');
 
-// Route imports
+// routes
 var authRoutes = require('./routes/authRoutes');
 var dashboardRoutes = require('./routes/dashboardRoutes');
 var profileRoutes = require('./routes/profileRoutes');
@@ -104,7 +103,7 @@ var { requireRole } = require('./middleware/rbac');
 var { flagHighRisk } = require('./middleware/riskCheck');
 var { handleReAuth } = require('./middleware/stepUpAuth');
 
-// Metrics endpoint (only accessible from localhost in production)
+// prometheus metrics (only from localhost in prod)
 var { register } = require('./services/metricservice');
 app.get('/metrics', async function(req, res) {
     var ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
@@ -117,46 +116,46 @@ app.get('/metrics', async function(req, res) {
     res.end(await register.metrics());
 });
 
-// Rate limiting for APIs
+// rate limit on api routes
 app.use('/api', apiLimiter);
 
-// CSRF configuration (must be above public routes since login uses CSRF)
+// csrf token setup
 app.use(csrfProtection);
 app.get('/api/csrf-token', function(req, res) {
     var token = generateCSRFToken(req);
     res.json({ csrfToken: token });
 });
 
-// Authentication and Public Routes
-// Mounted BEFORE requireLogin so they are never blocked in an infinite loop
+// auth routes go before requireLogin so login page is accessible
 app.use('/', authRoutes);
 
-// Apply Security Middleware to all Sub-Routes
+// security block page needs to be before requireLogin too
+// otherwise high risk users get stuck in a redirect loop
+app.get('/security-block', function(req, res) {
+    res.sendFile(path.join(__dirname, 'views', 'security-block.html'));
+});
+
+// everything below here requires login
 app.use(requireLogin);
 app.use(flagHighRisk);
 app.use(verifyHMAC);
 
-// Re-auth endpoint
+// re-auth endpoint for sensitive actions
 app.post('/api/verify-reauth', handleReAuth);
 
-// Routes - open to logged-in users
+// logged in user routes
 app.use('/', dashboardRoutes);
 app.use('/', profileRoutes);
 
-// Routes - restricted by role
+// role restricted routes
 app.use('/', requireRole(['SuperAdmin', 'HR', 'IT']), mappingRoutes);
 app.use('/', requireRole(['SuperAdmin', 'IT']), monitoringRoutes);
 app.use('/', requireRole(['SuperAdmin', 'IT']), networkRoutes);
 app.use('/', securityPostureRoutes);
 
-// Home page redirect
+// home page just goes to dashboard
 app.get('/', function(req, res) {
     res.redirect('/dashboard');
-});
-
-// Security block page
-app.get('/security-block', function(req, res) {
-    res.sendFile(path.join(__dirname, 'views', 'security-block.html'));
 });
 
 // 404 page
@@ -164,8 +163,7 @@ app.use(function(req, res) {
     res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
 });
 
-// --- Server Start ---
-
+// start the server
 var PORT = process.env.PORT || 3000;
 var server = app.listen(PORT, '0.0.0.0', function() {
     console.log('\n================================');
@@ -178,8 +176,7 @@ var server = app.listen(PORT, '0.0.0.0', function() {
     console.log('  Server is ready.\n');
 });
 
-// --- Error Handling ---
-
+// error handling
 process.on('unhandledRejection', function(reason) {
     console.error('Unhandled error:', reason);
 });
@@ -189,12 +186,15 @@ process.on('uncaughtException', function(err) {
     process.exit(1);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', function() {
+// graceful shutdown on SIGTERM and SIGINT (ctrl+c)
+function shutdownServer() {
     console.log('Shutting down server...');
     server.close(function() {
         console.log('Server stopped.');
         process.exit(0);
     });
     setTimeout(function() { process.exit(1); }, 10000);
-});
+}
+
+process.on('SIGTERM', shutdownServer);
+process.on('SIGINT', shutdownServer);

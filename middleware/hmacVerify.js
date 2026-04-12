@@ -1,20 +1,18 @@
 var crypto = require('crypto');
 
-// HMAC secret for request signing
+// hmac secret for signing requests
 var HMAC_SECRET = process.env.HMAC_SECRET || process.env.SESSION_SECRET || 'zts-hmac-default';
 
-// Requests older than 5 minutes are rejected
+// reject requests older than 5 minutes
 var MAX_AGE = 5 * 60 * 1000;
 
-/**
- * Middleware: verify HMAC signature on requests.
- * If no signature header is sent, skip (not all requests need it).
- */
+// verify hmac signature on incoming requests
+// if no signature header is sent we just skip
 function verifyHMAC(req, res, next) {
     var signature = req.headers['x-hmac-signature'];
     var timestamp = req.headers['x-hmac-timestamp'];
 
-    // No signature? Skip HMAC check
+    // no signature sent, skip hmac check
     if (!signature) {
         req.hmacVerified = false;
         return next();
@@ -31,7 +29,7 @@ function verifyHMAC(req, res, next) {
         return res.status(403).json({ success: false, message: 'Request expired. Please try again.' });
     }
 
-    // Build the expected signature
+    // build expected signature
     var sessionToken = req.session?.sessionToken || '';
     var body = JSON.stringify(req.body || {});
     var payload = sessionToken + body + timestamp;
@@ -41,7 +39,7 @@ function verifyHMAC(req, res, next) {
         .update(payload)
         .digest('hex');
 
-    // Compare using timing-safe method
+    // timing safe comparison
     var isValid = false;
     if (signature.length === expected.length) {
         isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
@@ -69,9 +67,7 @@ function verifyHMAC(req, res, next) {
     next();
 }
 
-/**
- * Generate an HMAC signature for a request.
- */
+// generate hmac for outgoing requests
 function generateHMAC(sessionToken, requestBody, timestamp) {
     var payload = sessionToken + JSON.stringify(requestBody || {}) + timestamp;
     return crypto.createHmac('sha256', HMAC_SECRET).update(payload).digest('hex');

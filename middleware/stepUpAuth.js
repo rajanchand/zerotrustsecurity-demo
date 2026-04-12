@@ -2,13 +2,11 @@ var bcrypt = require('bcryptjs');
 var { supabase } = require('../db');
 var { logEvent } = require('../services/auditService');
 
-// Re-auth is valid for 5 minutes
+// re-auth window lasts 5 minutes
 var REAUTH_WINDOW = 5 * 60 * 1000;
 
-/**
- * Middleware: require password confirmation for sensitive actions.
- * If the user recently confirmed, let them through. Otherwise ask for password.
- */
+// check if user recently confirmed their password
+// if they did it within 5 mins let them through, otherwise ask again
 function requireReAuth(req, res, next) {
     if (!req.session?.userId) {
         return res.status(401).json({ success: false, message: 'Please log in.' });
@@ -28,9 +26,7 @@ function requireReAuth(req, res, next) {
     });
 }
 
-/**
- * Handle the password confirmation request.
- */
+// handle the password confirmation
 async function handleReAuth(req, res) {
     try {
         var password = req.body.password || '';

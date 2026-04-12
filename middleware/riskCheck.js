@@ -1,9 +1,7 @@
 var { logSecurityEvent } = require('../services/monitorService');
 
-/**
- * Middleware: monitor user behaviour and flag high-risk activity.
- * Checks for too many requests or IP address changes.
- */
+// track user behaviour and flag risky activity
+// looks at request rate and ip changes
 function flagHighRisk(req, res, next) {
     if (!req.session?.userId) {
         return next();
@@ -12,35 +10,39 @@ function flagHighRisk(req, res, next) {
     var userId = req.session.userId;
     var now = Date.now();
 
-    // Check if user already has a risk score from login
+    // carry over risk score from login
     if (req.session.riskScore) {
         req.session.highRisk = req.session.riskScore > 60;
     }
 
-    // Set up tracking for this user
+    // setup tracking for this user if not done yet
     if (!req.session.requestTracker) {
         req.session.requestTracker = {
-            requests: [],
+            count: 0,
+            windowStart: now,
             lastIP: req.ip,
             riskBoost: 0
         };
     }
 
     var tracker = req.session.requestTracker;
-    tracker.requests.push(now);
+    tracker.count++;
 
-    // Only keep requests from the last 2 minutes
+    // reset counter every 2 minutes
     var twoMinutesAgo = now - 2 * 60 * 1000;
-    tracker.requests = tracker.requests.filter(function(t) { return t > twoMinutesAgo; });
+    if (tracker.windowStart < twoMinutesAgo) {
+        tracker.count = 1;
+        tracker.windowStart = now;
+    }
 
-    // Get clean IP address
+    // get clean ip address
     var ip = (req.headers['x-forwarded-for'] || req.ip || '127.0.0.1')
         .split(',')[0]
         .trim()
         .replace('::ffff:', '');
 
-    // Too many requests in 2 minutes? Add risk
-    if (tracker.requests.length > 200) {
+    // too many requests in 2 minutes, add risk
+    if (tracker.count > 200) {
         if (!tracker.lastWarning || (now - tracker.lastWarning) > 60000) {
             tracker.lastWarning = now;
             tracker.riskBoost = Math.min(tracker.riskBoost + 10, 40);
@@ -50,12 +52,12 @@ function flagHighRisk(req, res, next) {
                 user_id: userId,
                 username: req.session.username || 'System',
                 ip: req.ip,
-                details: { reason: 'Too many requests', count: tracker.requests.length }
+                details: { reason: 'Too many requests', count: tracker.count }
             }).catch(function() {});
         }
     }
 
-    // IP address changed mid-session? Add risk
+    // ip changed mid session, thats suspicious
     if (tracker.lastIP && tracker.lastIP !== ip) {
         tracker.riskBoost = Math.min(tracker.riskBoost + 20, 40);
 
@@ -70,13 +72,13 @@ function flagHighRisk(req, res, next) {
         tracker.lastIP = ip;
     }
 
-    // Apply risk boost to session
+    // apply the risk boost
     if (tracker.riskBoost > 0) {
         var currentRisk = req.session.riskScore || 0;
         var totalRisk = Math.min(currentRisk + tracker.riskBoost, 100);
         req.session.highRisk = totalRisk > 60;
 
-        // Slowly reduce the boost over time
+        // slowly reduce the boost over time
         tracker.riskBoost = Math.max(0, tracker.riskBoost - 1);
     }
 

@@ -1,8 +1,6 @@
 var crypto = require('crypto');
 
-/**
- * Compare two tokens safely (prevents timing attacks).
- */
+// timing safe comparison to prevent timing attacks
 function safeCompare(a, b) {
     if (!a || !b || a.length !== b.length) {
         return false;
@@ -10,9 +8,7 @@ function safeCompare(a, b) {
     return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
-/**
- * Generate a CSRF token for the session.
- */
+// create a csrf token if session doesnt have one
 function generateCSRFToken(req) {
     if (!req.session.csrfToken) {
         req.session.csrfToken = crypto.randomBytes(32).toString('hex');
@@ -20,19 +16,17 @@ function generateCSRFToken(req) {
     return req.session.csrfToken;
 }
 
-// Pages that don't need CSRF checking
+// paths that skip csrf checking
 var SKIP_PATHS = ['/logout'];
 
-/**
- * Middleware: validate CSRF token on POST/PUT/DELETE requests.
- */
+// check csrf token on POST/PUT/DELETE requests
 function csrfProtection(req, res, next) {
-    // GET requests don't need CSRF
+    // GET requests dont need csrf
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         return next();
     }
 
-    // Skip for specifically excluded paths
+    // skip excluded paths
     if (SKIP_PATHS.includes(req.path)) {
         return next();
     }

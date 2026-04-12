@@ -1,7 +1,5 @@
-/**
- * Check if a password meets the minimum requirements.
- * Returns { valid: true/false, errors: [...] }
- */
+// check if password meets our requirements
+// returns { valid: true/false, errors: [...] }
 function validatePassword(password) {
     var errors = [];
 

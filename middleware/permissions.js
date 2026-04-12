@@ -1,10 +1,7 @@
-/**
- * Middleware: check if a user has a specific permission.
- * SuperAdmin always passes. Other roles need the permission set in their profile.
- */
+// check if user has a specific permission
+// superadmin can do everything, others need the permission set
 function requirePermission(permissionName) {
     return function(req, res, next) {
-        // SuperAdmin can do everything
         if (req.session.role === 'SuperAdmin') {
             return next();
         }
@@ -15,7 +12,7 @@ function requirePermission(permissionName) {
             return next();
         }
 
-        // Check if it's an API request
+        // check if its an api or page request
         var isApiRequest = req.xhr || (req.headers?.accept || '').includes('json');
 
         if (isApiRequest) {

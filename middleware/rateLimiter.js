@@ -2,7 +2,7 @@ var rateLimit = require('express-rate-limit');
 
 var isProduction = process.env.NODE_ENV === 'production';
 
-// Limit login attempts (10 per 15 min in production)
+// login attempts: 10 per 15 mins in prod
 var loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: isProduction ? 10 : 200,
@@ -12,7 +12,7 @@ var loginLimiter = rateLimit({
     validate: { xForwardedForHeader: false }
 });
 
-// Limit OTP attempts (5 per 5 min in production)
+// otp attempts: 5 per 5 mins in prod
 var otpLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
     max: isProduction ? 5 : 100,
@@ -22,7 +22,7 @@ var otpLimiter = rateLimit({
     validate: { xForwardedForHeader: false }
 });
 
-// General API rate limit (200 per 15 min in production)
+// general api limit: 200 per 15 mins in prod
 var apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: isProduction ? 200 : 2000,
