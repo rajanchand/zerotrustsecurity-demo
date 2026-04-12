@@ -79,7 +79,7 @@
         <div class="card">
             <div class="card-head">
                 <h3>All Rules</h3>
-                <button class="small-btn" onclick="loadRules()">Refresh</button>
+                <button class="small-btn" onclick="loadRules(true)">Refresh</button>
             </div>
             <table>
                 <thead><tr><th>IP Address</th><th>Action</th><th>Reason</th><th>Created By</th><th>Options</th></tr></thead>
@@ -137,7 +137,7 @@
             else { showToast(res.message || 'Error', 'error'); }
         }
 
-        async function loadRules() {
+        async function loadRules(isRefreshClick = false) {
             try {
                 var session = await (await fetch('/api/session')).json();
                 if (!session.loggedIn) return location.href = '/login';
@@ -154,6 +154,7 @@
 
                 if (rules.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:#aaa;">No rules yet.</td></tr>';
+                    if (isRefreshClick) showToast('Rules refreshed', 'success');
                     return;
                 }
 
@@ -167,7 +168,8 @@
                         '<td><button class="small-btn red" onclick="deleteRule(\'' + rule.id + '\')">Delete</button></td>';
                     tbody.appendChild(tr);
                 });
-            } catch (err) { console.error(err); }
+                if (isRefreshClick) showToast('Rules refreshed', 'success');
+            } catch (err) { console.error(err); if (isRefreshClick) showToast('Failed to refresh rules', 'error'); }
         }
 
         loadRules();

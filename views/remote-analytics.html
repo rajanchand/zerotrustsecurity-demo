@@ -67,7 +67,7 @@
     <div class="container">
         <div class="page-top">
             <div><h1>Analytics</h1><p>Usage, sessions, and connection data</p></div>
-            <button class="small-btn" onclick="loadData()">Refresh</button>
+            <button class="small-btn" onclick="loadData(true)">Refresh</button>
         </div>
 
         <div class="stats-row">
@@ -150,7 +150,7 @@
             await loadData();
         }
 
-        async function loadData() {
+        async function loadData(isRefreshClick = false) {
             try {
                 var res = await fetch('/api/admin/remote-analytics');
                 var data = await res.json();
@@ -167,7 +167,6 @@
                 var risk = data.kpis.avgRiskScore || 0;
                 document.getElementById('kpi-avgrisk').style.color = risk >= 60 ? '#dc2626' : risk >= 30 ? '#d97706' : '#16a34a';
 
-
                 drawLocations(data.topLocations || []);
                 drawConnections(data.networkTrust || {});
                 drawSessions(data.recentSessions || []);
@@ -176,7 +175,9 @@
                 uniqueUsersData = data.uniqueOffHoursUsers || [];
                 vpnData = data.vpnEvents || [];
                 fillModals();
-            } catch (err) { console.error(err); }
+                
+                if (isRefreshClick) showToast('Analytics data refreshed', 'success');
+            } catch (err) { console.error(err); if (isRefreshClick) showToast('Failed to refresh data', 'error'); }
         }
 
 
