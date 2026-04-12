@@ -1,24 +1,21 @@
-const crypto = require('crypto');
-const { supabase } = require('../db');
-const { sendOTPEmail } = require('./emailService');
-const { encrypt, decrypt } = require('./encryptionService');
+var crypto = require('crypto');
+var { supabase } = require('../db');
+var { sendOTPEmail } = require('./emailService');
+var { encrypt, decrypt } = require('./encryptionService');
 
-/**
- * Generate and send an OTP code to a user.
- * @param {string|number} userId - The user's ID.
- */
-const generateOTP = async (userId) => {
-    const otpCode = String(100000 + crypto.randomInt(900000));
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+// generate a 6 digit otp and send it to the user
+async function generateOTP(userId) {
+    var otpCode = String(100000 + crypto.randomInt(900000));
+    var expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-    // Mark old codes as used
+    // mark old codes as used first
     await supabase
         .from('otp_store')
         .update({ used: true })
         .eq('user_id', userId)
         .eq('used', false);
 
-    const encryptedCode = encrypt(otpCode);
+    var encryptedCode = encrypt(otpCode);
 
     await supabase.from('otp_store').insert({
         user_id: userId,
@@ -26,30 +23,29 @@ const generateOTP = async (userId) => {
         expires_at: expiresAt
     });
 
-    const { data: user } = await supabase
+    var { data: user } = await supabase
         .from('users')
         .select('email, username')
         .eq('id', userId)
         .single();
 
-    if (user?.email) {
-        console.log(`\n[OTP] Code: ${otpCode} | User: ${user.username}\n`);
+    if (user && user.email) {
+        // only log otp to console in dev mode
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('\n[OTP] Code: ' + otpCode + ' | User: ' + user.username + '\n');
+        }
 
-        sendOTPEmail(user.email, user.username, otpCode).catch(() => {
-            console.error(`[OTP] Failed to send code for user ID: ${userId}`);
+        sendOTPEmail(user.email, user.username, otpCode).catch(function() {
+            console.error('[OTP] Failed to send code for user ID: ' + userId);
         });
     }
 
     return otpCode;
-};
+}
 
-/**
- * Verify an OTP code for a user.
- * @param {string|number} userId - The user's ID.
- * @param {string} inputCode - The code the user entered.
- */
-const verifyOTP = async (userId, inputCode) => {
-    const { data: activeCodes } = await supabase
+// verify the otp code user entered
+async function verifyOTP(userId, inputCode) {
+    var { data: activeCodes } = await supabase
         .from('otp_store')
         .select('*')
         .eq('user_id', userId)
@@ -57,13 +53,14 @@ const verifyOTP = async (userId, inputCode) => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-    if (!activeCodes?.length) {
+    if (!activeCodes || !activeCodes.length) {
         return { valid: false, reason: 'No active code found.' };
     }
 
-    let matchedCode = null;
-    for (const record of activeCodes) {
-        const decrypted = decrypt(record.code);
+    var matchedCode = null;
+    for (var i = 0; i < activeCodes.length; i++) {
+        var record = activeCodes[i];
+        var decrypted = decrypt(record.code);
         if (decrypted === inputCode || record.code === inputCode) {
             matchedCode = record;
             break;
@@ -84,6 +81,6 @@ const verifyOTP = async (userId, inputCode) => {
         .eq('id', matchedCode.id);
 
     return { valid: true };
-};
+}
 
-module.exports = { generateOTP, verifyOTP };
+module.exports = { generateOTP: generateOTP, verifyOTP: verifyOTP };

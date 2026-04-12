@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
+var { createClient } = require('@supabase/supabase-js');
 
 // Database connection settings
 var dbUrl = process.env.SUPABASE_URL;
