@@ -1,55 +1,55 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const UAParser = require('ua-parser-js');
+var express = require('express');
+var bcrypt = require('bcryptjs');
+var crypto = require('crypto');
+var UAParser = require('ua-parser-js');
 
-const { supabase } = require('../db');
-const { generateOTP, verifyOTP } = require('../services/otpService');
-const { sendLoginAlertEmail, sendAnomalyAlertEmail } = require('../services/emailService');
-const { calculateRisk } = require('../services/riskEngine');
-const { registerDevice, approveDevice } = require('../services/deviceService');
-const { getGeoFromIP, isVPNConnection, checkImpossibleTravel } = require('../services/geoService');
-const { logEvent } = require('../services/auditService');
-const { logSecurityEvent } = require('../services/monitorService');
-const { generateCSRFToken } = require('../middleware/csrf');
-const { loginLimiter, otpLimiter } = require('../middleware/rateLimiter');
-const metrics = require('../services/metricservice');
-const { sendSlackAlert } = require('../services/slackService');
-const { classifyNetwork } = require('../services/networkTrustService');
-const { isOffHours } = require('../services/policyService');
+var { supabase } = require('../db');
+var { generateOTP, verifyOTP } = require('../services/otpService');
+var { sendLoginAlertEmail, sendAnomalyAlertEmail } = require('../services/emailService');
+var { calculateRisk } = require('../services/riskEngine');
+var { registerDevice, approveDevice } = require('../services/deviceService');
+var { getGeoFromIP, isVPNConnection, checkImpossibleTravel } = require('../services/geoService');
+var { logEvent } = require('../services/auditService');
+var { logSecurityEvent } = require('../services/monitorService');
+var { generateCSRFToken } = require('../middleware/csrf');
+var { loginLimiter, otpLimiter } = require('../middleware/rateLimiter');
+var metrics = require('../services/metricservice');
+var { sendSlackAlert } = require('../services/slackService');
+var { classifyNetwork } = require('../services/networkTrustService');
+var { isOffHours } = require('../services/policyService');
 
-const router = express.Router();
+var router = express.Router();
 
-const PRIVILEGED_AUTO_APPROVAL_ROLES = ['SuperAdmin', 'IT'];
+// roles that get their devices auto-approved
+var PRIVILEGED_AUTO_APPROVAL_ROLES = ['SuperAdmin', 'IT'];
 
-const getClientIP = (req) => {
-    const ipHeader = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
+// get the real client ip, handles cloudflare and proxies
+function getClientIP(req) {
+    var ipHeader = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
     return ipHeader.split(',')[0].trim().replace('::ffff:', '');
-};
+}
 
-router.get('/login', loginLimiter, (req, res) => {
+// show login page
+router.get('/login', loginLimiter, function(req, res) {
     res.sendFile('login.html', { root: 'views' });
 });
 
-router.post('/api/login', loginLimiter, async (req, res) => {
+// handle login form submission
+router.post('/api/login', loginLimiter, async function(req, res) {
     try {
-        const username = (req.body.username || '').trim();
-        const password = req.body.password || '';
-        const fingerprint = req.body.fingerprint || 'unknown-device';
+        var username = (req.body.username || '').trim();
+        var password = req.body.password || '';
+        var fingerprint = req.body.fingerprint || 'unknown-device';
 
         if (!username || !password) {
             return res.json({ success: false, message: 'Username and password are required.' });
         }
 
-        const clientIP = getClientIP(req);
+        var clientIP = getClientIP(req);
 
-        // Check if login is outside working hours
-        if (isOffHours(new Date())) {
-            // Optional: Log attempt during restricted hours
-        }
-
+        // check if this ip is blocked
         try {
-            const { data: networkRule } = await supabase
+            var { data: networkRule } = await supabase
                 .from('ip_rules')
                 .select('action, reason')
                 .eq('ip_address', clientIP)
@@ -67,10 +67,11 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                 return res.json({ success: false, message: 'Access denied from this IP address.' });
             }
         } catch (err) {
-            // No restrictive rule found
+            // no block rule found, thats fine
         }
 
-        const { data: user } = await supabase
+        // look up the user
+        var { data: user } = await supabase
             .from('users')
             .select('*')
             .eq('username', username)
@@ -83,10 +84,11 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                 ip: clientIP,
                 req: req,
                 details: { reason: 'User not found' }
-            }).catch(() => {});
+            }).catch(function() {});
             return res.json({ success: false, message: 'Wrong username or password.' });
         }
 
+        // blocked accounts cant log in (except superadmin)
         if (user.status === 'blocked' && user.role !== 'SuperAdmin') {
             await logEvent(user.id, 'LOGIN_BLOCKED', 'Blocked user tried to log in', clientIP, req.correlationId);
             return res.json({ success: false, message: 'Your account is blocked. Please contact admin.' });
@@ -97,9 +99,10 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             return res.json({ success: false, message: 'Your account is suspended. Please contact admin.' });
         }
 
+        // lockout after 5 failed attempts for 30 mins
         if (user.failed_attempts >= 5 && user.role !== 'SuperAdmin') {
-            const lockoutTime = 30 * 60 * 1000; 
-            const lastFail = user.last_failed_at ? new Date(user.last_failed_at).getTime() : 0;
+            var lockoutTime = 30 * 60 * 1000;
+            var lastFail = user.last_failed_at ? new Date(user.last_failed_at).getTime() : 0;
             if (Date.now() - lastFail < lockoutTime) {
                 await logEvent(user.id, 'LOGIN_LOCKED', 'Locked user tried to log in', clientIP);
                 return res.json({ success: false, message: 'Too many failed attempts. Try again in 30 minutes.' });
@@ -108,15 +111,16 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             user.failed_attempts = 0;
         }
 
-        const passwordOk = await bcrypt.compare(password, user.password_hash);
+        // check password
+        var passwordOk = await bcrypt.compare(password, user.password_hash);
         if (!passwordOk) {
-            const failCount = (user.failed_attempts || 0) + 1;
+            var failCount = (user.failed_attempts || 0) + 1;
             await supabase.from('users').update({
                 failed_attempts: failCount,
                 last_failed_at: new Date().toISOString()
             }).eq('id', user.id);
 
-            await logEvent(user.id, 'LOGIN_FAILED', `Failed login attempt: ${failCount}`, clientIP);
+            await logEvent(user.id, 'LOGIN_FAILED', 'Failed login attempt: ' + failCount, clientIP);
             metrics.loginTotal.inc({ outcome: 'failed' });
             await logSecurityEvent({
                 event_type: 'LOGIN_FAILED',
@@ -129,23 +133,26 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             return res.json({ success: false, message: 'Wrong username or password.' });
         }
 
-        const userAgentParser = new UAParser(req.headers['user-agent']);
-        const browserInfo = userAgentParser.getBrowser();
-        const osInfo = userAgentParser.getOS();
-        const geoData = await getGeoFromIP(clientIP);
-        const country = geoData.country || 'Distributed Region';
-        const isVPN = isVPNConnection(clientIP) || geoData.isProxy;
+        // parse browser and os info
+        var userAgentParser = new UAParser(req.headers['user-agent']);
+        var browserInfo = userAgentParser.getBrowser();
+        var osInfo = userAgentParser.getOS();
+        var geoData = await getGeoFromIP(clientIP);
+        var country = geoData.country || 'Distributed Region';
+        var isVPN = isVPNConnection(clientIP) || geoData.isProxy;
 
-        const deviceResult = await registerDevice(user.id, {
+        // register the device
+        var deviceResult = await registerDevice(user.id, {
             fingerprint: fingerprint,
-            browser: `${browserInfo.name || 'Unknown'} ${browserInfo.version || ''}`,
-            os: `${osInfo.name || 'Unknown'} ${osInfo.version || ''}`,
+            browser: (browserInfo.name || 'Unknown') + ' ' + (browserInfo.version || ''),
+            os: (osInfo.name || 'Unknown') + ' ' + (osInfo.version || ''),
             ip: clientIP,
             country: country
         });
 
-        const needsApproval = !PRIVILEGED_AUTO_APPROVAL_ROLES.includes(user.role);
+        var needsApproval = !PRIVILEGED_AUTO_APPROVAL_ROLES.includes(user.role);
 
+        // new device needs admin approval
         if (deviceResult.isNew && needsApproval) {
             await logEvent(user.id, 'DEVICE_NEW', 'New device found, waiting for approval', clientIP);
             await logSecurityEvent({
@@ -157,7 +164,7 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                 device_id: deviceResult.device ? deviceResult.device.id : null,
                 details: { agent: req.headers['user-agent'], awaiting_approval: true, role: user.role }
             });
-            sendAnomalyAlertEmail(user.username, clientIP, country, 'New device detected').catch(() => {});
+            sendAnomalyAlertEmail(user.username, clientIP, country, 'New device detected').catch(function() {});
             return res.json({
                 success: false,
                 message: 'New device detected. Waiting for admin approval.',
@@ -165,9 +172,10 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             });
         }
 
+        // auto-approve for privileged roles
         if (deviceResult.isNew && !needsApproval) {
             await approveDevice(deviceResult.device.id, user.id);
-            await logEvent(user.id, 'DEVICE_AUTO_APPROVED', `Device auto-approved for ${user.role}`, clientIP);
+            await logEvent(user.id, 'DEVICE_AUTO_APPROVED', 'Device auto-approved for ' + user.role, clientIP);
             await logSecurityEvent({
                 event_type: 'DEVICE_NEW',
                 user_id: user.id,
@@ -177,9 +185,10 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                 device_id: deviceResult.device ? deviceResult.device.id : null,
                 details: { agent: req.headers['user-agent'], auto_authorized: true, role: user.role }
             });
-            sendAnomalyAlertEmail(user.username, clientIP, country, 'Device auto-approved').catch(() => {});
+            sendAnomalyAlertEmail(user.username, clientIP, country, 'Device auto-approved').catch(function() {});
         }
 
+        // existing device still waiting for approval
         if (!deviceResult.isNew && needsApproval && !deviceResult.device.approved) {
             await logEvent(user.id, 'DEVICE_PENDING', 'Login blocked: device not approved', clientIP);
             return res.json({
@@ -189,28 +198,32 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             });
         }
 
-        let isOffHoursLogin = isOffHours(new Date()); 
+        // check if login is outside working hours
+        var isOffHoursLogin = isOffHours(new Date());
 
+        // check department-specific rules
         if (user.department) {
             try {
-                const { data: departmentContext } = await supabase
+                var { data: departmentContext } = await supabase
                     .from('departments')
                     .select('allowed_countries, work_hours_start, work_hours_end, timezone')
                     .eq('name', user.department)
                     .single();
 
                 if (departmentContext) {
+                    // department-specific working hours
                     if (departmentContext.work_hours_start !== undefined && departmentContext.work_hours_end !== undefined) {
-                        const deptTimezone = departmentContext.timezone || 'UTC';
-                        const timeFormatter = new Intl.DateTimeFormat('en-US', { timeZone: deptTimezone, hour: 'numeric', hour12: false });
-                        const departmentalHour = parseInt(timeFormatter.format(new Date()), 10);
+                        var deptTimezone = departmentContext.timezone || 'UTC';
+                        var timeFormatter = new Intl.DateTimeFormat('en-US', { timeZone: deptTimezone, hour: 'numeric', hour12: false });
+                        var departmentalHour = parseInt(timeFormatter.format(new Date()), 10);
                         isOffHoursLogin = departmentalHour < departmentContext.work_hours_start || departmentalHour >= departmentContext.work_hours_end;
                     }
 
+                    // geo-fencing: only allow login from certain countries
                     if (departmentContext.allowed_countries) {
-                        const allowedCountries = departmentContext.allowed_countries.split(',').map(c => locale.trim().toLowerCase());
+                        var allowedCountries = departmentContext.allowed_countries.split(',').map(function(c) { return c.trim().toLowerCase(); });
                         if (allowedCountries.length > 0 && !allowedCountries.includes(country.toLowerCase())) {
-                            await logEvent(user.id, 'GEO_FENCE_VIOLATION', `Country not allowed: ${country}`, clientIP);
+                            await logEvent(user.id, 'GEO_FENCE_VIOLATION', 'Country not allowed: ' + country, clientIP);
                             await logSecurityEvent({
                                 event_type: 'GEO_FENCE_VIOLATION',
                                 user_id: user.id, username: user.username, ip: clientIP, location: country, risk_score: 100,
@@ -221,30 +234,31 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                         }
                     }
                 }
-            } catch (err) { } 
+            } catch (err) { }
         }
 
-        let isKnownCountry = true;
-        let impossibleTravel = false;
+        // check login history for suspicious patterns
+        var isKnownCountry = true;
+        var impossibleTravel = false;
 
-        const { data: recentSessions } = await supabase
+        var { data: recentSessions } = await supabase
             .from('sessions_log')
             .select('country, login_at')
             .eq('user_id', user.id)
             .order('login_at', { ascending: false })
             .limit(10);
 
-        if (recentSessions?.length > 0) {
-            isKnownCountry = recentSessions.some(auth => auth.country === country);
+        if (recentSessions && recentSessions.length > 0) {
+            isKnownCountry = recentSessions.some(function(auth) { return auth.country === country; });
 
-            const lastSession = recentSessions[0];
-            const minutesSinceLast = (new Date() - new Date(lastSession.login_at)) / (1000 * 60);
+            var lastSession = recentSessions[0];
+            var minutesSinceLast = (new Date() - new Date(lastSession.login_at)) / (1000 * 60);
             impossibleTravel = checkImpossibleTravel(country, lastSession.country, minutesSinceLast);
 
             if (!isKnownCountry || impossibleTravel) {
-                const reason = impossibleTravel ? 'Login from different country too quickly' : 'New login location';
+                var reason = impossibleTravel ? 'Login from different country too quickly' : 'New login location';
 
-                await logEvent(user.id, 'LOCATION_ALERT', `${reason}: ${country}`, clientIP);
+                await logEvent(user.id, 'LOCATION_ALERT', reason + ': ' + country, clientIP);
                 await logSecurityEvent({
                     event_type: 'LOCATION_ALERT',
                     user_id: user.id,
@@ -254,13 +268,15 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                     risk_score: 100,
                     details: { reason: reason, previous_country: lastSession.country, role: user.role }
                 });
-                sendAnomalyAlertEmail(user.username, clientIP, country, reason).catch(() => {});
+                sendAnomalyAlertEmail(user.username, clientIP, country, reason).catch(function() {});
             }
         }
 
-        const networkTrust = await classifyNetwork(user.id, clientIP, country, isVPN);
+        // classify the network trust level
+        var networkTrust = await classifyNetwork(user.id, clientIP, country, isVPN);
 
-        const riskResult = await calculateRisk({
+        // calculate overall risk score
+        var riskResult = await calculateRisk({
             userId: user.id,
             username: user.username,
             ip: clientIP,
@@ -276,6 +292,7 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             networkTrustModifier: networkTrust.riskModifier
         });
 
+        // log vpn usage
         if (isVPN) {
             await logSecurityEvent({
                 event_type: 'VPN_DETECTED',
@@ -289,7 +306,7 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             metrics.vpnDetected.inc();
 
             if (!isKnownCountry || impossibleTravel) {
-                const previousCountry = (recentSessions?.length > 0) ? recentSessions[0].country : 'Unknown';
+                var previousCountry = (recentSessions && recentSessions.length > 0) ? recentSessions[0].country : 'Unknown';
                 sendSlackAlert({
                     type: 'VPN_ALERT',
                     username: user.username,
@@ -299,16 +316,17 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                     riskScore: riskResult.score,
                     riskLevel: riskResult.level,
                     previousCountry: previousCountry,
-                    device: `${browserInfo.name || 'Unknown'} ${browserInfo.version || ''} on ${osInfo.name || 'Unknown'} ${osInfo.version || ''}`,
-                    loginReasons: `[VPN] [Country change: ${previousCountry} -> ${country}]`,
-                    reason: `VPN from new country: ${previousCountry} -> ${country}`
-                }).catch(() => {});
+                    device: (browserInfo.name || 'Unknown') + ' ' + (browserInfo.version || '') + ' on ' + (osInfo.name || 'Unknown') + ' ' + (osInfo.version || ''),
+                    loginReasons: '[VPN] [Country change: ' + previousCountry + ' -> ' + country + ']',
+                    reason: 'VPN from new country: ' + previousCountry + ' -> ' + country
+                }).catch(function() {});
             }
         }
 
+        // auto-block if risk is too high (except superadmin)
         if (riskResult.score >= 100 && user.role !== 'SuperAdmin') {
             await supabase.from('users').update({ status: 'blocked' }).eq('id', user.id);
-            await logEvent(user.id, 'AUTO_BLOCK', `Auto-blocked: risk score too high: ${riskResult.score}`, clientIP);
+            await logEvent(user.id, 'AUTO_BLOCK', 'Auto-blocked: risk score too high: ' + riskResult.score, clientIP);
             await logSecurityEvent({
                 event_type: 'LOGIN_BLOCKED',
                 user_id: user.id, username: user.username, ip: clientIP, location: country, risk_score: riskResult.score,
@@ -317,11 +335,14 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             return res.json({ success: false, message: 'Your account has been blocked due to high risk. Contact admin.' });
         }
 
+        // password was correct, reset fail counter
         await supabase.from('users').update({ failed_attempts: 0 }).eq('id', user.id);
 
-        const logicSessionToken = crypto.randomUUID();
+        // create a session token so we can track concurrent logins
+        var logicSessionToken = crypto.randomUUID();
         await supabase.from('users').update({ active_session_token: logicSessionToken }).eq('id', user.id);
 
+        // store everything in the session
         req.session.userId = user.id;
         req.session.username = user.username;
         req.session.role = user.role;
@@ -339,10 +360,11 @@ router.post('/api/login', loginLimiter, async (req, res) => {
         req.session.isUnusualHours = isOffHoursLogin;
         req.session.networkTrust = networkTrust;
 
-        const deviceLabel = `${browserInfo.name || 'Unknown'} ${browserInfo.version || ''} on ${osInfo.name || 'Unknown'} ${osInfo.version || ''}`.trim();
+        var deviceLabel = ((browserInfo.name || 'Unknown') + ' ' + (browserInfo.version || '') + ' on ' + (osInfo.name || 'Unknown') + ' ' + (osInfo.version || '')).trim();
         req.session.deviceLabel = deviceLabel;
 
-        let flags = [];
+        // build login context flags
+        var flags = [];
         flags.push(networkTrust.label);
         if (isVPN && networkTrust.tier !== 'ANONYMIZED') flags.push('[VPN]');
         if (isOffHoursLogin) flags.push('[Off-hours]');
@@ -350,11 +372,12 @@ router.post('/api/login', loginLimiter, async (req, res) => {
         if (!isKnownCountry) flags.push('[New country]');
         if (impossibleTravel) flags.push('[Impossible travel]');
         if (flags.length <= 1) flags.push('[Normal]');
-        
-        const loginFlags = flags.join(' · ');
+
+        var loginFlags = flags.join(' · ');
         req.session.loginReasons = loginFlags;
 
-        const sessionRecord = {
+        // save session to the sessions_log table
+        var sessionRecord = {
             user_id: user.id,
             ip: clientIP,
             user_agent: req.headers['user-agent'],
@@ -373,15 +396,13 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             await supabase.from('sessions_log').insert(sessionRecord);
         }
 
-        // OTP is always required — no bypass
-
-
+        // otp is always required, no bypass
         req.session.otpVerified = false;
         req.session.offHoursLogin = isOffHoursLogin;
         await generateOTP(user.id);
         metrics.otpSent.inc();
 
-        await logEvent(user.id, 'LOGIN_PASSWORD_OK', `Password OK, OTP required (Classification: ${riskResult.level})`, clientIP);
+        await logEvent(user.id, 'LOGIN_PASSWORD_OK', 'Password OK, OTP required (Risk: ' + riskResult.level + ')', clientIP);
         await logSecurityEvent({
             event_type: 'OTP_SENT',
             user_id: user.id,
@@ -392,6 +413,7 @@ router.post('/api/login', loginLimiter, async (req, res) => {
             details: { factors: riskResult.factors, role: user.role, vpn: isVPN, off_hours: isOffHoursLogin }
         });
 
+        // extra logging and alerts for off-hours logins
         if (isOffHoursLogin) {
             await logSecurityEvent({
                 event_type: 'RISK_SCORE_CHANGED',
@@ -414,10 +436,10 @@ router.post('/api/login', loginLimiter, async (req, res) => {
                 device: deviceLabel,
                 loginReasons: loginFlags,
                 reason: 'Off-hours login'
-            }).catch(() => {});
+            }).catch(function() {});
         }
 
-        return req.session.save(() => {
+        return req.session.save(function() {
             return res.json({
                 success: true,
                 risk: { score: riskResult.score, level: riskResult.level, factors: riskResult.factors },
@@ -433,22 +455,30 @@ router.post('/api/login', loginLimiter, async (req, res) => {
     }
 });
 
-router.get('/otp', otpLimiter, (req, res) => {
+// show otp page
+router.get('/otp', otpLimiter, function(req, res) {
     if (!req.session.userId) return res.redirect('/login');
     res.sendFile('otp.html', { root: 'views' });
 });
 
-router.post('/api/verify-otp', otpLimiter, async (req, res) => {
+// verify otp code
+router.post('/api/verify-otp', otpLimiter, async function(req, res) {
     try {
-        const otpCode = (req.body.code || '').trim();
+        var otpCode = (req.body.code || '').trim();
 
         if (!req.session || !req.session.userId) {
             return res.json({ success: false, message: 'Session expired. Please log in again.' });
         }
 
-        const { userId: userId, username = 'unidentified', riskScore = 0, riskLevel = 'Low', role = 'Standard', loginIP, loginCountry } = req.session;
+        var userId = req.session.userId;
+        var username = req.session.username || 'unidentified';
+        var riskScore = req.session.riskScore || 0;
+        var riskLevel = req.session.riskLevel || 'Low';
+        var role = req.session.role || 'Standard';
+        var loginIP = req.session.loginIP;
+        var loginCountry = req.session.loginCountry;
 
-        const verificationResult = await verifyOTP(userId, otpCode);
+        var verificationResult = await verifyOTP(userId, otpCode);
 
         if (!verificationResult.valid) {
             await logEvent(userId, 'OTP_FAILED', verificationResult.reason, getClientIP(req));
@@ -465,18 +495,18 @@ router.post('/api/verify-otp', otpLimiter, async (req, res) => {
 
         req.session.otpVerified = true;
         req.session.lastActive = Date.now();
-        
-        const clientIP = getClientIP(req);
+
+        var clientIP = getClientIP(req);
 
         req.session.mfaVerifiedIp = clientIP;
         req.session.mfaVerifiedOffHours = isOffHours(new Date());
 
-        const csrfToken = generateCSRFToken(req);
+        var csrfToken = generateCSRFToken(req);
 
-        await logEvent(userId, 'LOGIN_SUCCESS', `OTP verified. Risk Classification: ${riskLevel}`, clientIP);
+        await logEvent(userId, 'LOGIN_SUCCESS', 'OTP verified. Risk: ' + riskLevel, clientIP);
         metrics.loginTotal.inc({ outcome: 'success' });
         metrics.riskScore.set({ user: username }, riskScore || 0);
-        
+
         await logSecurityEvent({
             event_type: 'LOGIN_SUCCESS',
             user_id: userId,
@@ -484,7 +514,7 @@ router.post('/api/verify-otp', otpLimiter, async (req, res) => {
             ip: loginIP,
             location: loginCountry,
             risk_score: riskScore,
-            details: { role, status: 'Verified' }
+            details: { role: role, status: 'Verified' }
         });
 
         await logSecurityEvent({
@@ -495,35 +525,36 @@ router.post('/api/verify-otp', otpLimiter, async (req, res) => {
             risk_score: riskScore
         });
 
-        sendLoginAlertEmail(username, loginIP || clientIP, loginCountry || 'Unknown').catch(() => {});
+        sendLoginAlertEmail(username, loginIP || clientIP, loginCountry || 'Unknown').catch(function() {});
 
+        // send slack alert
         try {
-            const { data: prevSessions } = await supabase
+            var { data: prevSessions } = await supabase
                 .from('sessions_log')
                 .select('id')
                 .eq('user_id', userId)
                 .limit(2);
-            
-            const isFirstLogin = !prevSessions || prevSessions.length <= 1;
+
+            var isFirstLogin = !prevSessions || prevSessions.length <= 1;
             sendSlackAlert({
                 type: isFirstLogin ? 'FIRST_LOGIN' : 'LOGIN',
-                username,
-                role,
+                username: username,
+                role: role,
                 ip: loginIP || clientIP,
                 country: loginCountry || 'Unknown',
-                riskScore,
-                riskLevel,
+                riskScore: riskScore,
+                riskLevel: riskLevel,
                 device: req.session.deviceLabel || 'Unknown device',
                 loginReasons: req.session.loginReasons || 'Standard'
-            }).catch(() => {});
+            }).catch(function() {});
         } catch (err) {
-            sendSlackAlert({ type: 'LOGIN', username, role, ip: loginIP || clientIP, country: loginCountry || 'Unknown', riskScore, riskLevel, device: req.session.deviceLabel || 'Unknown device' }).catch(() => {});
+            sendSlackAlert({ type: 'LOGIN', username: username, role: role, ip: loginIP || clientIP, country: loginCountry || 'Unknown', riskScore: riskScore, riskLevel: riskLevel, device: req.session.deviceLabel || 'Unknown device' }).catch(function() {});
         }
 
-        const redirectTo = req.session.returnTo || '/dashboard';
+        var redirectTo = req.session.returnTo || '/dashboard';
         delete req.session.returnTo;
-        
-        req.session.save(() => {
+
+        req.session.save(function() {
             return res.json({ success: true, redirect: redirectTo, csrfToken: csrfToken });
         });
 
@@ -533,7 +564,8 @@ router.post('/api/verify-otp', otpLimiter, async (req, res) => {
     }
 });
 
-router.get('/api/session', (req, res) => {
+// get current session info
+router.get('/api/session', function(req, res) {
     if (!req.session.userId || !req.session.otpVerified) {
         return res.json({ loggedIn: false });
     }
@@ -565,16 +597,17 @@ router.get('/api/session', (req, res) => {
     });
 });
 
-router.get('/logout', async (req, res) => {
+// logout
+router.get('/logout', async function(req, res) {
     try {
-        if (req.session?.userId) {
-            const userId = req.session.userId;
-            const clientIP = getClientIP(req);
+        if (req.session && req.session.userId) {
+            var userId = req.session.userId;
+            var clientIP = getClientIP(req);
 
             try { await supabase.from('users').update({ active_session_token: null }).eq('id', userId); } catch (err) { }
             try { await logEvent(userId, 'LOGOUT', 'User logged out', clientIP); } catch (err) { }
             try {
-                const { data: previousSession } = await supabase
+                var { data: previousSession } = await supabase
                     .from('sessions_log')
                     .select('id')
                     .eq('user_id', userId)
@@ -593,7 +626,7 @@ router.get('/logout', async (req, res) => {
         res.clearCookie('connect.sid');
 
         if (req.session) {
-            req.session.destroy(() => {
+            req.session.destroy(function() {
                 res.redirect('/login');
             });
         } else {
@@ -606,5 +639,3 @@ router.get('/logout', async (req, res) => {
 });
 
 module.exports = router;
-
-
