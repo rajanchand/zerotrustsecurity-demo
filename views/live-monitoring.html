@@ -39,8 +39,6 @@
         .badge-info { background: #f0f0f0; color: #555; }
 
         .mono { font-family: monospace; font-size: 0.75rem; color: #888; }
-        .user-block { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .user-icon { width: 28px; height: 28px; background: #2563eb; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #fff; font-weight: 700; }
 
         .risk-bar { width: 80px; height: 6px; background: #eee; border-radius: 10px; position: relative; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
         .risk-fill { position: absolute; height: 100%; left: 0; top: 0; border-radius: 10px; transition: width 0.4s; }
@@ -163,7 +161,7 @@
                 '<td class="mono">' + fmtDate(evt.timestamp || new Date()) + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + severity + '</span></td>' +
                 '<td><span class="mono" style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">' + (evt.event_type || 'SYSTEM') + '</span></td>' +
-                '<td><div class="user-block"><div class="user-icon">' + ((evt.username || 'S')[0].toUpperCase()) + '</div><div><div>' + (evt.username || 'System') + '</div>' + (details.role ? '<div style="font-size:0.6rem; color:#888;">' + details.role + '</div>' : '') + '</div></div></td>' +
+                '<td><div style="color: #000; font-weight: 700; font-size: 0.85rem;">' + (evt.username || 'System') + '</div>' + (details.role ? '<div style="font-size:0.65rem; color:#666;">' + details.role + '</div>' : '') + '</td>' +
                 '<td><div class="mono">' + (evt.ip || '-') + '</div><div style="font-size:0.7rem; color:#2563eb; font-weight:600;">' + (evt.location || 'Unknown') + (details.vpn ? ' <span style="color:#dc2626;">(VPN)</span>' : '') + '</div></td>' +
                 '<td><div class="risk-bar"><div class="risk-fill" style="width:' + score + '%; background:' + color + '"></div></div><span class="mono">' + score + '</span></td>';
 
