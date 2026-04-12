@@ -1,16 +1,18 @@
-const express = require('express');
-const path = require('path');
-const { supabase } = require('../db');
-const { logEvent } = require('../services/auditService');
-const { getAllDevices } = require('../services/deviceService');
+var express = require('express');
+var path = require('path');
+var { supabase } = require('../db');
+var { logEvent } = require('../services/auditService');
+var { getAllDevices } = require('../services/deviceService');
 
-const router = express.Router();
+var router = express.Router();
 
-router.get('/network', (req, res) => {
+// serve network management page
+router.get('/network', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'network.html'));
 });
 
-router.get('/api/network/ip-rules', async (req, res) => {
+// get all ip rules
+router.get('/api/network/ip-rules', async function(req, res) {
     if (req.session.highRisk) {
         return res.status(403).json({ error: 'Access blocked: your risk score is too high.' });
     }
@@ -23,8 +25,13 @@ router.get('/api/network/ip-rules', async (req, res) => {
 
         var formatted = (rules || []).map(function(rule) {
             return {
-                ...rule,
-                created_by_name: rule.users?.username || 'System'
+                id: rule.id,
+                ip_address: rule.ip_address,
+                action: rule.action,
+                reason: rule.reason,
+                created_by: rule.created_by,
+                created_at: rule.created_at,
+                created_by_name: rule.users ? rule.users.username : 'System'
             };
         });
 
@@ -34,15 +41,16 @@ router.get('/api/network/ip-rules', async (req, res) => {
     }
 });
 
-router.post('/api/network/ip-rules/add', async (req, res) => {
+// add or update an ip rule
+router.post('/api/network/ip-rules/add', async function(req, res) {
     if (req.session.highRisk) {
         return res.status(403).json({ success: false, message: 'Access blocked: your risk score is too high.' });
     }
 
     try {
-        var { ipAddress, action, reason } = req.body;
-        if (!action) action = 'block';
-        if (!reason) reason = '';
+        var ipAddress = req.body.ipAddress;
+        var action = req.body.action || 'block';
+        var reason = req.body.reason || '';
 
         if (!ipAddress) {
             return res.status(400).json({ success: false, message: 'IP address is required.' });
@@ -80,7 +88,8 @@ router.post('/api/network/ip-rules/add', async (req, res) => {
     }
 });
 
-router.post('/api/network/ip-rules/delete', async (req, res) => {
+// delete an ip rule
+router.post('/api/network/ip-rules/delete', async function(req, res) {
     if (req.session.highRisk) {
         return res.status(403).json({ success: false, message: 'Access blocked: your risk score is too high.' });
     }
@@ -102,7 +111,8 @@ router.post('/api/network/ip-rules/delete', async (req, res) => {
     }
 });
 
-router.get('/api/network/device-health', async (req, res) => {
+// device health overview
+router.get('/api/network/device-health', async function(req, res) {
     if (req.session.highRisk) {
         return res.status(403).json({ error: 'Access blocked: your risk score is too high.' });
     }

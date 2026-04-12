@@ -1,15 +1,17 @@
-const express = require('express');
-const path = require('path');
-const { addClient, getRecentEvents, getStats24h } = require('../services/monitorService');
-const { supabase } = require('../db');
+var express = require('express');
+var path = require('path');
+var { addClient, getRecentEvents, getStats24h } = require('../services/monitorService');
+var { supabase } = require('../db');
 
-const router = express.Router();
+var router = express.Router();
 
-router.get('/admin/live-monitoring', (req, res) => {
+// serve the live monitoring page
+router.get('/admin/live-monitoring', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'live-monitoring.html'));
 });
 
-router.get('/api/monitor/stream', (req, res) => {
+// sse stream for live events
+router.get('/api/monitor/stream', function(req, res) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -18,7 +20,7 @@ router.get('/api/monitor/stream', (req, res) => {
     res.write('data: {"type":"connected"}\n\n');
     addClient(res);
 
-    const keepAlive = setInterval(() => {
+    var keepAlive = setInterval(function() {
         try {
             res.write('data: {"type":"ping"}\n\n');
         } catch (err) {
@@ -26,35 +28,39 @@ router.get('/api/monitor/stream', (req, res) => {
         }
     }, 20000);
 
-    req.on('close', () => {
+    req.on('close', function() {
         clearInterval(keepAlive);
     });
 });
 
-router.get('/api/monitor/events', async (req, res) => {
+// get recent security events
+router.get('/api/monitor/events', async function(req, res) {
     try {
-        const limit = parseInt(req.query.limit) || 100;
-        const securityEvents = await getRecentEvents(limit);
+        var limit = parseInt(req.query.limit) || 100;
+        var securityEvents = await getRecentEvents(limit);
         res.json(securityEvents);
     } catch (err) {
         res.json([]);
     }
 });
 
-router.get('/api/monitor/stats', async (req, res) => {
+// get 24h stats
+router.get('/api/monitor/stats', async function(req, res) {
     try {
-        const stats = await getStats24h();
+        var stats = await getStats24h();
         res.json(stats);
     } catch (err) {
         res.json({ total: 0, critical: 0, high: 0, login_failed: 0, blocked: 0, access_denied: 0, vpn_detected: 0, avg_risk: 0 });
     }
 });
 
-router.get('/admin/user-log', (req, res) => {
+// serve user log page
+router.get('/admin/user-log', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'user-log.html'));
 });
 
-router.get('/api/admin/users/:userId/forensics', async (req, res) => {
+// get detailed info about a specific user (forensics view)
+router.get('/api/admin/users/:userId/forensics', async function(req, res) {
     try {
         var userId = parseInt(req.params.userId);
 
@@ -119,11 +125,12 @@ router.get('/api/admin/users/:userId/forensics', async (req, res) => {
     }
 });
 
-router.get('/api/admin/logs/all', async (req, res) => {
+// get all audit logs
+router.get('/api/admin/logs/all', async function(req, res) {
     try {
-        const { getAllAuditLogs } = require('../services/auditService');
-        const limit = parseInt(req.query.limit) || 200;
-        const logs = await getAllAuditLogs(limit);
+        var { getAllAuditLogs } = require('../services/auditService');
+        var limit = parseInt(req.query.limit) || 200;
+        var logs = await getAllAuditLogs(limit);
         res.json(logs);
     } catch (err) {
         res.json([]);

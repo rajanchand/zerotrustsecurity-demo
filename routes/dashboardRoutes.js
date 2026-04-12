@@ -1,16 +1,17 @@
-const express = require('express');
-const path = require('path');
-const { supabase } = require('../db');
-const { getRiskHistory } = require('../services/riskEngine');
-const { getUserAuditLog } = require('../services/auditService');
-const { getDeviceHealth } = require('../services/deviceService');
-const { logSecurityEvent } = require('../services/monitorService');
-const { classifyNetwork } = require('../services/networkTrustService');
-const { isOffHours } = require('../services/policyService');
+var express = require('express');
+var path = require('path');
+var { supabase } = require('../db');
+var { getRiskHistory } = require('../services/riskEngine');
+var { getUserAuditLog } = require('../services/auditService');
+var { getDeviceHealth } = require('../services/deviceService');
+var { logSecurityEvent } = require('../services/monitorService');
+var { classifyNetwork } = require('../services/networkTrustService');
+var { isOffHours } = require('../services/policyService');
 
-const router = express.Router();
+var router = express.Router();
 
-const DASHBOARD_CONFIG = {
+// dashboard card configs for each role
+var DASHBOARD_CONFIG = {
     SuperAdmin: {
         title: 'Admin Dashboard',
         description: 'Manage users, devices, and system security.',
@@ -60,28 +61,40 @@ const DASHBOARD_CONFIG = {
     }
 };
 
-router.get('/dashboard', (req, res) => {
+// serve dashboard page
+router.get('/dashboard', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'dashboard.html'));
 });
 
-router.get('/portal', (req, res) => {
+// serve portal page
+router.get('/portal', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'portal.html'));
 });
 
-router.get('/api/dashboard-data', async (req, res) => {
+// get dashboard data for the current user
+router.get('/api/dashboard-data', async function(req, res) {
     try {
-        const { role, userId: userId, username, department, riskScore, riskLevel, isUnusualHours, loginCountry, loginIP } = req.session;
-        const dashConfig = DASHBOARD_CONFIG[role] || DASHBOARD_CONFIG.HR;
+        var role = req.session.role;
+        var userId = req.session.userId;
+        var username = req.session.username;
+        var department = req.session.department;
+        var riskScore = req.session.riskScore;
+        var riskLevel = req.session.riskLevel;
+        var isUnusualHours = req.session.isUnusualHours;
+        var loginCountry = req.session.loginCountry;
+        var loginIP = req.session.loginIP;
 
-        const securityCard = { icon: 'S', title: 'Personal Security', description: 'Your security status', link: '/risk' };
-        const cards = [...dashConfig.cards, securityCard];
+        var dashConfig = DASHBOARD_CONFIG[role] || DASHBOARD_CONFIG.HR;
 
-        const { count: sessionCount } = await supabase
+        var securityCard = { icon: 'S', title: 'Personal Security', description: 'Your security status', link: '/risk' };
+        var cards = dashConfig.cards.concat([securityCard]);
+
+        var { count: sessionCount } = await supabase
             .from('sessions_log')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId);
 
-        const { data: lastSession } = await supabase
+        var { data: lastSession } = await supabase
             .from('sessions_log')
             .select('country, device_fingerprint, ip')
             .eq('user_id', userId)
@@ -89,9 +102,9 @@ router.get('/api/dashboard-data', async (req, res) => {
             .limit(1)
             .single();
 
-        let isNewDevice = false;
+        var isNewDevice = false;
         if (lastSession) {
-            const { count: deviceCount } = await supabase
+            var { count: deviceCount } = await supabase
                 .from('devices')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', userId)
@@ -100,7 +113,7 @@ router.get('/api/dashboard-data', async (req, res) => {
         }
 
         res.json({
-            user: { username, role, department },
+            user: { username: username, role: role, department: department },
             dashboard: {
                 title: dashConfig.title,
                 description: dashConfig.description,
@@ -111,8 +124,8 @@ router.get('/api/dashboard-data', async (req, res) => {
                 riskLevel: riskLevel || 'Low',
                 sessionCount: sessionCount || 0,
                 loginContext: {
-                    country: lastSession?.country || loginCountry || 'Unknown',
-                    ip: lastSession?.ip || loginIP || 'Unknown',
+                    country: (lastSession && lastSession.country) || loginCountry || 'Unknown',
+                    ip: (lastSession && lastSession.ip) || loginIP || 'Unknown',
                     isNewDevice: isNewDevice
                 },
                 isUnusualHours: isUnusualHours || false
@@ -124,22 +137,25 @@ router.get('/api/dashboard-data', async (req, res) => {
     }
 });
 
-router.get('/api/activity', async (req, res) => {
+// recent activity for the logged in user
+router.get('/api/activity', async function(req, res) {
     try {
-        const logs = await getUserAuditLog(req.session.userId, 20);
+        var logs = await getUserAuditLog(req.session.userId, 20);
         res.json(logs);
     } catch (err) {
         res.json([]);
     }
 });
 
-router.get('/risk', (req, res) => {
+// serve risk page
+router.get('/risk', function(req, res) {
     res.sendFile(path.join(__dirname, '..', 'views', 'risk.html'));
 });
 
-router.get('/api/risk-data', async (req, res) => {
+// get risk data for the current user
+router.get('/api/risk-data', async function(req, res) {
     try {
-        const history = await getRiskHistory(req.session.userId, 20);
+        var history = await getRiskHistory(req.session.userId, 20);
         res.json({
             currentScore: req.session.riskScore || 0,
             currentLevel: req.session.riskLevel || 'Low',
@@ -151,30 +167,25 @@ router.get('/api/risk-data', async (req, res) => {
     }
 });
 
-router.get('/api/admin-stats', async (req, res) => {
+// admin stats for the superadmin dashboard
+router.get('/api/admin-stats', async function(req, res) {
     if (req.session.role !== 'SuperAdmin') {
         return res.status(403).json({ error: 'SuperAdmin access required.' });
     }
 
-    const { data: deviceCheck } = await supabase
+    var { data: deviceCheck } = await supabase
         .from('devices')
         .select('approved')
         .eq('user_id', req.session.userId)
         .eq('fingerprint', req.session.deviceFingerprint)
         .single();
 
-    if (!deviceCheck?.approved) {
+    if (!deviceCheck || !deviceCheck.approved) {
         return res.status(403).json({ error: 'Please register your device first.' });
     }
 
     try {
-        const [
-            { count: totalUsers },
-            { count: activeUsers },
-            { count: blockedUsers },
-            { count: pendingDevices },
-            { count: totalSessions }
-        ] = await Promise.all([
+        var results = await Promise.all([
             supabase.from('users').select('*', { count: 'exact', head: true }),
             supabase.from('users').select('*', { count: 'exact', head: true }).eq('status', 'active'),
             supabase.from('users').select('*', { count: 'exact', head: true }).eq('status', 'blocked'),
@@ -182,20 +193,26 @@ router.get('/api/admin-stats', async (req, res) => {
             supabase.from('sessions_log').select('*', { count: 'exact', head: true })
         ]);
 
-        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        var totalUsers = results[0].count;
+        var activeUsers = results[1].count;
+        var blockedUsers = results[2].count;
+        var pendingDevices = results[3].count;
+        var totalSessions = results[4].count;
 
-        const [
-            { count: events24h },
-            { count: fails24h },
-            { data: recentEvents }
-        ] = await Promise.all([
+        var since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        var activityResults = await Promise.all([
             supabase.from('audit_log').select('*', { count: 'exact', head: true }).gte('created_at', since24h),
             supabase.from('audit_log').select('*', { count: 'exact', head: true }).eq('action', 'LOGIN_FAILED').gte('created_at', since24h),
             supabase.from('audit_log').select('id, user_id, action, detail, ip, created_at').order('created_at', { ascending: false }).limit(10)
         ]);
 
-        const { data: rolesData } = await supabase.from('users').select('role');
-        const roleBreakdown = {};
+        var events24h = activityResults[0].count;
+        var fails24h = activityResults[1].count;
+        var recentEvents = activityResults[2].data;
+
+        var { data: rolesData } = await supabase.from('users').select('role');
+        var roleBreakdown = {};
         (rolesData || []).forEach(function(u) { roleBreakdown[u.role] = (roleBreakdown[u.role] || 0) + 1; });
 
         res.json({
@@ -217,13 +234,14 @@ router.get('/api/admin-stats', async (req, res) => {
     }
 });
 
-router.post('/api/system/emergency-lockdown', async (req, res) => {
+// emergency lockdown - ends all non-admin sessions
+router.post('/api/system/emergency-lockdown', async function(req, res) {
     if (req.session.role !== 'SuperAdmin') {
         return res.status(403).json({ success: false, message: 'SuperAdmin access required for this action.' });
     }
-    
+
     try {
-        const { error: dbError } = await supabase
+        var { error: dbError } = await supabase
             .from('users')
             .update({ active_session_token: null })
             .neq('role', 'SuperAdmin');
@@ -245,120 +263,139 @@ router.post('/api/system/emergency-lockdown', async (req, res) => {
     }
 });
 
-router.get('/admin/remote-analytics', (req, res) => {
+// serve remote analytics page
+router.get('/admin/remote-analytics', function(req, res) {
     if (req.session.role !== 'SuperAdmin' && req.session.role !== 'IT') {
         return res.status(403).send('Admin access required.');
     }
     res.sendFile(path.join(__dirname, '..', 'views', 'remote-analytics.html'));
 });
 
-router.get('/api/admin/remote-analytics', async (req, res) => {
+// remote analytics data
+router.get('/api/admin/remote-analytics', async function(req, res) {
     if (req.session.role !== 'SuperAdmin' && req.session.role !== 'IT') {
         return res.status(403).json({ error: 'Admin access required.' });
     }
-    
-    try {
-        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        let { data: sessions } = await supabase
+    try {
+        var since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        var { data: sessions } = await supabase
             .from('sessions_log')
             .select('id, user_id, ip, browser, os, country, risk_score, device_fingerprint, login_at, vpn')
             .gte('login_at', since24h)
             .order('login_at', { ascending: false });
-        
+
         sessions = sessions || [];
 
-        const { data: users } = await supabase.from('users').select('id, username, role');
-        const userMap = {};
+        var { data: users } = await supabase.from('users').select('id, username, role');
+        var userMap = {};
         (users || []).forEach(function(u) { userMap[u.id] = u; });
 
-        const { count: vpnCount } = await supabase
+        var { count: vpnCount } = await supabase
             .from('security_events')
             .select('*', { count: 'exact', head: true })
             .eq('event_type', 'VPN_DETECTED')
             .gte('created_at', since24h);
 
-        const offHoursEvents = [];
-        const offHoursUsers = {};
-        
-        sessions.forEach(session => {
+        // find off-hours logins
+        var offHoursEvents = [];
+        var offHoursUsers = {};
+
+        sessions.forEach(function(session) {
             if (isOffHours(new Date(session.login_at))) {
-                const identityContext = userMap[session.user_id] || {};
-                const offHoursEntry = { 
-                    ...session, 
-                    username: identityContext.username || 'Unknown', 
-                    details: { role: identityContext.role || 'Personnel' }, 
-                    created_at: session.login_at 
+                var identityContext = userMap[session.user_id] || {};
+                var offHoursEntry = {
+                    id: session.id,
+                    user_id: session.user_id,
+                    ip: session.ip,
+                    browser: session.browser,
+                    os: session.os,
+                    country: session.country,
+                    risk_score: session.risk_score,
+                    device_fingerprint: session.device_fingerprint,
+                    login_at: session.login_at,
+                    vpn: session.vpn,
+                    username: identityContext.username || 'Unknown',
+                    details: { role: identityContext.role || 'Personnel' },
+                    created_at: session.login_at
                 };
                 offHoursEvents.push(offHoursEntry);
                 if (!offHoursUsers[session.user_id]) offHoursUsers[session.user_id] = offHoursEntry;
             }
         });
-        
-        const totalSessions = sessions.length;
-        const vpnPercent = totalSessions > 0 ? Math.round((vpnCount || 0) / totalSessions * 100) : 0;
-        
-        let avgRisk = 0;
+
+        var totalSessions = sessions.length;
+        var vpnPercent = totalSessions > 0 ? Math.round((vpnCount || 0) / totalSessions * 100) : 0;
+
+        // average risk score
+        var avgRisk = 0;
         if (totalSessions > 0) {
-            const sumRisk = sessions.reduce((acc, s) => acc + (s.risk_score || 0), 0);
+            var sumRisk = sessions.reduce(function(acc, s) { return acc + (s.risk_score || 0); }, 0);
             avgRisk = Math.round(sumRisk / totalSessions);
         }
 
-        const uniqueCountries = new Set();
-        const uniqueDevices = new Set();
-        sessions.forEach(s => {
-            if (s.country) uniqueCountries.add(s.country);
-            if (s.device_fingerprint) uniqueDevices.add(s.device_fingerprint);
+        // unique countries and devices
+        var uniqueCountries = {};
+        var uniqueDevices = {};
+        sessions.forEach(function(s) {
+            if (s.country) uniqueCountries[s.country] = true;
+            if (s.device_fingerprint) uniqueDevices[s.device_fingerprint] = true;
         });
 
-        const hourlyCounts = Array(24).fill(0);
-        sessions.forEach(s => {
-            const observationHour = new Date(s.login_at).getUTCHours();
+        // hourly breakdown
+        var hourlyCounts = Array(24).fill(0);
+        sessions.forEach(function(s) {
+            var observationHour = new Date(s.login_at).getUTCHours();
             hourlyCounts[observationHour]++;
         });
-        const hourlyBreakdown = hourlyCounts.map((count, hour) => ({ hour, count }));
+        var hourlyBreakdown = hourlyCounts.map(function(count, hour) { return { hour: hour, count: count }; });
 
-        const countryCounts = {};
-        sessions.forEach(s => {
-            const region = s.country || 'Unknown';
+        // top countries
+        var countryCounts = {};
+        sessions.forEach(function(s) {
+            var region = s.country || 'Unknown';
             countryCounts[region] = (countryCounts[region] || 0) + 1;
         });
-        
-        const topCountries = Object.keys(countryCounts)
-            .map(k => ({ country: k, count: countryCounts[k] }))
-            .sort((a, b) => b.count - a.count)
+
+        var topCountries = Object.keys(countryCounts)
+            .map(function(k) { return { country: k, count: countryCounts[k] }; })
+            .sort(function(a, b) { return b.count - a.count; })
             .slice(0, 10);
 
-        const networkBreakdown = { office: 0, secure_remote: 0, untrusted: 0, anonymized: 0 };
-        for (const s of sessions) {
+        // network trust classification
+        var networkBreakdown = { office: 0, secure_remote: 0, untrusted: 0, anonymized: 0 };
+        for (var i = 0; i < sessions.length; i++) {
+            var s = sessions[i];
             try {
-                const trustRole = await classifyNetwork(s.user_id, s.ip, s.country, false);
-                if (trustRole.tier === 'INSTITUTIONAL') { 
-                    networkBreakdown.office++; 
-                    s.networkLabel = 'Office Network'; 
-                } else if (trustRole.tier === 'SECURE_REMOTE') { 
-                    networkBreakdown.secure_remote++; 
-                    s.networkLabel = 'Trusted: ' + (trustRole.label || 'Home/Remote'); 
-                } else if (trustRole.tier === 'ANONYMIZED') { 
-                    networkBreakdown.anonymized++; 
-                    s.networkLabel = 'VPN/Proxy'; 
-                } else { 
-                    networkBreakdown.untrusted++; 
-                    s.networkLabel = 'Unknown Network'; 
+                var trustRole = await classifyNetwork(s.user_id, s.ip, s.country, false);
+                if (trustRole.tier === 'INSTITUTIONAL') {
+                    networkBreakdown.office++;
+                    s.networkLabel = 'Office Network';
+                } else if (trustRole.tier === 'SECURE_REMOTE') {
+                    networkBreakdown.secure_remote++;
+                    s.networkLabel = 'Trusted: ' + (trustRole.label || 'Home/Remote');
+                } else if (trustRole.tier === 'ANONYMIZED') {
+                    networkBreakdown.anonymized++;
+                    s.networkLabel = 'VPN/Proxy';
+                } else {
+                    networkBreakdown.untrusted++;
+                    s.networkLabel = 'Unknown Network';
                 }
             } catch (err) {
-                networkBreakdown.untrusted++; 
+                networkBreakdown.untrusted++;
                 s.networkLabel = 'Unknown Network';
             }
         }
-        
+
         networkBreakdown.anonymized += (vpnCount || 0);
         if (networkBreakdown.anonymized > 0 && networkBreakdown.untrusted >= networkBreakdown.anonymized) {
             networkBreakdown.untrusted -= networkBreakdown.anonymized;
         }
 
-        const recentList = sessions.slice(0, 25).map(s => {
-            const identity = userMap[s.user_id] || {};
+        // build the recent sessions list
+        var recentList = sessions.slice(0, 25).map(function(s) {
+            var identity = userMap[s.user_id] || {};
             return {
                 username: identity.username || 'Unidentified',
                 role: identity.role || 'Personnel',
@@ -378,8 +415,8 @@ router.get('/api/admin/remote-analytics', async (req, res) => {
                 vpnPercentage: vpnPercent,
                 offHoursLogins: offHoursEvents.length,
                 avgRiskScore: avgRisk,
-                uniqueCountries: uniqueCountries.size,
-                uniqueDevices: uniqueDevices.size
+                uniqueCountries: Object.keys(uniqueCountries).length,
+                uniqueDevices: Object.keys(uniqueDevices).length
             },
             hourlyBreakdown: hourlyBreakdown,
             topLocations: topCountries,
