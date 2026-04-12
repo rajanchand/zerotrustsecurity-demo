@@ -1,4 +1,5 @@
 var { logSecurityEvent } = require('../services/monitorService');
+var geoService = require('../services/geoService');
 
 // track user behaviour and flag risky activity
 // looks at request rate and ip changes
@@ -43,6 +44,9 @@ function flagHighRisk(req, res, next) {
 
     // too many requests in 2 minutes, add risk
     if (tracker.count > 200) {
+        var locationData = geoService.getLocation(ip);
+        var country = locationData ? locationData.country : 'Unknown';
+
         if (!tracker.lastWarning || (now - tracker.lastWarning) > 60000) {
             tracker.lastWarning = now;
             tracker.riskBoost = Math.min(tracker.riskBoost + 10, 40);
@@ -51,14 +55,17 @@ function flagHighRisk(req, res, next) {
                 event_type: 'RISK_ALERT',
                 user_id: userId,
                 username: req.session.username || 'System',
-                ip: req.ip,
+                ip: ip,
+                location: country,
                 details: { reason: 'Too many requests', count: tracker.count }
             }).catch(function() {});
         }
     }
 
-    // ip changed mid session, thats suspicious
     if (tracker.lastIP && tracker.lastIP !== ip) {
+        var locationData = geoService.getLocation(ip);
+        var country = locationData ? locationData.country : 'Unknown';
+
         tracker.riskBoost = Math.min(tracker.riskBoost + 20, 40);
 
         logSecurityEvent({
@@ -66,6 +73,7 @@ function flagHighRisk(req, res, next) {
             user_id: userId,
             username: req.session.username || 'System',
             ip: ip,
+            location: country,
             details: { previous_ip: tracker.lastIP, current_ip: ip }
         }).catch(function() {});
 
