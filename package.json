@@ -1,13 +1,12 @@
 {
   "name": "zts-zero-trust-security-demo",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Zero Trust Security Demo for MSc Dissertation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup": "node setup-db.js",
-    "seed": "node seed.js"
+    "update-db": "node update-db.js"
   },
   "author": "Rajan",
   "license": "ISC",
