@@ -1,40 +1,30 @@
 var SLACK_WEBHOOK = process.env.SLACK_WEBHOOK_URL || '';
 
-var ALERT_COLORS = {
-    AUTHENTICATION: '#22c55e',
-    VPN_ALERT: '#ef4444',
-    OFF_HOURS_ALERT: '#f59e0b',
-    INITIAL_ENROLLMENT: '#3b82f6',
-    SECURITY_DEVIATION: '#ef4444'
-};
-
 var ALERT_TITLES = {
-    AUTHENTICATION: 'User Logged In',
+    LOGIN: 'User Logged In',
+    FIRST_LOGIN: 'First Login',
     VPN_ALERT: 'VPN or Unusual Location',
     OFF_HOURS_ALERT: 'Off-Hours Login',
     INITIAL_ENROLLMENT: 'New User Created',
     SECURITY_DEVIATION: 'Security Issue'
 };
 
-/**
- * Send a security alert to the Slack channel.
- */
+// send a security alert to the slack channel
 async function sendSlackAlert(params) {
     if (!SLACK_WEBHOOK) {
         console.log('[Slack] Not configured, skipping alert');
         return { dispatched: false, failureReason: 'Slack not configured' };
     }
 
-    var type = params.type || 'AUTHENTICATION';
+    var type = params.type || 'LOGIN';
     var title = ALERT_TITLES[type] || 'Security Event';
-    var color = ALERT_COLORS[type] || '#64748b';
     var time = new Date().toUTCString();
 
-    // Build a simple text message instead of a fancy table
-    var msg = 'User: ' + (params.username || 'System') + 
-              ', Role: ' + (params.role || 'N/A') + 
-              ', IP: ' + (params.ip || 'Unknown') + 
-              ', Location: ' + (params.country || 'Unknown') + 
+    // build a simple text message
+    var msg = 'User: ' + (params.username || 'System') +
+              ', Role: ' + (params.role || 'N/A') +
+              ', IP: ' + (params.ip || 'Unknown') +
+              ', Location: ' + (params.country || 'Unknown') +
               ', Risk: ' + (params.riskScore || 0) + ' (' + (params.riskLevel || 'Low') + ')' +
               ', Time: ' + time;
 
@@ -79,4 +69,4 @@ async function sendSlackAlert(params) {
     }
 }
 
-module.exports = { sendSlackAlert };
+module.exports = { sendSlackAlert: sendSlackAlert };

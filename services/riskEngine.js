@@ -1,7 +1,7 @@
 var { supabase } = require('../db');
 var { logSecurityEvent } = require('./monitorService');
 
-// How many points each risk factor adds
+// risk points for each factor
 var RISK_POINTS = {
     NEW_DEVICE: 25,
     NEW_COUNTRY: 30,
@@ -11,19 +11,14 @@ var RISK_POINTS = {
     ADMIN_UNKNOWN_IP: 40
 };
 
-/**
- * Get risk level from score: Low (0-30), Medium (31-60), High (61+)
- */
+// get risk level from score
 function getRiskLevel(score) {
     if (score <= 30) return 'Low';
     if (score <= 60) return 'Medium';
     return 'High';
 }
 
-/**
- * Calculate risk score for a login attempt.
- * Returns { score, level, factors }
- */
+// work out the risk score for a login attempt
 async function calculateRisk(data) {
     var score = 0;
     var factors = [];
@@ -58,7 +53,7 @@ async function calculateRisk(data) {
         factors.push({ factor: 'Off-hours login', points: RISK_POINTS.OFF_HOURS });
     }
 
-    // Adjust for network trust (can add or reduce risk)
+    // network trust can add or reduce risk
     if (data.networkTrustModifier) {
         score += data.networkTrustModifier;
         if (data.networkTrustModifier < 0) {
@@ -68,12 +63,12 @@ async function calculateRisk(data) {
         }
     }
 
-    // Keep score between 0 and 100
+    // keep between 0 and 100
     score = Math.min(100, Math.max(0, score));
 
     var level = getRiskLevel(score);
 
-    // Save to database
+    // save to db
     await supabase.from('risk_logs').insert({
         user_id: data.userId,
         score: score,
@@ -85,7 +80,7 @@ async function calculateRisk(data) {
         })
     });
 
-    // Log security event if risk > 0
+    // log if risk > 0
     if (score > 0) {
         logSecurityEvent({
             event_type: 'RISK_SCORE_THRESHOLD_ADJUSTED',
@@ -104,9 +99,7 @@ async function calculateRisk(data) {
     };
 }
 
-/**
- * Get risk history for a user.
- */
+// get risk history for a user
 async function getRiskHistory(userId, limit) {
     limit = limit || 20;
     var { data: logs } = await supabase
@@ -119,9 +112,7 @@ async function getRiskHistory(userId, limit) {
     return logs || [];
 }
 
-/**
- * Get all risk logs (for admin view).
- */
+// get all risk logs for admin view
 async function getAllRiskHistory(limit) {
     limit = limit || 50;
     var { data: logs } = await supabase
@@ -132,7 +123,7 @@ async function getAllRiskHistory(limit) {
 
     if (!logs || logs.length === 0) return [];
 
-    // Get usernames for each log
+    // get usernames for each log entry
     var userIds = [];
     logs.forEach(function(log) {
         if (log.user_id && userIds.indexOf(log.user_id) === -1) {
@@ -169,6 +160,6 @@ module.exports = {
     calculateRisk: calculateRisk,
     getRiskHistory: getRiskHistory,
     getAllRiskHistory: getAllRiskHistory,
-    RISK_WEIGHTS: RISK_POINTS,
+    RISK_POINTS: RISK_POINTS,
     getRiskLevel: getRiskLevel
 };
