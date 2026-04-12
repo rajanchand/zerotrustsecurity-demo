@@ -111,7 +111,7 @@
                 <button class="small-btn" onclick="closeModal()">Close</button>
             </div>
             <table>
-                <thead><tr><th>User</th><th>Time</th><th>IP</th><th>Details</th></tr></thead>
+                <thead><tr><th>User</th><th>Time</th><th>IP</th><th>Location</th><th>Details</th></tr></thead>
                 <tbody id="modalBody"></tbody>
             </table>
         </div>
@@ -254,7 +254,11 @@
             else {
                 filtered.forEach(function(e) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td><strong>' + (e.username || 'System') + '</strong></td><td class="mono">' + fmtDate(e.timestamp || new Date()) + '</td><td class="mono">' + (e.ip || '-') + '</td><td>' + ((e.details && e.details.reason) || e.event_type) + '</td>';
+                    tr.innerHTML = '<td><strong>' + (e.username || 'System') + '</strong></td>' +
+                                   '<td class="mono">' + fmtDate(e.timestamp || new Date()) + '</td>' +
+                                   '<td class="mono">' + (e.ip || '-') + '</td>' +
+                                   '<td><strong style="color:#2563eb; font-size:0.8rem;">' + (e.location || 'Unknown') + '</strong></td>' +
+                                   '<td>' + ((e.details && e.details.reason) || e.event_type) + '</td>';
                     tbody.appendChild(tr);
                 });
             }
