@@ -414,6 +414,7 @@ router.get('/api/admin/remote-analytics', async function(req, res) {
                 totalSessions24h: totalSessions,
                 vpnPercentage: vpnPercent,
                 offHoursLogins: offHoursEvents.length,
+                uniqueOffHoursUsers: Object.keys(offHoursUsers).length,
                 avgRiskScore: avgRisk,
                 uniqueCountries: Object.keys(uniqueCountries).length,
                 uniqueDevices: Object.keys(uniqueDevices).length

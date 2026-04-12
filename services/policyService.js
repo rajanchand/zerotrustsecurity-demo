@@ -3,7 +3,7 @@
 // anything outside that is off hours
 var OFFICE_HOURS = {
     START: 9,
-    END: 18
+    END: 16
 };
 
 // check if the given time is outside office hours
@@ -14,7 +14,7 @@ function isOffHours(date, timezoneOffsetMinutes) {
     var hour = d.getHours() + offsetHours;
     hour = (hour + 24) % 24;
 
-    // off hours = before 9am or after 6pm
+    // off hours = before 9am or after 4pm (16:00)
     if (hour >= OFFICE_HOURS.END || hour < OFFICE_HOURS.START) {
         return true;
     }
