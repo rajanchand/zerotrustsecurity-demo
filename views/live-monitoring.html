@@ -129,10 +129,8 @@
             var session = await (await fetch('/api/session')).json();
             if (!session.loggedIn) return location.href = '/login';
             buildNavbar(session.user.role, 'live-monitoring', session.user.username);
-            updateStats();
-            loadHistory();
+            await loadHistory();
             startLiveStream();
-            setInterval(updateStats, 10000);
         }
 
         async function loadHistory() {
@@ -140,6 +138,7 @@
                 var res = await fetch('/api/monitor/events?limit=300');
                 events = await res.json();
                 renderEvents();
+                updateStats();
             } catch (err) { console.error(err); }
         }
 
@@ -213,22 +212,25 @@
                         if (tbody.children.length === 1 && tbody.children[0].textContent.indexOf('Loading') >= 0) tbody.innerHTML = '';
                         addEventRow(tbody, data, true);
                         document.getElementById('eventCount').textContent = events.length;
+                        updateStats();
                     }
                 } catch (e) { console.error(e); }
             };
             source.onerror = function() { document.getElementById('connState').textContent = 'Disconnected'; document.querySelector('.live-dot').style.background = '#dc2626'; };
         }
 
-        async function updateStats() {
-            try {
-                var res = await fetch('/api/monitor/stats');
-                var stats = await res.json();
-                document.getElementById('stat-total').textContent = stats.total || 0;
-                document.getElementById('stat-critical').textContent = stats.critical || 0;
-                document.getElementById('stat-high').textContent = stats.high || 0;
-                document.getElementById('stat-failures').textContent = stats.login_failed || 0;
-                document.getElementById('stat-vpn').textContent = stats.vpn_detected || 0;
-            } catch (e) { console.error(e); }
+        function updateStats() {
+            var total = events.length;
+            var critical = events.filter(function(e) { return e.severity === 'CRITICAL'; }).length;
+            var high = events.filter(function(e) { return e.severity === 'HIGH'; }).length;
+            var failures = events.filter(function(e) { return String(e.event_type).indexOf('FAIL') >= 0 || String(e.event_type).indexOf('BLOCK') >= 0; }).length;
+            var vpn = events.filter(function(e) { return e.event_type === 'VPN_DETECTED'; }).length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-critical').textContent = critical;
+            document.getElementById('stat-high').textContent = high;
+            document.getElementById('stat-failures').textContent = failures;
+            document.getElementById('stat-vpn').textContent = vpn;
         }
 
         function togglePause() {
@@ -244,7 +246,7 @@
             else if (category === 'CRITICAL') { filtered = events.filter(function(e) { return e.severity === 'CRITICAL'; }); header = 'Critical Events'; }
             else if (category === 'HIGH') { filtered = events.filter(function(e) { return e.severity === 'HIGH'; }); header = 'High Risk Events'; }
             else if (category === 'FAILURES') { filtered = events.filter(function(e) { return String(e.event_type).indexOf('FAIL') >= 0 || String(e.event_type).indexOf('BLOCK') >= 0; }); header = 'Failed Logins'; }
-            else if (category === 'VPN') { filtered = events.filter(function(e) { return e.event_type === 'VPN_DETECTED' || (e.details && e.details.vpn); }); header = 'VPN Usage'; }
+            else if (category === 'VPN') { filtered = events.filter(function(e) { return e.event_type === 'VPN_DETECTED'; }); header = 'VPN Usage'; }
 
             document.getElementById('modalTitle').textContent = header;
             var tbody = document.getElementById('modalBody'); tbody.innerHTML = '';
