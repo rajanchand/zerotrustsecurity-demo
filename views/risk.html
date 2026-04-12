@@ -156,14 +156,21 @@
                     tr.innerHTML = '<td><strong>' + r.score + '</strong></td><td><span class="badge ' + badgeClass + '">' + r.level + '</span></td><td style="font-family:monospace; font-size:0.8rem;">' + (ip || '—') + '</td><td>' + (country || '—') + '</td><td>' + desc + '</td><td style="font-size:0.8rem; color:#888;">' + formatDate(r.created_at) + '</td>';
                     tbody.appendChild(tr);
                 });
-                renderChart(history);
             } else {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:#aaa;">No history yet.</td></tr>';
             }
+            
+            renderChart(history);
         }
 
         function renderChart(history) {
             var data = history.slice().reverse();
+            
+            // Render an empty flatline if no historical score exists to prevent a broken blank UI block.
+            if (data.length === 0) {
+                data = [{ created_at: new Date().toISOString(), score: 0 }];
+            }
+
             new Chart(document.getElementById('riskChart').getContext('2d'), {
                 type: 'line',
                 data: {
