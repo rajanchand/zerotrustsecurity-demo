@@ -3,18 +3,13 @@ var crypto = require('crypto');
 var ALGORITHM = 'aes-256-gcm';
 var IV_LENGTH = 16;
 
-/**
- * Get the encryption key from environment variables.
- * Creates a 32-byte key using SHA-256 hash.
- */
+// get 32 byte key from env variable
 function getKey() {
     var secret = process.env.ENCRYPTION_KEY || process.env.SESSION_SECRET || 'zts-default-key';
     return crypto.createHash('sha256').update(secret).digest();
 }
 
-/**
- * Encrypt a string. Returns format: "iv:authTag:ciphertext"
- */
+// encrypt a string, returns "iv:authTag:ciphertext" format
 function encrypt(text) {
     if (!text) return text;
 
@@ -30,15 +25,13 @@ function encrypt(text) {
     return iv.toString('hex') + ':' + tag.toString('hex') + ':' + encrypted;
 }
 
-/**
- * Decrypt a string in "iv:authTag:ciphertext" format.
- */
+// decrypt a string from "iv:authTag:ciphertext" format
 function decrypt(encrypted) {
     if (!encrypted) return encrypted;
 
     var parts = encrypted.split(':');
     if (parts.length !== 3) {
-        // Not encrypted, return as-is
+        // not encrypted, return as is
         return encrypted;
     }
 
