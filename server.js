@@ -80,10 +80,10 @@ if (process.env.DATABASE_URL) {
     });
 } else {
     if (isProduction) {
-        console.error('ERROR: DATABASE_URL is missing. Postgres session store is required in production.');
-        process.exit(1);
+        console.error('WARNING: DATABASE_URL is missing. Postgres session store is required for stable production. Falling back to MemoryStore.');
+    } else {
+        console.warn('WARNING: DATABASE_URL not set. Falling back to MemoryStore for sessions.');
     }
-    console.warn('WARNING: DATABASE_URL not set. Falling back to MemoryStore for sessions.');
 }
 
 app.use(session(sessionOptions));
