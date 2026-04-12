@@ -72,7 +72,7 @@
 
         <div class="stats-row">
             <div class="stat-box"><div class="label">Sessions (24h)</div><div class="value" id="kpi-sessions">--</div><div class="sub">Total logins</div></div>
-            <div class="stat-box"><div class="label">VPN Usage</div><div class="value" id="kpi-vpn" style="color:#d97706">--</div><div class="sub">Via VPN</div></div>
+            <div class="stat-box" style="cursor:pointer;" onclick="openModal('vpnModal')"><div class="label">VPN Usage</div><div class="value" id="kpi-vpn" style="color:#d97706">--</div><div class="sub">Via VPN</div></div>
             <div class="stat-box" style="cursor:pointer;" onclick="openModal('offHoursModal')"><div class="label">Off-Hours</div><div class="value" id="kpi-offhours" style="color:#dc2626">--</div><div class="sub">After-hours logins</div></div>
             <div class="stat-box" style="cursor:pointer;" onclick="openModal('uniqueOffHoursModal')"><div class="label">Off-Hour Users</div><div class="value" id="kpi-uniqueoffhours" style="color:#d97706">--</div><div class="sub">Unique accounts</div></div>
             <div class="stat-box"><div class="label">Avg Risk</div><div class="value" id="kpi-avgrisk">--</div><div class="sub">Average score</div></div>
@@ -116,6 +116,15 @@
         </div>
     </div>
 
+    <!-- VPN Logins Modal -->
+    <div id="vpnModal" class="modal-bg">
+        <div class="modal-inner">
+            <h3 style="margin-top:0;">VPN Logins</h3>
+            <table><thead><tr><th>User</th><th>Role</th><th>Time</th><th>Status</th><th>Location</th><th>IP</th><th>VPN</th></tr></thead><tbody id="vpnBody"></tbody></table>
+            <div style="margin-top:16px; text-align:right;"><button class="small-btn" onclick="closeModal('vpnModal')">Close</button></div>
+        </div>
+    </div>
+
     <!-- Unique Off-Hours Modal -->
     <div id="uniqueOffHoursModal" class="modal-bg">
         <div class="modal-inner">
@@ -131,6 +140,7 @@
     <script>
         var offHoursData = [];
         var uniqueUsersData = [];
+        var vpnData = [];
 
         async function initPage() {
             var res = await fetch('/api/session');
@@ -162,8 +172,9 @@
                 drawConnections(data.networkTrust || {});
                 drawSessions(data.recentSessions || []);
 
-                offHoursData = data.offHoursData || [];
+                offHoursData = data.offHoursEvents || [];
                 uniqueUsersData = data.uniqueOffHoursUsers || [];
+                vpnData = data.vpnEvents || [];
                 fillModals();
             } catch (err) { console.error(err); }
         }
@@ -224,6 +235,13 @@
                 var time = new Date(u.created_at).toLocaleString('en-GB');
                 var active = (Date.now() - new Date(u.created_at).getTime() < 15 * 60 * 1000);
                 b2.innerHTML += '<tr><td>' + (u.username || '') + '</td><td>' + (u.details && u.details.role ? u.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (u.country || '') + '</td><td style="font-family:monospace;">' + (u.ip || '') + '</td><td>' + (u.vpn ? 'Yes' : 'No') + '</td></tr>';
+            });
+            var b3 = document.getElementById('vpnBody');
+            b3.innerHTML = '';
+            vpnData.forEach(function(evt) {
+                var time = new Date(evt.created_at).toLocaleString('en-GB');
+                var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
+                b3.innerHTML += '<tr><td>' + (evt.username || '') + '</td><td>' + (evt.details && evt.details.role ? evt.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (evt.country || '') + '</td><td style="font-family:monospace;">' + (evt.ip || '') + '</td><td><span style="color:#dc2626; font-weight:600;">Yes</span></td></tr>';
             });
         }
 

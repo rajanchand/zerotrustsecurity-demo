@@ -301,27 +301,33 @@ router.get('/api/admin/remote-analytics', async function(req, res) {
         // find off-hours logins
         var offHoursEvents = [];
         var offHoursUsers = {};
+        var vpnEvents = [];
 
         sessions.forEach(function(session) {
+            var identityContext = userMap[session.user_id] || {};
+            var sessionEntry = {
+                id: session.id,
+                user_id: session.user_id,
+                ip: session.ip,
+                browser: session.browser,
+                os: session.os,
+                country: session.country,
+                risk_score: session.risk_score,
+                device_fingerprint: session.device_fingerprint,
+                login_at: session.login_at,
+                vpn: session.vpn,
+                username: identityContext.username || 'Unknown',
+                details: { role: identityContext.role || 'Personnel' },
+                created_at: session.login_at
+            };
+
             if (isOffHours(new Date(session.login_at))) {
-                var identityContext = userMap[session.user_id] || {};
-                var offHoursEntry = {
-                    id: session.id,
-                    user_id: session.user_id,
-                    ip: session.ip,
-                    browser: session.browser,
-                    os: session.os,
-                    country: session.country,
-                    risk_score: session.risk_score,
-                    device_fingerprint: session.device_fingerprint,
-                    login_at: session.login_at,
-                    vpn: session.vpn,
-                    username: identityContext.username || 'Unknown',
-                    details: { role: identityContext.role || 'Personnel' },
-                    created_at: session.login_at
-                };
-                offHoursEvents.push(offHoursEntry);
-                if (!offHoursUsers[session.user_id]) offHoursUsers[session.user_id] = offHoursEntry;
+                offHoursEvents.push(sessionEntry);
+                if (!offHoursUsers[session.user_id]) offHoursUsers[session.user_id] = sessionEntry;
+            }
+
+            if (session.vpn) {
+                vpnEvents.push(sessionEntry);
             }
         });
 
@@ -426,7 +432,8 @@ router.get('/api/admin/remote-analytics', async function(req, res) {
             offHoursEvents: offHoursEvents,
             offHoursCount: offHoursEvents.length,
             uniqueOffHoursCount: Object.keys(offHoursUsers).length,
-            uniqueOffHoursUsers: Object.values(offHoursUsers)
+            uniqueOffHoursUsers: Object.values(offHoursUsers),
+            vpnEvents: vpnEvents
         });
     } catch (err) {
         console.error('[Analytics] Error:', err);
