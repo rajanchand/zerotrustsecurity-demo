@@ -76,7 +76,7 @@ router.get('/api/admin/users/:userId/forensics', async function(req, res) {
         }
 
         var results = await Promise.all([
-            supabase.from('devices').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            supabase.from('devices').select('*').eq('user_id', userId).order('first_seen', { ascending: false }),
             supabase.from('sessions_log').select('*').eq('user_id', userId).order('login_at', { ascending: false }).limit(30),
             supabase.from('audit_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
             supabase.from('security_events').select('*').eq('user_id', userId).order('timestamp', { ascending: false }).limit(50)
