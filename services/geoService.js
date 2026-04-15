@@ -4,17 +4,13 @@ var http = require('http');
 var CACHE_TTL = 30 * 60 * 1000;
 var geoCache = {};
 
-/**
- * IPv6-mapped IPv4 addresses (e.g., "::ffff:1.2.3.4" -> "1.2.3.4").
- */
+// strip ipv6 prefix from ipv4-mapped addresses
 function cleanIP(ip) {
     if (!ip) return ip;
     return ip.startsWith('::ffff:') ? ip.slice(7) : ip;
 }
 
-/**
- * Check if an IP is a local/private network address.
- */
+// check for local/private ips
 function isLocalIP(ip) {
     if (!ip) return true;
     var clean = cleanIP(ip);
@@ -27,10 +23,7 @@ function isLocalIP(ip) {
     );
 }
 
-/**
- *  country, city, ISP, and proxy status for an IP address.
- *  ip-api.com .
- */
+// look up location for an ip using ip-api.com
 function getGeoFromIP(ip) {
     return new Promise(function (resolve) {
         var clean = cleanIP(ip);
@@ -92,9 +85,7 @@ function getGeoFromIP(ip) {
     });
 }
 
-/**
- * Get the country for an IP from cache. Returns 'Unknown' if not cached.
- */
+// get country from cache, returns 'Unknown' if not cached
 function getCountryFromIP(ip) {
     var clean = cleanIP(ip);
     if (isLocalIP(clean)) return 'Local Network';
@@ -103,9 +94,7 @@ function getCountryFromIP(ip) {
     return 'Unknown';
 }
 
-/**
- * Check if an IP address looks like it's from a VPN or proxy.
- */
+// check if the ip is likely a vpn or proxy
 function isVPNConnection(ip) {
     if (!ip) return false;
     var clean = cleanIP(ip);
@@ -118,10 +107,7 @@ function isVPNConnection(ip) {
     return vpnRanges.some(function (range) { return clean.startsWith(range); });
 }
 
-/**
- * Check for impossible travel: same user logging in from two countries
- * within 2 hours (120 minutes).
- */
+// flag impossible travel (two countries in under 2 hours)
 function checkImpossibleTravel(currentCountry, previousCountry, minutesBetween) {
     if (!previousCountry || !currentCountry) return false;
     if (currentCountry === previousCountry) return false;

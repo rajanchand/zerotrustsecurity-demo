@@ -1,8 +1,6 @@
 var { supabase } = require('../db');
 
-/**
- * Find a device in the database by fingerprint or browser+OS match.
- */
+// find device by fingerprint or browser+os combo
 async function findDevice(userId, fingerprint, browser, os) {
     // Try exact fingerprint match first
     var { data: device } = await supabase
@@ -38,11 +36,7 @@ async function findDevice(userId, fingerprint, browser, os) {
     return null;
 }
 
-/**
- * Register a device. If the device exists, update its last seen time.
- * If it's new, add it to the database.
- * Returns { isNew: true/false, device: {...} }
- */
+// register device or update last seen if it already exists
 async function registerDevice(userId, info) {
     var existing = await findDevice(userId, info.fingerprint, info.browser, info.os);
 
@@ -89,9 +83,7 @@ async function registerDevice(userId, info) {
     return { isNew: true, device: newDevice };
 }
 
-/**
- * Get all devices for a user.
- */
+// get all devices for a user
 async function getUserDevices(userId) {
     var { data: devices } = await supabase
         .from('devices')
@@ -102,9 +94,7 @@ async function getUserDevices(userId) {
     return devices || [];
 }
 
-/**
- * Get all devices in the system (admin view).
- */
+// get all devices (admin view)
 async function getAllDevices() {
     var { data: devices } = await supabase
         .from('devices')
@@ -142,9 +132,7 @@ async function getAllDevices() {
     });
 }
 
-/**
- * Get all devices waiting for approval.
- */
+// get pending devices waiting for approval
 async function getPendingDevices() {
     var { data: devices } = await supabase
         .from('devices')
@@ -182,9 +170,7 @@ async function getPendingDevices() {
     });
 }
 
-/**
- * Approve a device.
- */
+// approve a device
 async function approveDevice(deviceId, approvedBy, trustLevel) {
     trustLevel = trustLevel || 'Managed';
 
@@ -211,16 +197,12 @@ async function approveDevice(deviceId, approvedBy, trustLevel) {
     return { success: true, device: updated };
 }
 
-/**
- * Remove a device from the system.
- */
+// remove a device
 async function rejectDevice(deviceId) {
     await supabase.from('devices').delete().eq('id', deviceId);
 }
 
-/**
- * Get device health stats for a user.
- */
+// device health stats for a user
 async function getDeviceHealth(userId) {
     var devices = await getUserDevices(userId);
     var total = devices.length;

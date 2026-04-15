@@ -1,6 +1,5 @@
-// off hours and office hours config
-// office hours: 9am to 6pm
-// anything outside that is off hours
+// office hours: 9am to 4pm
+// anything outside that counts as off hours
 var OFFICE_HOURS = {
     START: 9,
     END: 16

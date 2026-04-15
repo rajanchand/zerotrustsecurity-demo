@@ -14,9 +14,7 @@ var TRUST_TIERS = {
     UNTRUSTED:     { tier: 'UNTRUSTED',     label: 'Unknown Network', riskModifier: 0, color: '#64748b' }
 };
 
-/**
- * Check if an IP is in the corporate IP list.
- */
+// check if ip is in the office/corporate list
 function isCorporateIP(ip) {
     if (!ip || CORPORATE_IPS.length === 0) return false;
 
@@ -39,10 +37,7 @@ function isCorporateIP(ip) {
     return false;
 }
 
-/**
- * Classify the trust level of a network connection.
- * Returns { tier, label, riskModifier, color }
- */
+// classify network trust (returns tier, label, risk modifier)
 async function classifyNetwork(userId, ip, country, isVPN) {
     // VPN/proxy detected
     if (isVPN) {

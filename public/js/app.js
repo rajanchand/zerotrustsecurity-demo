@@ -1,6 +1,4 @@
-/**
- * ZTS Shared Functions
- */
+// shared helpers for all ZTS pages
 
 // Show a small notification message
 function showToast(message, type) {
