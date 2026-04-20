@@ -91,7 +91,7 @@
 
         <form id="verify-form">
             <div style="margin: 20px 0;">
-                <input type="text" id="token-input" class="code-input" placeholder="0 0 0 | 0 0 0" maxlength="13" required autofocus autocomplete="one-time-code">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" id="token-input" class="code-input" placeholder="0 0 0 | 0 0 0" required autofocus autocomplete="one-time-code">
             </div>
             <button type="submit" class="verify-btn">Verify</button>
         </form>
@@ -155,6 +155,12 @@
 
                 var tokenVal = document.getElementById('token-input').value.replace(/[^0-9]/g, '');
 
+                if (tokenVal.length !== 6) {
+                    errorBox.textContent = 'Please enter a valid 6-digit code.';
+                    errorBox.style.display = 'block';
+                    return;
+                }
+
                 var result = await postJSON('/api/verify-otp', {
                     code: tokenVal
                 });
@@ -200,14 +206,37 @@
 
         // format visual input
         document.getElementById('token-input').addEventListener('input', function(e) {
-            var raw = e.target.value.replace(/[^0-9]/g, '');
+            var input = e.target;
+            var oldVal = input.value;
+            var cursor = input.selectionStart;
+            
+            var digitsBeforeCursor = oldVal.substring(0, cursor).replace(/[^0-9]/g, '').length;
+            var raw = oldVal.replace(/[^0-9]/g, '').substring(0, 6);
+            
             var formatted = '';
             for (var i = 0; i < raw.length; i++) {
                 if (i === 3) formatted += ' | ';
                 else if (i > 0 && i !== 3) formatted += ' ';
                 formatted += raw[i];
             }
-            e.target.value = formatted;
+            
+            if (oldVal !== formatted) {
+                input.value = formatted;
+                
+                var newCursor = 0;
+                var digitCount = 0;
+                for (var j = 0; j < formatted.length; j++) {
+                    if (/[0-9]/.test(formatted[j])) {
+                        digitCount++;
+                        if (digitCount === digitsBeforeCursor) {
+                            newCursor = j + 1;
+                            break;
+                        }
+                    }
+                }
+                if (digitsBeforeCursor === 0) newCursor = 0;
+                input.setSelectionRange(newCursor, newCursor);
+            }
         });
 
         document.getElementById('verify-form').addEventListener('submit', verifyCode);

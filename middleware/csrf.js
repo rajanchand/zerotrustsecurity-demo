@@ -34,6 +34,10 @@ function csrfProtection(req, res, next) {
     var token = req.headers['x-csrf-token'] || req.body._csrfToken;
 
     if (!token || !safeCompare(token, req.session.csrfToken)) {
+console.log('CSRF FAIL for path:', req.path);
+console.log('Provided token:', token);
+console.log('Session csrfToken:', req.session ? req.session.csrfToken : 'no session');
+console.log('Session ID:', req.sessionID);
         var { logSecurityEvent } = require('../services/monitorService');
 
         logSecurityEvent({
