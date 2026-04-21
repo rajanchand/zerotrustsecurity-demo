@@ -1,5 +1,4 @@
 # Zero Trust Security (ZTS) Architecture Demo
-**A practical approach to securing remote work environments.**
 
 Hi there! Welcome to the practical demonstration of a Zero Trust Security (ZTS) model, built entirely from the ground up as part of my MSc IT Dissertation. 
 
