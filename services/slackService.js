@@ -6,7 +6,9 @@ var ALERT_TITLES = {
     VPN_ALERT: 'VPN or Unusual Location',
     OFF_HOURS_ALERT: 'Off-Hours Login',
     INITIAL_ENROLLMENT: 'New User Created',
-    SECURITY_DEVIATION: 'Security Issue'
+    SECURITY_DEVIATION: 'Security Issue',
+    HIGH_RISK: '🚨 High Risk Login',
+    COUNTRY_CHANGE: '🌍 Suspicious Country Change'
 };
 
 // send a security alert to the slack channel

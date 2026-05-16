@@ -6,7 +6,7 @@ var { generateOTP } = require('../services/otpService');
 var PUBLIC_PATHS = [
     '/login', '/logout', '/otp', '/verify-otp',
     '/api/login', '/api/verify-otp', '/api/session',
-    '/css', '/js', '/api/csrf-token'
+    '/css', '/js', '/api/csrf-token', '/favicon.ico', '/manifest.json', '/apple-touch-icon.png'
 ];
 
 // check user status from db every 10 seconds
@@ -25,22 +25,9 @@ async function requireLogin(req, res, next) {
         return res.redirect('/login');
     }
 
-    // check working hours from env
-    var currentHour = new Date().getUTCHours();
-    var START_HOUR = parseInt(process.env.WORK_HOURS_START, 10);
-    if (isNaN(START_HOUR)) START_HOUR = 0;
-    
-    var END_HOUR = parseInt(process.env.WORK_HOURS_END, 10);
-    if (isNaN(END_HOUR)) END_HOUR = 24;
 
-    if (currentHour < START_HOUR || currentHour >= END_HOUR) {
-        if (req.session) {
-            req.session.destroy(function() { res.redirect('/login?msg=off_hours'); });
-        } else {
-            res.redirect('/login?msg=off_hours');
-        }
-        return;
-    }
+
+
 
     // high risk users go to security block page
     if (req.session.highRisk && req.path !== '/security-block' && req.path !== '/logout') {

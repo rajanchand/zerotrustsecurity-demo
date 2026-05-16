@@ -93,6 +93,13 @@ var { csrfProtection, generateCSRFToken } = require('./middleware/csrf');
 var { apiLimiter } = require('./middleware/rateLimiter');
 var { verifyHMAC } = require('./middleware/hmacVerify');
 
+app.use(function(req, res, next) {
+    if (req.path.startsWith('/api/') || req.path === '/login' || req.path === '/otp') {
+        console.log(`[REQ] ${req.method} ${req.path} - Session ID: ${req.sessionID} - Has userId: ${req.session && req.session.userId ? 'YES' : 'NO'}`);
+    }
+    next();
+});
+
 // routes
 var authRoutes = require('./routes/authRoutes');
 var dashboardRoutes = require('./routes/dashboardRoutes');

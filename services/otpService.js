@@ -60,8 +60,18 @@ async function verifyOTP(userId, inputCode) {
     var matchedCode = null;
     for (var i = 0; i < activeCodes.length; i++) {
         var record = activeCodes[i];
-        var decrypted = decrypt(record.code);
-        if (decrypted === inputCode || record.code === inputCode) {
+        var decrypted = decrypt(record.code) || '';
+        var inputStr = inputCode || '';
+        
+        // Pad to ensure buffers are same length for timingSafeEqual
+        var inputBuffer = Buffer.from(inputStr.padStart(6, '0'));
+        var decryptedBuffer = Buffer.from(decrypted.padStart(6, '0'));
+        var rawBuffer = Buffer.from((record.code || '').padStart(6, '0'));
+
+        var isDecryptedMatch = (inputBuffer.length === decryptedBuffer.length) && crypto.timingSafeEqual(inputBuffer, decryptedBuffer);
+        var isRawMatch = (inputBuffer.length === rawBuffer.length) && crypto.timingSafeEqual(inputBuffer, rawBuffer);
+
+        if (isDecryptedMatch || isRawMatch) {
             matchedCode = record;
             break;
         }

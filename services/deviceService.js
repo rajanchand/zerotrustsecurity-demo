@@ -54,14 +54,8 @@ async function registerDevice(userId, info) {
         return { isNew: false, device: existing };
     }
 
-    // Check if user is SuperAdmin (auto-approve)
+    // Zero Trust: All devices are pending until explicitly approved by an administrator
     var autoApprove = false;
-    try {
-        var { data: user } = await supabase.from('users').select('role').eq('id', userId).single();
-        if (user && user.role === 'SuperAdmin') autoApprove = true;
-    } catch (err) {
-        // Not critical
-    }
 
     var label = (info.browser || 'Unknown') + ' (' + (info.os || 'Unknown') + ')';
     var { data: newDevice } = await supabase

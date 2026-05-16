@@ -1,4 +1,6 @@
 var http = require('http');
+var https = require('https');
+
 
 // Cache geo lookups for 30 minutes
 var CACHE_TTL = 30 * 60 * 1000;
@@ -44,21 +46,21 @@ function getGeoFromIP(ip) {
             return resolve(cached.data);
         }
 
-        // Look up the IP
-        var url = 'http://ip-api.com/json/' + clean + '?fields=status,country,city,isp,proxy';
+        // Look up the IP securely over HTTPS
+        var url = 'https://ipwho.is/' + clean;
 
-        var req = http.get(url, function (res) {
+        var req = https.get(url, function (res) {
             var body = '';
             res.on('data', function (chunk) { body += chunk; });
             res.on('end', function () {
                 try {
                     var result = JSON.parse(body);
-                    if (result.status === 'success') {
+                    if (result.success) {
                         var geo = {
                             country: result.country || 'Unknown',
                             city: result.city || 'Unknown',
-                            isp: result.isp || 'Unknown',
-                            isProxy: !!result.proxy
+                            isp: (result.connection && result.connection.isp) || 'Unknown',
+                            isProxy: !!(result.security && (result.security.proxy || result.security.vpn))
                         };
                         geoCache[clean] = {
                             data: geo,

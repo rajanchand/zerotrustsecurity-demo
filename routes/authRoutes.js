@@ -20,8 +20,7 @@ var { isOffHours } = require('../services/policyService');
 
 var router = express.Router();
 
-// roles that get their devices auto-approved
-var PRIVILEGED_AUTO_APPROVAL_ROLES = ['SuperAdmin', 'IT'];
+// All devices require explicit approval in a Zero Trust model
 
 // get the real client ip, handles cloudflare and proxies
 function getClientIP(req) {
@@ -150,7 +149,7 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             country: country
         });
 
-        var needsApproval = !PRIVILEGED_AUTO_APPROVAL_ROLES.includes(user.role);
+        var needsApproval = true; // Zero Trust: All devices require approval
 
         // new device needs admin approval
         if (deviceResult.isNew && needsApproval) {
@@ -172,21 +171,6 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             });
         }
 
-        // auto-approve for privileged roles
-        if (deviceResult.isNew && !needsApproval) {
-            await approveDevice(deviceResult.device.id, user.id);
-            await logEvent(user.id, 'DEVICE_AUTO_APPROVED', 'Device auto-approved for ' + user.role, clientIP);
-            await logSecurityEvent({
-                event_type: 'DEVICE_NEW',
-                user_id: user.id,
-                username: user.username,
-                ip: clientIP,
-                location: country,
-                device_id: deviceResult.device ? deviceResult.device.id : null,
-                details: { agent: req.headers['user-agent'], auto_authorized: true, role: user.role }
-            });
-            sendAnomalyAlertEmail(user.username, clientIP, country, 'Device auto-approved').catch(function() {});
-        }
 
         // existing device still waiting for approval
         if (!deviceResult.isNew && needsApproval && !deviceResult.device.approved) {
@@ -323,6 +307,40 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             }
         }
 
+        // country change or impossible travel without VPN
+        if (!isVPN && (!isKnownCountry || impossibleTravel)) {
+            var prevCountry = (recentSessions && recentSessions.length > 0) ? recentSessions[0].country : 'Unknown';
+            sendSlackAlert({
+                type: 'COUNTRY_CHANGE',
+                username: user.username,
+                role: user.role,
+                ip: clientIP,
+                country: country,
+                riskScore: riskResult.score,
+                riskLevel: riskResult.level,
+                device: (browserInfo.name || 'Unknown') + ' ' + (browserInfo.version || '') + ' on ' + (osInfo.name || 'Unknown') + ' ' + (osInfo.version || ''),
+                loginReasons: '[Country change: ' + prevCountry + ' → ' + country + ']' +
+                    (impossibleTravel ? ' [Impossible travel]' : ''),
+                reason: 'Suspicious country change: ' + prevCountry + ' → ' + country
+            }).catch(function() {});
+        }
+
+        // alert on any high-risk login
+        if (riskResult.level === 'High') {
+            sendSlackAlert({
+                type: 'HIGH_RISK',
+                username: user.username,
+                role: user.role,
+                ip: clientIP,
+                country: country,
+                riskScore: riskResult.score,
+                riskLevel: riskResult.level,
+                device: (browserInfo.name || 'Unknown') + ' ' + (browserInfo.version || '') + ' on ' + (osInfo.name || 'Unknown') + ' ' + (osInfo.version || ''),
+                loginReasons: riskResult.factors.map(function(f) { return f.factor; }).join(', '),
+                reason: 'High risk login detected (score: ' + riskResult.score + ')'
+            }).catch(function() {});
+        }
+
         // auto-block if risk is too high (except superadmin)
         if (riskResult.score >= 100 && user.role !== 'SuperAdmin') {
             await supabase.from('users').update({ status: 'blocked' }).eq('id', user.id);
@@ -343,6 +361,13 @@ router.post('/api/login', loginLimiter, async function(req, res) {
         await supabase.from('users').update({ active_session_token: logicSessionToken }).eq('id', user.id);
 
         // store everything in the session
+        await new Promise(function(resolve, reject) {
+            req.session.regenerate(function(err) {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
         req.session.userId = user.id;
         req.session.username = user.username;
         req.session.role = user.role;
@@ -439,7 +464,11 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             }).catch(function() {});
         }
 
-        return req.session.save(function() {
+        console.log('[DEBUG LOGIN] Session ID at save:', req.sessionID);
+        console.log('[DEBUG LOGIN] Session userId at save:', req.session.userId);
+        return req.session.save(function(err) {
+            if (err) console.error('[DEBUG LOGIN] Session save error:', err);
+            console.log('[DEBUG LOGIN] Session saved OK, ID:', req.sessionID);
             return res.json({
                 success: true,
                 risk: { score: riskResult.score, level: riskResult.level, factors: riskResult.factors },
@@ -466,7 +495,12 @@ router.post('/api/verify-otp', otpLimiter, async function(req, res) {
     try {
         var otpCode = (req.body.code || '').trim();
 
+        console.log('[DEBUG OTP] Session ID:', req.sessionID);
+        console.log('[DEBUG OTP] Session userId:', req.session ? req.session.userId : 'NO SESSION');
+        console.log('[DEBUG OTP] Cookie header:', req.headers.cookie ? req.headers.cookie.substring(0, 80) : 'NONE');
+
         if (!req.session || !req.session.userId) {
+            console.log('[DEBUG OTP] Session keys:', req.session ? Object.keys(req.session) : 'NO SESSION');
             return res.json({ success: false, message: 'Session expired. Please log in again.' });
         }
 
