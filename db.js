@@ -221,7 +221,7 @@ class QueryBuilder {
             });
             db[this.table] = rows;
             await writeDB(db);
-            return { data: Array.isArray(this.record) ? newRecords : newRecords[0], error: null };
+            return { data: Array.isArray(this.record) ? newRecords : [newRecords[0]], error: null };
         }
 
         if (this.action === 'update') {
