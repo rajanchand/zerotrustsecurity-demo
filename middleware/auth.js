@@ -95,7 +95,8 @@ async function requireLogin(req, res, next) {
             req.session.otpVerified = false;
             req.session.returnTo = req.originalUrl;
 
-            await generateOTP(req.session.userId);
+            var otpCode = await generateOTP(req.session.userId);
+            req.session.currentOtp = otpCode;
             return req.session.save(function() {
                 res.redirect('/otp');
             });

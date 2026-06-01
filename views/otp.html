@@ -70,6 +70,11 @@
         <h1>Enter Verification Code</h1>
         <p class="desc">We sent a 6-digit code to your registered device.</p>
 
+        <!-- Display OTP for Demo Mode -->
+        <div id="demo-otp-banner" style="display: none; background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; padding: 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-bottom: 20px; text-align: center;">
+            Demo Mode OTP: <span id="demo-otp-code" style="font-family: monospace; font-size: 1.25rem; letter-spacing: 2px; color: #0284c7; font-weight: 700;">------</span>
+        </div>
+
         <div id="alert-off-hours" class="warning-box warning-yellow">
             <strong>Off-hours login:</strong> You are signing in outside normal hours. Extra verification is needed.
         </div>
@@ -108,6 +113,15 @@
             try {
                 var res = await fetch('/api/session');
                 var session = await res.json();
+
+                if (session.otpCode) {
+                    var banner = document.getElementById('demo-otp-banner');
+                    var codeSpan = document.getElementById('demo-otp-code');
+                    if (banner && codeSpan) {
+                        codeSpan.textContent = session.otpCode;
+                        banner.style.display = 'block';
+                    }
+                }
 
                 if (session.offHoursLogin || session.isUnusualHours) {
                     var alert = document.getElementById('alert-off-hours');

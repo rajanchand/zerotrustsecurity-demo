@@ -149,7 +149,16 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             country: country
         });
 
-        var needsApproval = true; // Zero Trust: All devices require approval
+        // SuperAdmin auto-approval: automatically approve the device in the database
+        if (user.role === 'SuperAdmin' && (!deviceResult.device || !deviceResult.device.approved)) {
+            await supabase.from('devices').update({ approved: true, trust_level: 'Managed', approved_by: user.id }).eq('user_id', user.id);
+            if (deviceResult.device) {
+                deviceResult.device.approved = true;
+                deviceResult.device.trust_level = 'Managed';
+            }
+        }
+
+        var needsApproval = user.role !== 'SuperAdmin'; // Zero Trust: All devices require approval (except SuperAdmin)
 
         // new device needs admin approval
         if (deviceResult.isNew && needsApproval) {
@@ -203,8 +212,8 @@ router.post('/api/login', loginLimiter, async function(req, res) {
                         isOffHoursLogin = departmentalHour < departmentContext.work_hours_start || departmentalHour >= departmentContext.work_hours_end;
                     }
 
-                    // geo-fencing: only allow login from certain countries
-                    if (departmentContext.allowed_countries) {
+                    // geo-fencing: only allow login from certain countries (SuperAdmin always allowed)
+                    if (departmentContext.allowed_countries && user.role !== 'SuperAdmin') {
                         var allowedCountries = departmentContext.allowed_countries.split(',').map(function(c) { return c.trim().toLowerCase(); });
                         if (allowedCountries.length > 0 && !allowedCountries.includes(country.toLowerCase())) {
                             await logEvent(user.id, 'GEO_FENCE_VIOLATION', 'Country not allowed: ' + country, clientIP);
@@ -424,7 +433,8 @@ router.post('/api/login', loginLimiter, async function(req, res) {
         // otp is always required, no bypass
         req.session.otpVerified = false;
         req.session.offHoursLogin = isOffHoursLogin;
-        await generateOTP(user.id);
+        var otpCode = await generateOTP(user.id);
+        req.session.currentOtp = otpCode;
         metrics.otpSent.inc();
 
         await logEvent(user.id, 'LOGIN_PASSWORD_OK', 'Password OK, OTP required (Risk: ' + riskResult.level + ')', clientIP);
@@ -600,11 +610,12 @@ router.post('/api/verify-otp', otpLimiter, async function(req, res) {
 
 // get current session info
 router.get('/api/session', function(req, res) {
-    if (!req.session.userId || !req.session.otpVerified) {
+    if (!req.session.userId) {
         return res.json({ loggedIn: false });
     }
     res.json({
-        loggedIn: true,
+        loggedIn: !!req.session.otpVerified,
+        otpCode: req.session.otpVerified ? undefined : req.session.currentOtp,
         user: {
             id: req.session.userId,
             username: req.session.username,

@@ -18,3 +18,5 @@ deploy.sh
 .venv/
 
 .gemini/
+mock-db.json
+

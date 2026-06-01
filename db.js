@@ -1,16 +1,209 @@
 require('dotenv').config();
-var { createClient } = require('@supabase/supabase-js');
+var fs = require('fs');
+var path = require('path');
 
-// Database connection settings
-var dbUrl = process.env.SUPABASE_URL;
-var dbKey = process.env.SUPABASE_KEY;
+// We will use a robust local JSON file-based database for the local demo/MSc dissertation presentation
+// to avoid any cloud Supabase connection, project pause, or password issues.
+var dbPath = path.join(__dirname, 'mock-db.json');
 
-if (!dbUrl || !dbKey || dbUrl.includes('your-project')) {
-    console.error('[Error] Database settings are missing.');
-    console.error('Please set SUPABASE_URL and SUPABASE_KEY in your .env file.');
-    process.exit(1);
+if (!fs.existsSync(dbPath)) {
+    var initialData = {
+        users: [
+            {
+                id: 1,
+                username: "rajan.chand",
+                password_hash: "$2a$10$x4/P0JKq2hmrKVoXd2MJA.22byGdWZCTcNtcMuUODIIpf6dmuAGTS", // rajan123!
+                email: "rajanprakash.chand08@gmail.com",
+                role: "SuperAdmin",
+                status: "active",
+                failed_attempts: 0,
+                department: "IT",
+                permissions: {},
+                active_session_token: null,
+                password_changed_at: new Date().toISOString()
+            }
+        ],
+        departments: [
+            {
+                id: 1,
+                name: "IT",
+                allowed_countries: "United Kingdom,Nepal,United States,Local Network",
+                work_hours_start: 9,
+                work_hours_end: 18,
+                timezone: "Europe/London"
+            }
+        ],
+        sessions_log: [],
+        otp_store: [],
+        risk_logs: [],
+        audit_log: [],
+        password_history: [],
+        devices: [],
+        ip_rules: []
+    };
+    fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2));
 }
 
-var supabase = createClient(dbUrl, dbKey);
+class QueryBuilder {
+    constructor(table) {
+        this.table = table;
+        this.filters = [];
+        this.sortColumn = null;
+        this.sortAscending = true;
+        this.limitCount = null;
+        this.action = 'select';
+    }
 
-module.exports = { supabase };
+    select(fields) {
+        return this;
+    }
+
+    insert(record) {
+        this.action = 'insert';
+        this.record = record;
+        return this;
+    }
+
+    update(fields) {
+        this.action = 'update';
+        this.fields = fields;
+        return this;
+    }
+
+    delete() {
+        this.action = 'delete';
+        return this;
+    }
+
+    eq(column, value) {
+        this.filters.push({ type: 'eq', column, value });
+        return this;
+    }
+
+    order(column, options) {
+        this.sortColumn = column;
+        this.sortAscending = options && options.ascending !== false;
+        return this;
+    }
+
+    limit(count) {
+        this.limitCount = count;
+        return this;
+    }
+
+    async execute() {
+        var db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        var rows = db[this.table] || [];
+
+        // Apply filters
+        var filteredRows = rows.filter(row => {
+            return this.filters.every(f => {
+                if (f.type === 'eq') {
+                    return row[f.column] === f.value;
+                }
+                return true;
+            });
+        });
+
+        // Apply sort
+        if (this.sortColumn) {
+            filteredRows.sort((a, b) => {
+                var valA = a[this.sortColumn];
+                var valB = b[this.sortColumn];
+                if (valA < valB) return this.sortAscending ? -1 : 1;
+                if (valA > valB) return this.sortAscending ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // Apply limit
+        if (this.limitCount !== null) {
+            filteredRows = filteredRows.slice(0, this.limitCount);
+        }
+
+        if (this.action === 'insert') {
+            var newRecords = Array.isArray(this.record) ? this.record : [this.record];
+            newRecords.forEach(rec => {
+                rec.id = rec.id || (rows.length ? Math.max(...rows.map(r => r.id || 0)) + 1 : 1);
+                rec.created_at = rec.created_at || new Date().toISOString();
+                
+                // Set default column values
+                if (this.table === 'otp_store') {
+                    if (rec.used === undefined) rec.used = false;
+                }
+                if (this.table === 'users') {
+                    if (rec.failed_attempts === undefined) rec.failed_attempts = 0;
+                    if (rec.status === undefined) rec.status = 'active';
+                }
+                if (this.table === 'devices') {
+                    if (rec.approved === undefined) rec.approved = false;
+                }
+                
+                rows.push(rec);
+            });
+            db[this.table] = rows;
+            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            return { data: Array.isArray(this.record) ? newRecords : newRecords[0], error: null };
+        }
+
+        if (this.action === 'update') {
+            var updatedRows = [];
+            db[this.table] = rows.map(row => {
+                var matches = this.filters.every(f => f.type === 'eq' && row[f.column] === f.value);
+                if (matches) {
+                    var updated = { ...row, ...this.fields };
+                    updatedRows.push(updated);
+                    return updated;
+                }
+                return row;
+            });
+            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            return { data: updatedRows, error: null };
+        }
+
+        if (this.action === 'delete') {
+            var deletedRows = [];
+            db[this.table] = rows.filter(row => {
+                var matches = this.filters.every(f => f.type === 'eq' && row[f.column] === f.value);
+                if (matches) {
+                    deletedRows.push(row);
+                    return false;
+                }
+                return true;
+            });
+            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+            return { data: deletedRows, error: null };
+        }
+
+        return { data: filteredRows, error: null };
+    }
+
+    async single() {
+        var res = await this.execute();
+        if (res.data && res.data.length > 0) {
+            return { data: res.data[0], error: null };
+        }
+        return { data: null, error: { message: 'No rows found', code: 'PGRST116' } };
+    }
+
+    async maybeSingle() {
+        var res = await this.execute();
+        if (res.data && res.data.length > 0) {
+            return { data: res.data[0], error: null };
+        }
+        return { data: null, error: null };
+    }
+
+    then(resolve, reject) {
+        this.execute().then(resolve, reject);
+    }
+}
+
+console.log('[ZTS] Initializing local JSON-based database for premium demo performance...');
+var supabase = {
+    from: function(table) {
+        return new QueryBuilder(table);
+    }
+};
+
+module.exports = { supabase: supabase };
