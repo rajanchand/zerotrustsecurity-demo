@@ -1,6 +1,7 @@
 var { logSecurityEvent } = require('../services/monitorService');
 var { supabase } = require('../db');
 var { generateOTP } = require('../services/otpService');
+var { getClientIP } = require('../services/ipService');
 
 // pages that dont need login
 var PUBLIC_PATHS = [
@@ -42,18 +43,22 @@ async function requireLogin(req, res, next) {
     if (now - lastActive > TIMEOUT) {
         var userId = req.session.userId;
         var username = req.session.username || 'unknown';
-        req.session.destroy(function() {
-            logSecurityEvent({
-                event_type: 'FORCE_LOGOUT',
-                user_id: userId,
-                username: username,
-                ip: req.ip,
-                req: req,
-                details: { reason: 'Inactive for too long' }
-            }).catch(function() {});
+        var userIP = getClientIP(req);
+        
+        logSecurityEvent({
+            event_type: 'FORCE_LOGOUT',
+            user_id: userId,
+            username: username,
+            ip: userIP,
+            req: req,
+            details: { reason: 'Inactive for too long' }
+        }).catch(function() {});
+
+        res.clearCookie('connect.sid');
+        return req.session.destroy(function(err) {
+            if (err) console.error('[Session] Failed to destroy expired session:', err);
             res.redirect('/login?msg=session_expired');
         });
-        return;
     }
 
     req.session.lastActive = now;
@@ -64,8 +69,7 @@ async function requireLogin(req, res, next) {
         var reason = '';
 
         // get client ip
-        var rawIP = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
-        var currentIP = rawIP.split(',')[0].trim().replace('::ffff:', '');
+        var currentIP = getClientIP(req);
 
         // ip changed since last otp verification
         if (req.session.mfaVerifiedIp && currentIP !== req.session.mfaVerifiedIp) {
@@ -105,23 +109,29 @@ async function requireLogin(req, res, next) {
 
     // device fingerprint check
     var deviceFP = req.headers['x-device-fingerprint'];
-    if (deviceFP && req.session.deviceFingerprint && deviceFP !== req.session.deviceFingerprint) {
+    var expectedFP = req.session.deviceFingerprint;
+    
+    // If the session is bound to a fingerprint, but the request does not provide one,
+    // or if the provided fingerprint does not match, flag it as a hijacking attempt.
+    if (expectedFP && (!deviceFP || deviceFP !== expectedFP)) {
         logSecurityEvent({
             event_type: 'SESSION_HIJACK_ATTEMPT',
             user_id: req.session.userId,
             username: req.session.username || 'unknown',
-            ip: req.ip,
+            ip: getClientIP(req),
             req: req,
             details: {
-                reason: 'Device fingerprint changed',
-                expected: req.session.deviceFingerprint,
-                received: deviceFP
+                reason: !deviceFP ? 'Missing device fingerprint header' : 'Device fingerprint mismatch',
+                expected: expectedFP,
+                received: deviceFP || 'none'
             }
         }).catch(function() {});
-        req.session.destroy(function() {
+
+        res.clearCookie('connect.sid');
+        return req.session.destroy(function(err) {
+            if (err) console.error('[Session] Fail to destroy on hijack attempt:', err);
             res.redirect('/login?msg=session_invalid');
         });
-        return;
     }
 
     // periodically check db for account status changes
@@ -142,11 +152,14 @@ async function requireLogin(req, res, next) {
                         event_type: 'FORCE_LOGOUT',
                         user_id: req.session.userId,
                         username: req.session.username || 'unknown',
-                        ip: req.ip,
+                        ip: getClientIP(req),
                         req: req,
                         details: { reason: 'Account status: ' + user.status }
                     }).catch(function() {});
-                    return req.session.destroy(function() {
+
+                    res.clearCookie('connect.sid');
+                    return req.session.destroy(function(err) {
+                        if (err) console.error('[Session] Fail to destroy blocked user session:', err);
                         res.redirect('/login?msg=account_blocked');
                     });
                 }
@@ -169,12 +182,14 @@ async function requireLogin(req, res, next) {
                         event_type: 'FORCE_LOGOUT',
                         user_id: req.session.userId,
                         username: req.session.username || 'unknown',
-                        ip: req.ip,
+                        ip: getClientIP(req),
                         req: req,
                         details: { reason: 'Logged in from another device' }
                     }).catch(function() {});
 
-                    return req.session.destroy(function() {
+                    res.clearCookie('connect.sid');
+                    return req.session.destroy(function(err) {
+                        if (err) console.error('[Session] Fail to destroy concurrent session:', err);
                         res.redirect('/login?msg=session_invalid');
                     });
                 }

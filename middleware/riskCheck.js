@@ -1,5 +1,6 @@
 var { logSecurityEvent } = require('../services/monitorService');
 var geoService = require('../services/geoService');
+var { getClientIP } = require('../services/ipService');
 
 // track user behaviour and flag risky activity
 // looks at request rate and ip changes
@@ -36,14 +37,11 @@ async function flagHighRisk(req, res, next) {
         tracker.windowStart = now;
     }
 
-    // get clean ip address
-    var ip = (req.headers['x-forwarded-for'] || req.ip || '127.0.0.1')
-        .split(',')[0]
-        .trim()
-        .replace('::ffff:', '');
+    // get clean ip address using centralized service
+    var ip = getClientIP(req);
 
-    // too many requests in 2 minutes, add risk
-    if (tracker.count > 200) {
+    // too many requests in 2 minutes (threshold optimized to 15 for demo purposes), add risk
+    if (tracker.count > 15) {
         var geoData1 = await geoService.getGeoFromIP(ip);
         var country1 = geoData1.country || 'Unknown';
 
