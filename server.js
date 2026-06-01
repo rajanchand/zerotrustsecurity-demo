@@ -20,13 +20,15 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            scriptSrcAttr: ["'unsafe-inline'"],
+            // Note: 'unsafe-inline' is required because demo HTML templates use inline <script> blocks.
+            // In production, these should be moved to external .js files and use nonce-based CSP.
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            // styleSrc needs 'unsafe-inline' for inline styles used in the demo HTML templates
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", process.env.GRAFANA_URL || "*"],
-            frameSrc: ["'self'", process.env.GRAFANA_URL || "*"],
+            connectSrc: ["'self'", process.env.GRAFANA_URL || "'self'"].filter(function(v, i, a) { return a.indexOf(v) === i; }),
+            frameSrc: ["'self'", process.env.GRAFANA_URL || "'self'"].filter(function(v, i, a) { return a.indexOf(v) === i; }),
             upgradeInsecureRequests: isProduction ? [] : null
         }
     },
@@ -93,12 +95,15 @@ var { csrfProtection, generateCSRFToken } = require('./middleware/csrf');
 var { apiLimiter } = require('./middleware/rateLimiter');
 var { verifyHMAC } = require('./middleware/hmacVerify');
 
-app.use(function(req, res, next) {
-    if (req.path.startsWith('/api/') || req.path === '/login' || req.path === '/otp') {
-        console.log(`[REQ] ${req.method} ${req.path} - Session ID: ${req.sessionID} - Has userId: ${req.session && req.session.userId ? 'YES' : 'NO'}`);
-    }
-    next();
-});
+// dev-only request logger (does not log session IDs or sensitive data)
+if (!isProduction) {
+    app.use(function(req, res, next) {
+        if (req.path.startsWith('/api/')) {
+            console.log('[REQ] ' + req.method + ' ' + req.path);
+        }
+        next();
+    });
+}
 
 // routes
 var authRoutes = require('./routes/authRoutes');
@@ -113,11 +118,12 @@ var { requireLogin } = require('./middleware/auth');
 var { requireRole } = require('./middleware/rbac');
 var { flagHighRisk } = require('./middleware/riskCheck');
 var { handleReAuth } = require('./middleware/stepUpAuth');
+var { getClientIP } = require('./services/ipService');
 
 // prometheus metrics (only from localhost in prod)
 var { register } = require('./services/metricservice');
 app.get('/metrics', async function(req, res) {
-    var ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+    var ip = getClientIP(req);
     var isLocal = ['127.0.0.1', '::1', '::ffff:127.0.0.1', ''].includes(ip);
 
     if (!isLocal && isProduction) {

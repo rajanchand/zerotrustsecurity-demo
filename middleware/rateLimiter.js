@@ -2,20 +2,20 @@ var rateLimit = require('express-rate-limit');
 
 var isProduction = process.env.NODE_ENV === 'production';
 
-// login attempts: 10 per 15 mins in prod
+// login attempts: 6 per 5 mins for strict brute-force protection
 var loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: isProduction ? 10 : 200,
-    message: { success: false, message: 'Too many login attempts. Please wait 15 minutes.' },
+    windowMs: 5 * 60 * 1000,
+    max: 6,
+    message: { success: false, message: 'Too many login attempts. Please wait 5 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
     validate: { xForwardedForHeader: false }
 });
 
-// otp attempts: 5 per 5 mins in prod
+// otp attempts: 5 per 5 mins for MFA protection
 var otpLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: isProduction ? 5 : 100,
+    max: 5,
     message: { success: false, message: 'Too many OTP attempts. Please wait 5 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,

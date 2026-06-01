@@ -22,11 +22,8 @@ var router = express.Router();
 
 // All devices require explicit approval in a Zero Trust model
 
-// get the real client ip, handles cloudflare and proxies
-function getClientIP(req) {
-    var ipHeader = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || '127.0.0.1';
-    return ipHeader.split(',')[0].trim().replace('::ffff:', '');
-}
+// get the real client ip, centralized in ipService
+var { getClientIP } = require('../services/ipService');
 
 // show login page
 router.get('/login', loginLimiter, function(req, res) {
@@ -474,11 +471,8 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             }).catch(function() {});
         }
 
-        console.log('[DEBUG LOGIN] Session ID at save:', req.sessionID);
-        console.log('[DEBUG LOGIN] Session userId at save:', req.session.userId);
         return req.session.save(function(err) {
-            if (err) console.error('[DEBUG LOGIN] Session save error:', err);
-            console.log('[DEBUG LOGIN] Session saved OK, ID:', req.sessionID);
+            if (err) console.error('[Auth] Session save error:', err);
             return res.json({
                 success: true,
                 risk: { score: riskResult.score, level: riskResult.level, factors: riskResult.factors },
@@ -505,12 +499,7 @@ router.post('/api/verify-otp', otpLimiter, async function(req, res) {
     try {
         var otpCode = (req.body.code || '').trim();
 
-        console.log('[DEBUG OTP] Session ID:', req.sessionID);
-        console.log('[DEBUG OTP] Session userId:', req.session ? req.session.userId : 'NO SESSION');
-        console.log('[DEBUG OTP] Cookie header:', req.headers.cookie ? req.headers.cookie.substring(0, 80) : 'NONE');
-
         if (!req.session || !req.session.userId) {
-            console.log('[DEBUG OTP] Session keys:', req.session ? Object.keys(req.session) : 'NO SESSION');
             return res.json({ success: false, message: 'Session expired. Please log in again.' });
         }
 
