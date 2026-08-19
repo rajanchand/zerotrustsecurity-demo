@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - ZTS</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=2.5.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 80px 24px 40px; }
@@ -136,7 +136,7 @@
 
     <div class="zts-footer"><div class="footer-brand">ZTS Admin Portal</div></div>
 
-    <script src="/js/app.js?v=2.2.1"></script>
+    <script src="/js/app.js?v=2.5.0"></script>
     <script>
         var offHoursData = [];
         var uniqueUsersData = [];
@@ -233,25 +233,39 @@
         function fillModals() {
             var b1 = document.getElementById('offHoursBody');
             b1.innerHTML = '';
-            offHoursData.forEach(function(evt) {
-                var time = new Date(evt.created_at).toLocaleString('en-GB');
-                var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
-                b1.innerHTML += '<tr><td>' + (evt.username || '') + '</td><td>' + (evt.details && evt.details.role ? evt.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (evt.country || '') + '</td><td style="font-family:monospace;">' + (evt.ip || '') + '</td><td>' + (evt.vpn ? 'Yes' : 'No') + '</td></tr>';
-            });
+            if (!offHoursData || offHoursData.length === 0) {
+                b1.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#aaa;">No off-hours activity recorded in the last 24 hours.</td></tr>';
+            } else {
+                offHoursData.forEach(function(evt) {
+                    var time = new Date(evt.created_at).toLocaleString('en-GB');
+                    var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
+                    b1.innerHTML += '<tr><td>' + (evt.username || '') + '</td><td>' + (evt.details && evt.details.role ? evt.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (evt.country || '') + '</td><td style="font-family:monospace;">' + (evt.ip || '') + '</td><td>' + (evt.vpn ? 'Yes' : 'No') + '</td></tr>';
+                });
+            }
+
             var b2 = document.getElementById('uniqueOffHoursBody');
             b2.innerHTML = '';
-            uniqueUsersData.forEach(function(u) {
-                var time = new Date(u.created_at).toLocaleString('en-GB');
-                var active = (Date.now() - new Date(u.created_at).getTime() < 15 * 60 * 1000);
-                b2.innerHTML += '<tr><td>' + (u.username || '') + '</td><td>' + (u.details && u.details.role ? u.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (u.country || '') + '</td><td style="font-family:monospace;">' + (u.ip || '') + '</td><td>' + (u.vpn ? 'Yes' : 'No') + '</td></tr>';
-            });
+            if (!uniqueUsersData || uniqueUsersData.length === 0) {
+                b2.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#aaa;">No unique off-hours users recorded in the last 24 hours.</td></tr>';
+            } else {
+                uniqueUsersData.forEach(function(u) {
+                    var time = new Date(u.created_at).toLocaleString('en-GB');
+                    var active = (Date.now() - new Date(u.created_at).getTime() < 15 * 60 * 1000);
+                    b2.innerHTML += '<tr><td>' + (u.username || '') + '</td><td>' + (u.details && u.details.role ? u.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (u.country || '') + '</td><td style="font-family:monospace;">' + (u.ip || '') + '</td><td>' + (u.vpn ? 'Yes' : 'No') + '</td></tr>';
+                });
+            }
+
             var b3 = document.getElementById('vpnBody');
             b3.innerHTML = '';
-            vpnData.forEach(function(evt) {
-                var time = new Date(evt.created_at).toLocaleString('en-GB');
-                var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
-                b3.innerHTML += '<tr><td>' + (evt.username || '') + '</td><td>' + (evt.details && evt.details.role ? evt.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (evt.country || '') + '</td><td style="font-family:monospace;">' + (evt.ip || '') + '</td><td><span style="color:#dc2626; font-weight:600;">Yes</span></td></tr>';
-            });
+            if (!vpnData || vpnData.length === 0) {
+                b3.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#aaa;">No VPN activity recorded in the last 24 hours.</td></tr>';
+            } else {
+                vpnData.forEach(function(evt) {
+                    var time = new Date(evt.created_at).toLocaleString('en-GB');
+                    var active = (Date.now() - new Date(evt.created_at).getTime() < 15 * 60 * 1000);
+                    b3.innerHTML += '<tr><td>' + (evt.username || '') + '</td><td>' + (evt.details && evt.details.role ? evt.details.role : '') + '</td><td>' + time + '</td><td>' + (active ? '<strong style="color:#16a34a">Active</strong>' : 'Ended') + '</td><td>' + (evt.country || '') + '</td><td style="font-family:monospace;">' + (evt.ip || '') + '</td><td><span style="color:#dc2626; font-weight:600;">Yes</span></td></tr>';
+                });
+            }
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
