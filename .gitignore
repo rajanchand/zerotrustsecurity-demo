@@ -11,9 +11,6 @@ npm-debug.log*
 # SQL migration files — already applied to Supabase, not needed in repo
 *.sql
 
-# Deployment script — contains VPS-specific paths
-deploy.sh
-
 # Python virtual env
 .venv/
 

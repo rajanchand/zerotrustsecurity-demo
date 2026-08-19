@@ -17,13 +17,13 @@ echo "  IP   : $VPS_IP"
 echo ""
 
 # Step 1: Environment check
-if ! command -v node &> /dev/null || ! command -v pm2 &> /dev/null; then
-  echo "[1/7] Setting up Node.js and PM2..."
+if ! command -v node &> /dev/null || ! command -v pm2 &> /dev/null || ! command -v nginx &> /dev/null; then
+  echo "[1/7] Setting up Node.js, PM2, and Nginx..."
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs
+  apt-get install -y nodejs nginx
   npm install -g pm2
 else
-  echo "[1/2] Environment ready (Node $(node -v))"
+  echo "[1/7] Environment ready (Node $(node -v))"
 fi
 
 # Step 3: Git fetch and reset
@@ -52,10 +52,18 @@ else
     echo "[4/7] No dependency changes. Skipping npm install."
 fi
 
-# Step 5: Environment file check
+# Step 5: Environment file check & auto-creation
 if [ ! -f "$APP_DIR/.env" ]; then
-  echo "  Error: No .env file found in $APP_DIR"
-  exit 1
+  echo "[5/7] Creating default production .env file..."
+  SECRET_HEX=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" 2>/dev/null || echo "zts-production-session-secret-$(date +%s)")
+  cat > "$APP_DIR/.env" <<EOF
+PORT=3000
+NODE_ENV=production
+SESSION_SECRET=$SECRET_HEX
+EOF
+  echo "  -> Created .env successfully."
+else
+  echo "[5/7] Environment file (.env) exists."
 fi
 
 # Step 6: Nginx config
