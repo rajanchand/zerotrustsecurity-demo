@@ -81,8 +81,17 @@ fetchCSRFToken();
 
 // Send POST request with JSON data
 async function postJSON(url, data) {
+    if (!csrfToken && url !== '/api/csrf-token') {
+        try {
+            var csrfRes = await fetch('/api/csrf-token');
+            var csrfData = await csrfRes.json();
+            if (csrfData && csrfData.csrfToken) csrfToken = csrfData.csrfToken;
+        } catch (e) {}
+    }
+
     var headers = { 'Content-Type': 'application/json' };
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    headers['X-Device-Fingerprint'] = getFingerprint();
 
     try {
         var response = await fetch(url, {
@@ -137,7 +146,7 @@ function buildNavbar(role, activePage, username) {
     if (role === 'SuperAdmin' || role === 'IT' || role === 'HR') {
         var mappingActive = (activePage === 'mapping' || activePage === 'register-device' || activePage === 'user-access');
         html += '<div class="nav-item ' + (mappingActive ? 'active' : '') + '">';
-        html += '<button class="nav-link" onclick="toggleDropdown(this)">Mapping <span class="arrow">&#9662;</span></button>';
+        html += '<button type="button" class="nav-link" onclick="toggleDropdown(this, event)">Mapping <span class="arrow">&#9662;</span></button>';
         html += '<div class="dropdown-menu">';
         html += '<a href="/mapping" ' + (activePage === 'mapping' ? 'class="active"' : '') + '>Users</a>';
         if (role === 'SuperAdmin') {
@@ -164,7 +173,7 @@ function buildNavbar(role, activePage, username) {
     // Security - everyone
     var secActive = (activePage === 'risk' || activePage === 'user-log');
     html += '<div class="nav-item ' + (secActive ? 'active' : '') + '">';
-    html += '<button class="nav-link" onclick="toggleDropdown(this)">Security <span class="arrow">&#9662;</span></button>';
+    html += '<button type="button" class="nav-link" onclick="toggleDropdown(this, event)">Security <span class="arrow">&#9662;</span></button>';
     html += '<div class="dropdown-menu">';
     html += '<a href="/risk" ' + (activePage === 'risk' ? 'class="active"' : '') + '>Risk Score</a>';
     if (role === 'SuperAdmin') {
@@ -178,9 +187,9 @@ function buildNavbar(role, activePage, username) {
     var userMenu = document.getElementById('userMenu');
     if (userMenu) {
         var initial = username ? username.charAt(0).toUpperCase() : '?';
-        userMenu.innerHTML = '<button class="user-menu-btn" onclick="toggleUserMenu(this)">' +
+        userMenu.innerHTML = '<button type="button" class="user-menu-btn" onclick="toggleUserMenu(this, event)">' +
             '<div class="user-avatar">' + initial + '</div>' +
-            '<span>' + username + '</span>' +
+            '<span>' + (username || 'User') + '</span>' +
             '<span class="arrow">&#9662;</span></button>' +
             '<div class="dropdown-menu">' +
             '<a href="/profile" ' + (activePage === 'profile' ? 'class="active"' : '') + '>My Profile</a>' +
@@ -189,23 +198,55 @@ function buildNavbar(role, activePage, username) {
     }
 }
 
-function toggleDropdown(btn) {
+function toggleDropdown(btn, evt) {
+    if (evt && evt.stopPropagation) {
+        evt.stopPropagation();
+    }
     var item = btn.closest('.nav-item');
+    if (!item) return;
     var wasOpen = item.classList.contains('open');
-    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
-    if (!wasOpen) item.classList.add('open');
+    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) {
+        if (el !== item) el.classList.remove('open');
+    });
+    if (wasOpen) {
+        item.classList.remove('open');
+    } else {
+        item.classList.add('open');
+    }
 }
 
-function toggleUserMenu(btn) {
+function toggleUserMenu(btn, evt) {
+    if (evt && evt.stopPropagation) {
+        evt.stopPropagation();
+    }
     var menu = btn.closest('.user-menu');
+    if (!menu) return;
     var wasOpen = menu.classList.contains('open');
-    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
-    if (!wasOpen) menu.classList.add('open');
+    document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) {
+        if (el !== menu) el.classList.remove('open');
+    });
+    if (wasOpen) {
+        menu.classList.remove('open');
+    } else {
+        menu.classList.add('open');
+    }
 }
 
+// Close dropdowns when clicking outside
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('.nav-item') && !e.target.closest('.user-menu')) {
-        document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!e.target.closest('.dropdown-menu')) {
+        document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) {
+            el.classList.remove('open');
+        });
+    }
+});
+
+// Close dropdowns on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.nav-item.open, .user-menu.open').forEach(function(el) {
+            el.classList.remove('open');
+        });
     }
 });
 
@@ -213,6 +254,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var toggle = document.querySelector('.menu-toggle');
     var navMenu = document.querySelector('.nav-menu');
     if (toggle && navMenu) {
-        toggle.addEventListener('click', function() { navMenu.classList.toggle('open'); });
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navMenu.classList.toggle('open');
+        });
     }
 });
