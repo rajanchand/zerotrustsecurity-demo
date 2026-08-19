@@ -9,6 +9,14 @@ function requireRole(allowedRoles) {
         }
 
         if (!allowedRoles.includes(userRole)) {
+            if (req.path.startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Access denied. Insufficient permissions.',
+                    requiredRoles: allowedRoles,
+                    currentRole: userRole || 'None'
+                });
+            }
             return res.status(403).send(
                 '<!DOCTYPE html>' +
                 '<html lang="en">' +

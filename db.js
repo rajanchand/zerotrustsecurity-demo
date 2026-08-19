@@ -23,6 +23,19 @@ if (!fsSync.existsSync(dbPath)) {
                 permissions: {},
                 active_session_token: null,
                 password_changed_at: new Date().toISOString()
+            },
+            {
+                id: 2,
+                username: "admin",
+                password_hash: "$2a$10$oZXmHIchOsOYDCqX1TR8p.qFyK5n2pUKi7ZmeV0p03exTDdWQ5hyy", // ZeroTrust$#@
+                email: "admin@zerotrust.local",
+                role: "SuperAdmin",
+                status: "active",
+                failed_attempts: 0,
+                department: "IT",
+                permissions: {},
+                active_session_token: null,
+                password_changed_at: new Date().toISOString()
             }
         ],
         departments: [

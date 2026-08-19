@@ -59,8 +59,8 @@ router.post('/api/profile/update', async function(req, res) {
     }
 });
 
-// change password
-router.post('/api/profile/change-password', async function(req, res) {
+// change password (support both endpoint aliases)
+async function handleChangePassword(req, res) {
     try {
         var currentPassword = req.body.currentPassword;
         var newPassword = req.body.newPassword;
@@ -137,7 +137,10 @@ router.post('/api/profile/change-password', async function(req, res) {
         console.error('Password change error:', err);
         res.status(500).json({ success: false, message: 'Failed to change password.' });
     }
-});
+}
+
+router.post('/api/profile/change-password', handleChangePassword);
+router.post('/api/profile/update-password', handleChangePassword);
 
 // get another users profile (admin only)
 router.get('/api/profile/:userId', async function(req, res) {

@@ -33,13 +33,13 @@ function csrfProtection(req, res, next) {
 
     var token = req.headers['x-csrf-token'] || req.body._csrfToken;
 
-    if (!token || !safeCompare(token, req.session.csrfToken)) {
+    if (!token || !safeCompare(token, req.session ? req.session.csrfToken : null)) {
         var { logSecurityEvent } = require('../services/monitorService');
 
         logSecurityEvent({
             event_type: 'CSRF_STATE_VIOLATION',
-            user_id: req.session.userId,
-            username: req.session.username || 'System',
+            user_id: req.session ? req.session.userId : null,
+            username: (req.session && req.session.username) || 'System',
             ip: req.ip,
             details: { path: req.path, method: req.method }
         }).catch(function() {});
