@@ -20,23 +20,20 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            // Note: 'unsafe-inline' is required because demo HTML templates use inline <script> blocks.
-            // In production, these should be moved to external .js files and use nonce-based CSP.
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            // styleSrc needs 'unsafe-inline' for inline styles used in the demo HTML templates
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
             connectSrc: ["'self'", process.env.GRAFANA_URL || "'self'"].filter(function(v, i, a) { return a.indexOf(v) === i; }),
             frameSrc: ["'self'", process.env.GRAFANA_URL || "'self'"].filter(function(v, i, a) { return a.indexOf(v) === i; }),
-            upgradeInsecureRequests: isProduction ? [] : null
+            upgradeInsecureRequests: null
         }
     },
     crossOriginEmbedderPolicy: false,
-    hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false
+    hsts: false
 }));
 
-// trust proxy for cloudflare
+// trust proxy for reverse proxy / cloudflare
 app.set('trust proxy', 1);
 
 // body parsing + static files
@@ -58,16 +55,16 @@ app.use(function(req, res, next) {
     next();
 });
 
-// session config (postgres backed via connect-pg-simple)
+// session config
 var sessionOptions = {
     secret: process.env.SESSION_SECRET || 'zts-default-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: isProduction,
+        secure: 'auto',
         httpOnly: true,
         maxAge: 30 * 60 * 1000,
-        sameSite: 'strict'
+        sameSite: 'lax'
     },
     rolling: true
 };
