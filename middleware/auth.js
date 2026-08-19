@@ -108,12 +108,18 @@ async function requireLogin(req, res, next) {
     }
 
     // device fingerprint check
+    // Only check on POST/PUT/DELETE requests where JS can attach custom headers.
+    // Browsers do NOT send custom headers on page navigations (GET), so checking
+    // on GET would kill the session every time the user navigates to a new page.
+    // Also skip for OTP paths since the user is still in the authentication flow.
+    var isModifyingRequest = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+    var isOtpPath = req.path === '/otp' || req.path === '/api/verify-otp';
     var deviceFP = req.headers['x-device-fingerprint'];
     var expectedFP = req.session.deviceFingerprint;
     
     // If the session is bound to a fingerprint, but the request does not provide one,
     // or if the provided fingerprint does not match, flag it as a hijacking attempt.
-    if (expectedFP && (!deviceFP || deviceFP !== expectedFP)) {
+    if (isModifyingRequest && !isOtpPath && expectedFP && (!deviceFP || deviceFP !== expectedFP)) {
         logSecurityEvent({
             event_type: 'SESSION_HIJACK_ATTEMPT',
             user_id: req.session.userId,
@@ -130,6 +136,9 @@ async function requireLogin(req, res, next) {
         res.clearCookie('connect.sid');
         return req.session.destroy(function(err) {
             if (err) console.error('[Session] Fail to destroy on hijack attempt:', err);
+            if (req.path.startsWith('/api/')) {
+                return res.status(401).json({ success: false, sessionInvalid: true, message: 'Your session was ended. Please sign in again.' });
+            }
             res.redirect('/login?msg=session_invalid');
         });
     }
