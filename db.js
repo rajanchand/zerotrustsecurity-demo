@@ -14,7 +14,7 @@ if (!fsSync.existsSync(dbPath)) {
             {
                 id: 1,
                 username: "rajan.chand",
-                password_hash: "$2a$10$x4/P0JKq2hmrKVoXd2MJA.22byGdWZCTcNtcMuUODIIpf6dmuAGTS", // rajan123!
+                password_hash: "$2a$10$qg8rizyXl6XsJvoE5yjhKeeCTnFnJ/eCw0RGdh/E32XO7ljg/A6CW", // Rajan33555@
                 email: "rajanprakash.chand08@gmail.com",
                 role: "SuperAdmin",
                 status: "active",
