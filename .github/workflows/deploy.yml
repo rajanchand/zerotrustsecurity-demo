@@ -3,7 +3,8 @@ name: Deploy ZTS to VPS
 on:
   push:
     branches:
-      - main  # Whenever you push to the 'main' branch, this pipeline activates
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,9 +13,18 @@ jobs:
       - name: SSH into VPS and Run Deploy Script
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 212.227.39.216
-          username: root
+          host: ${{ secrets.SSH_HOST || '212.227.39.216' }}
+          username: ${{ secrets.SSH_USERNAME || 'root' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
           script: |
+            if [ ! -d "/root/zts-web/.git" ]; then
+              echo "Cloning repository to /root/zts-web..."
+              mkdir -p /root/zts-web
+              git clone https://github.com/rajanchand/zerotrustsecurity-demo.git /root/zts-web
+            fi
             cd /root/zts-web
             bash deploy.sh
