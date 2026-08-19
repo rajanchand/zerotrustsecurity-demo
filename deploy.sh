@@ -74,8 +74,10 @@ DOMAIN="${DOMAIN:-zero-trust-security.org}"
 
 cat > "$TEMP_CONF" <<EOF
 server {
-    listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name $DOMAIN www.$DOMAIN 212.227.39.216 _;
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -84,11 +86,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        
-        # Forward the proto from Cloudflare (Flexible SSL)
-        # Standard \$scheme is 'http' locally, which blocks 'Secure' cookies.
-        # We must tell Node that the outer connection is 'https'.
-        proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
+        proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
     }
 }
