@@ -3,8 +3,8 @@
 function validatePassword(password) {
     var errors = [];
 
-    if (!password || password.length < 12) {
-        errors.push('Password must be at least 12 characters.');
+    if (!password || password.length < 8) {
+        errors.push('Password must be at least 8 characters.');
     }
     if (!/[A-Z]/.test(password)) {
         errors.push('Must include an uppercase letter.');
