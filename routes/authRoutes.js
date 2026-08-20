@@ -528,6 +528,7 @@ router.post('/api/verify-otp', otpLimiter, async function(req, res) {
 
         req.session.otpVerified = true;
         req.session.lastActive = Date.now();
+        req.session.lastReAuth = Date.now();
 
         var clientIP = getClientIP(req);
 

@@ -24,6 +24,12 @@ function validatePermissions(permissions) {
     return keys.every(function(key) { return VALID_PERMISSIONS.includes(key); });
 }
 
+function isDeviceAuthorized(req, deviceCheck) {
+    if (!req.session) return false;
+    if (req.session.role === 'SuperAdmin') return true;
+    return !!(deviceCheck && deviceCheck.approved);
+}
+
 // --- Page Routes ---
 
 router.get('/mapping', function(req, res) {
@@ -67,7 +73,7 @@ router.post('/api/mapping/users/create', requirePermission('user_create'), requi
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -135,7 +141,7 @@ router.post('/api/mapping/users/delete', requirePermission('user_delete'), requi
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -195,7 +201,7 @@ router.post('/api/mapping/users/change-role', requireReAuth, async function(req,
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -231,7 +237,7 @@ router.post('/api/mapping/users/edit', requirePermission('user_edit'), async fun
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -280,7 +286,7 @@ router.post('/api/mapping/users/suspend', requirePermission('user_suspend'), asy
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -315,7 +321,7 @@ router.post('/api/mapping/users/block', requirePermission('user_suspend'), async
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -353,7 +359,7 @@ router.post('/api/mapping/users/revoke-session', async function(req, res) {
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -428,7 +434,7 @@ router.post('/api/mapping/users/activate', requirePermission('user_approve'), as
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -506,7 +512,7 @@ router.post('/api/mapping/departments/create', async function(req, res) {
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -540,7 +546,7 @@ router.post('/api/mapping/departments/delete', async function(req, res) {
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -571,7 +577,7 @@ router.post('/api/mapping/departments/update-head', async function(req, res) {
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
@@ -698,7 +704,7 @@ router.post('/api/mapping/devices/reject', async function(req, res) {
             .eq('fingerprint', req.session.deviceFingerprint)
             .single();
 
-        if (!deviceCheck || !deviceCheck.approved) {
+        if (!isDeviceAuthorized(req, deviceCheck)) {
             return res.json({ success: false, message: 'Please register your device first.' });
         }
 
