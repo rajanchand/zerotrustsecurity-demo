@@ -417,7 +417,9 @@ router.post('/api/login', loginLimiter, async function(req, res) {
             device_fingerprint: fingerprint,
             country: country,
             risk_score: riskResult.score,
-            vpn: !!isVPN
+            vpn: !!isVPN,
+            login_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
         };
 
         try {

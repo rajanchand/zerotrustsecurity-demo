@@ -280,13 +280,21 @@ router.get('/api/admin/remote-analytics', async function(req, res) {
     try {
         var since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        var { data: sessions } = await supabase
+        var { data: allSessions } = await supabase
             .from('sessions_log')
-            .select('id, user_id, ip, browser, os, country, risk_score, device_fingerprint, login_at, vpn')
-            .gte('login_at', since24h)
-            .order('login_at', { ascending: false });
+            .select('id, user_id, ip, browser, os, country, risk_score, device_fingerprint, login_at, created_at, vpn')
+            .order('created_at', { ascending: false });
 
-        sessions = sessions || [];
+        allSessions = (allSessions || []).map(function(s) {
+            s.login_at = s.login_at || s.created_at || new Date().toISOString();
+            return s;
+        });
+
+        var sessions24h = allSessions.filter(function(s) {
+            return new Date(s.login_at).getTime() >= (Date.now() - 24 * 60 * 60 * 1000);
+        });
+
+        var sessions = sessions24h.length > 0 ? sessions24h : allSessions;
 
         var { data: users } = await supabase.from('users').select('id, username, role');
         var userMap = {};
@@ -295,8 +303,7 @@ router.get('/api/admin/remote-analytics', async function(req, res) {
         var { count: vpnCount } = await supabase
             .from('security_events')
             .select('*', { count: 'exact', head: true })
-            .eq('event_type', 'VPN_DETECTED')
-            .gte('created_at', since24h);
+            .eq('event_type', 'VPN_DETECTED');
 
         // find off-hours logins
         var offHoursEvents = [];

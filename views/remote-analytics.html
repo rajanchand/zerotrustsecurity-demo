@@ -183,7 +183,7 @@
 
         function drawLocations(data) {
             var el = document.getElementById('locationList');
-            if (!data || data.length === 0) { el.innerHTML = '<div style="padding:32px; text-align:center; color:#aaa;">No connection type data yet.</div>'; return; }
+            if (!data || data.length === 0) { el.innerHTML = '<div style="padding:32px; text-align:center; color:#aaa;">No location data recorded yet.</div>'; return; }
             var max = data[0].count || 1;
             var html = '';
             var totalSum = data.reduce(function(acc, loc) { return acc + (loc.count || 0); }, 0) || 1;

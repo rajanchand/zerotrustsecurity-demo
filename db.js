@@ -73,6 +73,71 @@ requiredTables.forEach(function(table) {
         migrated = true;
     }
 });
+
+// Seed demo sessions if empty so Analytics and Monitoring show rich metrics
+if (!existingDB.sessions_log || existingDB.sessions_log.length === 0) {
+    var now = Date.now();
+    existingDB.sessions_log = [
+        {
+            id: 1,
+            user_id: 1,
+            ip: "212.227.39.216",
+            user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+            browser: "Chrome",
+            os: "Mac OS",
+            device_fingerprint: "demo_fp_1",
+            country: "United Kingdom",
+            risk_score: 15,
+            vpn: false,
+            login_at: new Date(now - 30 * 60 * 1000).toISOString(),
+            created_at: new Date(now - 30 * 60 * 1000).toISOString()
+        },
+        {
+            id: 2,
+            user_id: 2,
+            ip: "86.12.45.10",
+            user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            browser: "Firefox",
+            os: "Windows",
+            device_fingerprint: "demo_fp_2",
+            country: "United Kingdom",
+            risk_score: 20,
+            vpn: false,
+            login_at: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date(now - 2 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 3,
+            user_id: 1,
+            ip: "103.240.180.12",
+            user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)",
+            browser: "Safari",
+            os: "iOS",
+            device_fingerprint: "demo_fp_3",
+            country: "Nepal",
+            risk_score: 35,
+            vpn: false,
+            login_at: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date(now - 5 * 60 * 60 * 1000).toISOString()
+        },
+        {
+            id: 4,
+            user_id: 2,
+            ip: "185.220.101.5",
+            user_agent: "Mozilla/5.0 (X11; Linux x86_64)",
+            browser: "Chrome",
+            os: "Linux",
+            device_fingerprint: "demo_fp_4",
+            country: "United States",
+            risk_score: 65,
+            vpn: true,
+            login_at: new Date(now - 8 * 60 * 60 * 1000).toISOString(),
+            created_at: new Date(now - 8 * 60 * 60 * 1000).toISOString()
+        }
+    ];
+    migrated = true;
+}
+
 if (migrated) {
     fsSync.writeFileSync(dbPath, JSON.stringify(existingDB, null, 2));
 }
@@ -230,6 +295,9 @@ class QueryBuilder {
                 }
                 if (this.table === 'devices') {
                     if (rec.approved === undefined) rec.approved = false;
+                }
+                if (this.table === 'sessions_log') {
+                    if (!rec.login_at) rec.login_at = rec.created_at || new Date().toISOString();
                 }
                 
                 rows.push(rec);
