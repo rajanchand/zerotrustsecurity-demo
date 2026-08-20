@@ -108,18 +108,13 @@ async function requireLogin(req, res, next) {
     }
 
     // device fingerprint check
-    // Only check on POST/PUT/DELETE requests where JS can attach custom headers.
-    // Browsers do NOT send custom headers on page navigations (GET), so checking
-    // on GET would kill the session every time the user navigates to a new page.
-    // Also skip for OTP paths since the user is still in the authentication flow.
     var isModifyingRequest = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
     var isOtpPath = req.path === '/otp' || req.path === '/api/verify-otp';
     var deviceFP = req.headers['x-device-fingerprint'];
     var expectedFP = req.session.deviceFingerprint;
     
-    // If the session is bound to a fingerprint, but the request does not provide one,
-    // or if the provided fingerprint does not match, flag it as a hijacking attempt.
-    if (isModifyingRequest && !isOtpPath && expectedFP && (!deviceFP || deviceFP !== expectedFP)) {
+    // Only check if both fingerprints are present and meaningful, and bypass for SuperAdmin
+    if (isModifyingRequest && !isOtpPath && req.session.role !== 'SuperAdmin' && expectedFP && deviceFP && expectedFP !== 'unknown' && deviceFP !== expectedFP) {
         logSecurityEvent({
             event_type: 'SESSION_HIJACK_ATTEMPT',
             user_id: req.session.userId,
@@ -127,9 +122,9 @@ async function requireLogin(req, res, next) {
             ip: getClientIP(req),
             req: req,
             details: {
-                reason: !deviceFP ? 'Missing device fingerprint header' : 'Device fingerprint mismatch',
+                reason: 'Device fingerprint mismatch',
                 expected: expectedFP,
-                received: deviceFP || 'none'
+                received: deviceFP
             }
         }).catch(function() {});
 
