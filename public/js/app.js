@@ -94,10 +94,13 @@ async function postJSON(url, data) {
     headers['X-Device-Fingerprint'] = getFingerprint();
 
     try {
+        var payload = Object.assign({}, data);
+        if (csrfToken && !payload._csrfToken) payload._csrfToken = csrfToken;
+
         var response = await fetch(url, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
 
         if (response.status === 401 && url !== '/api/verify-reauth') {
@@ -107,6 +110,19 @@ async function postJSON(url, data) {
         if (response.status === 403) {
             var err = {};
             try { err = await response.json(); } catch(e) { err = { message: 'Access denied' }; }
+            
+            // Auto-refresh CSRF token on session refresh and retry once
+            if (err.message && err.message.indexOf('Session expired') >= 0 && !data._retried) {
+                data._retried = true;
+                try {
+                    var freshCsrf = await fetch('/api/csrf-token');
+                    var freshData = await freshCsrf.json();
+                    if (freshData && freshData.csrfToken) {
+                        csrfToken = freshData.csrfToken;
+                        return await postJSON(url, data);
+                    }
+                } catch(e) {}
+            }
             return { requireReAuth: !!err.requireReAuth, success: false, message: err.message || 'Access denied' };
         }
 
