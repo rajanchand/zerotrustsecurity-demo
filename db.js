@@ -22,7 +22,8 @@ if (!fsSync.existsSync(dbPath)) {
                 department: "IT",
                 permissions: {},
                 active_session_token: null,
-                password_changed_at: new Date().toISOString()
+                password_changed_at: new Date().toISOString(),
+                created_at: "2026-01-15T09:00:00.000Z"
             },
             {
                 id: 2,
@@ -35,7 +36,8 @@ if (!fsSync.existsSync(dbPath)) {
                 department: "IT",
                 permissions: {},
                 active_session_token: null,
-                password_changed_at: new Date().toISOString()
+                password_changed_at: new Date().toISOString(),
+                created_at: "2026-01-15T09:00:00.000Z"
             }
         ],
         departments: [

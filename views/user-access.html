@@ -130,11 +130,10 @@
             users.forEach(function(user) {
                 var tr = document.createElement('tr');
                 tr.id = 'row-' + user.id;
-                var isSA = user.role === 'SuperAdmin';
                 var html = '<td><div class="user-info"><div class="user-avatar">' + user.username[0].toUpperCase() + '</div><div><strong>' + user.username + '</strong><br><span class="role-tag">' + user.role + '</span></div></div></td>';
                 PERMS.forEach(function(p) {
-                    var on = (user.permissions && user.permissions[p]) || isSA;
-                    html += '<td style="text-align:center"><label class="switch"><input type="checkbox" onchange="editPerm(' + user.id + ', \'' + p + '\', this.checked)" ' + (on ? 'checked' : '') + ' ' + (isSA ? 'disabled' : '') + '><span class="slider"></span></label></td>';
+                    var on = (user.permissions && user.permissions[p] === true) || user.role === 'SuperAdmin';
+                    html += '<td style="text-align:center"><label class="switch"><input type="checkbox" onchange="editPerm(' + user.id + ', \'' + p + '\', this.checked)" ' + (on ? 'checked' : '') + '><span class="slider"></span></label></td>';
                 });
                 tr.innerHTML = html;
                 tbody.appendChild(tr);

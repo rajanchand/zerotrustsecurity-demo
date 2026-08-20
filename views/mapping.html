@@ -39,8 +39,8 @@
         .status-blocked { background: #fee2e2; color: #991b1b; }
         .role-tag { font-weight: 600; font-size: 0.65rem; color: #2563eb; background: #eef2ff; padding: 2px 6px; border-radius: 3px; }
 
-        .actions { display: flex; gap: 4px; justify-content: flex-end; }
-        .act-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e0e0e0; background: #fff; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
+        .actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+        .act-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid #e0e0e0; background: #fff; color: #555; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
         .act-btn:hover { border-color: #2563eb; color: #2563eb; background: #f8f8f8; }
         .act-btn.red:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
         .act-btn.green:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
@@ -221,12 +221,12 @@
                     '<td><span class="status-tag status-' + user.status + '">' + user.status + '</span></td>' +
                     '<td>' + (user.department || 'General') + '</td>' +
                     '<td><div class="actions">' +
-                        (active ? '<button class="act-btn red" title="Suspend" onclick="toggleUserStatus(' + user.id + ', \'suspend\')">S</button>' : '<button class="act-btn green" title="Activate" onclick="toggleUserStatus(' + user.id + ', \'activate\')">A</button>') +
-                        '<button class="act-btn" title="Reset password" onclick="openResetModal(' + user.id + ', \'' + user.username + '\')">P</button>' +
-                        '<button class="act-btn" title="Edit" onclick="openEditModal(' + user.id + ', \'' + user.username + '\', \'' + user.role + '\', \'' + (user.department || '') + '\', \'' + (user.email || '') + '\', \'' + (user.phone || '') + '\')">E</button>' +
-                        (currentUserRole === 'SuperAdmin' ? '<button class="act-btn" title="Permissions" onclick="location.href=\'/admin/user-access\'">R</button>' : '') +
-                        '<button class="act-btn red" title="End sessions" onclick="killSessions(' + user.id + ')">X</button>' +
-                        '<button class="act-btn red" title="Delete" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">D</button>' +
+                        (active ? '<button class="act-btn red" title="Suspend User" onclick="toggleUserStatus(' + user.id + ', \'suspend\')">Suspend</button>' : '<button class="act-btn green" title="Activate User" onclick="toggleUserStatus(' + user.id + ', \'activate\')">Activate</button>') +
+                        '<button class="act-btn" title="Reset Password" onclick="openResetModal(' + user.id + ', \'' + user.username + '\')">Password</button>' +
+                        '<button class="act-btn" title="Edit User" onclick="openEditModal(' + user.id + ', \'' + user.username + '\', \'' + user.role + '\', \'' + (user.department || '') + '\', \'' + (user.email || '') + '\', \'' + (user.phone || '') + '\')">Edit</button>' +
+                        (currentUserRole === 'SuperAdmin' ? '<button class="act-btn" title="Manage Permissions" onclick="location.href=\'/admin/user-access\'">Perms</button>' : '') +
+                        '<button class="act-btn red" title="Revoke Active Session" onclick="killSessions(' + user.id + ')">Revoke</button>' +
+                        '<button class="act-btn red" title="Delete Account" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">Delete</button>' +
                     '</div></td>';
                 tbody.appendChild(tr);
             });

@@ -220,51 +220,61 @@
             document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active'); });
             btn.classList.add('active');
             document.querySelectorAll('.tab-section').forEach(function(s) { s.style.display = 'none'; });
-            document.getElementById('tab-' + tabId).style.display = 'block';
+            var target = document.getElementById('tab-' + tabId);
+            if (target) target.style.display = 'block';
         }
 
         function renderDetailPanel(data) {
-            var identity = data.identity; var inventory = data.inventory; var report = data.report;
+            var identity = data.identity || {}; var inventory = data.inventory || {}; var report = data.report || {};
+            document.getElementById('panelUsername').textContent = identity.username || 'User Profile';
             document.getElementById('panelRole').textContent = identity.role || 'User';
             var c = document.getElementById('panelContent');
 
             var sessionsHtml = '';
             if (inventory.sessions && inventory.sessions.length > 0) {
                 inventory.sessions.forEach(function(s) {
-                    sessionsHtml += '<div class="session-item"><div class="session-time">' + fmtTime(s.login_at) + '</div><div class="session-details"><span>' + s.ip + ' (' + (s.country || 'Unknown') + ')</span><span>' + (s.browser || '') + ' / ' + (s.os || '') + '</span></div><div style="margin-top:4px; display:flex; gap:6px;">' + (s.vpn ? '<span class="badge-vpn">VPN</span>' : '') + (s.risk_score > 0 ? '<span class="badge-vpn" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">Risk: ' + s.risk_score + '</span>' : '<span class="badge-safe">Clean</span>') + '</div></div>';
+                    sessionsHtml += '<div class="session-item"><div class="session-time">' + fmtTime(s.login_at) + '</div><div class="session-details"><span>' + (s.ip || '-') + ' (' + (s.country || 'Unknown') + ')</span><span>' + (s.browser || '') + ' / ' + (s.os || '') + '</span></div><div style="margin-top:4px; display:flex; gap:6px;">' + (s.vpn ? '<span class="badge-vpn">VPN</span>' : '') + (s.risk_score > 0 ? '<span class="badge-vpn" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">Risk: ' + s.risk_score + '</span>' : '<span class="badge-safe">Clean</span>') + '</div></div>';
                 });
-            } else { sessionsHtml = '<p style="color:#aaa;">No login history.</p>'; }
+            } else { sessionsHtml = '<p style="color:#aaa; padding:12px 0;">No login history found.</p>'; }
 
             var devicesHtml = '';
             if (inventory.devices && inventory.devices.length > 0) {
                 inventory.devices.forEach(function(d) {
                     var statusBadge = d.approved ? '<span class="badge-safe">Approved</span>' : '<span class="badge-vpn" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">Pending</span>';
-                    var regTime = d.first_seen ? fmtTime(d.first_seen) : 'Unknown time';
-                    devicesHtml += '<div class="info-row" style="flex-direction:column; gap:4px; padding:12px 0;"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="label" style="color:#333; font-size:0.85rem;">' + (d.label || 'Device') + ' &nbsp;' + statusBadge + '</span><span class="value" style="color:#888; font-size:0.75rem;">Registered: ' + regTime + '</span></div><div style="font-size:0.75rem; color:#666; font-family:monospace;">' + (d.os || '') + ' / ' + (d.browser || '') + '</div></div>';
+                    var regTime = d.first_seen ? fmtTime(d.first_seen) : 'Unknown';
+                    devicesHtml += '<div class="info-row" style="flex-direction:column; gap:4px; padding:12px 0; border-bottom:1px solid #f0f0f0;"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="label" style="color:#333; font-size:0.85rem; font-weight:700;">' + (d.label || 'Device') + ' &nbsp;' + statusBadge + '</span><span class="value" style="color:#888; font-size:0.75rem;">' + regTime + '</span></div><div style="font-size:0.75rem; color:#666; font-family:monospace;">' + (d.os || '') + ' / ' + (d.browser || '') + '</div></div>';
                 });
-            } else { devicesHtml = '<p style="color:#aaa;">No devices detected.</p>'; }
+            } else { devicesHtml = '<p style="color:#aaa; padding:12px 0;">No devices detected.</p>'; }
 
             var riskSummary = report.risk_summary || {};
+            var createdStr = identity.created_at ? fmtTime(identity.created_at) : 'Active Account';
+
             c.innerHTML = '<div class="stats-grid">' +
-                '<div class="stat-mini"><div class="number">' + (report.total_sessions || 0) + '</div><div class="desc">Total Logins</div></div>' +
+                '<div class="stat-mini"><div class="number">' + (report.total_sessions || (inventory.sessions ? inventory.sessions.length : 0)) + '</div><div class="desc">Total Logins</div></div>' +
                 '<div class="stat-mini"><div class="number">' + (riskSummary.last_risk || 0) + '</div><div class="desc">Last Risk Score</div></div>' +
                 '<div class="stat-mini"><div class="number">' + (report.vpn_sessions || 0) + '</div><div class="desc">VPN Sessions</div></div>' +
                 '<div class="stat-mini"><div class="number">' + (report.off_hour_logins || 0) + '</div><div class="desc">Off-Hours</div></div></div>' +
                 '<div class="panel-tabs"><button class="tab-btn active" onclick="switchTab(this, \'profile\')">Profile</button><button class="tab-btn" onclick="switchTab(this, \'sessions\')">Logins</button><button class="tab-btn" onclick="switchTab(this, \'devices\')">Devices</button></div>' +
                 '<div id="tab-profile" class="tab-section"><div class="section-title">User Profile</div>' +
-                '<div class="info-row"><span class="label">User ID</span><span class="value">' + identity.id + '</span></div>' +
-                '<div class="info-row"><span class="label">Role</span><span class="value"><span class="pill">' + identity.role + '</span></span></div>' +
-                '<div class="info-row"><span class="label">Department</span><span class="value">' + (identity.department || 'General') + '</span></div>' +
-                '<div class="info-row"><span class="label">Status</span><span class="value"><span class="pill">' + (identity.status ? identity.status.toUpperCase() : 'UNKNOWN') + '</span></span></div>' +
-                '<div class="info-row"><span class="label">Failed Logins</span><span class="value">' + (identity.failed_attempts || 0) + '</span></div>' +
-                '<div class="info-row"><span class="label">Created</span><span class="value">' + fmtTime(identity.created_at) + '</span></div></div>' +
+                '<div class="info-row"><span class="label">User ID</span><span class="value">#' + (identity.id || '-') + '</span></div>' +
+                '<div class="info-row"><span class="label">Role</span><span class="value"><span class="pill" style="background:#e0e7ff; color:#4338ca; font-weight:700;">' + (identity.role || 'User') + '</span></span></div>' +
+                '<div class="info-row"><span class="label">Department</span><span class="value">' + (identity.department || 'General IT') + '</span></div>' +
+                '<div class="info-row"><span class="label">Email</span><span class="value" style="font-size:0.75rem;">' + (identity.email || '-') + '</span></div>' +
+                '<div class="info-row"><span class="label">Status</span><span class="value"><span class="pill" style="background:#dcfce7; color:#166534; font-weight:700;">' + (identity.status ? identity.status.toUpperCase() : 'ACTIVE') + '</span></span></div>' +
+                '<div class="info-row"><span class="label">Failed Logins</span><span class="value">' + (identity.failed_attempts != null ? identity.failed_attempts : 0) + '</span></div>' +
+                '<div class="info-row"><span class="label">Member Since</span><span class="value">' + createdStr + '</span></div></div>' +
                 '<div id="tab-sessions" class="tab-section" style="display:none;"><div class="section-title">Login History</div>' + sessionsHtml + '</div>' +
                 '<div id="tab-devices" class="tab-section" style="display:none;"><div class="section-title">Registered Devices</div>' + devicesHtml + '</div>';
         }
 
         function fmtTime(d) {
-            try { return new Date(d).toLocaleString('en-GB', { hour12: false, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
-            catch (e) { return d; }
+            if (!d) return 'Just now';
+            try {
+                var dt = new Date(d);
+                if (isNaN(dt.getTime())) return 'Active';
+                return dt.toLocaleString('en-GB', { hour12: false, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            catch (e) { return 'Active'; }
         }
 
         function exportLogs() {

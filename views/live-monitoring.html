@@ -157,8 +157,9 @@
 
             var tr = document.createElement('tr');
             tr.className = 'log-row';
+            tr.id = 'event-row-' + id;
             tr.onclick = function() { toggleRow(id); };
-            tr.innerHTML = '<td style="color:#aaa; font-size:0.7rem;">+</td>' +
+            tr.innerHTML = '<td style="color:#2563eb; font-weight:700; font-size:0.85rem;" class="expand-icon">+</td>' +
                 '<td class="mono">' + fmtDate(evt.timestamp || new Date()) + '</td>' +
                 '<td><span class="badge ' + badgeClass + '">' + severity + '</span></td>' +
                 '<td><span class="mono" style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">' + (evt.event_type || 'SYSTEM') + '</span></td>' +
@@ -189,7 +190,13 @@
 
         function toggleRow(id) {
             var row = document.getElementById('details-' + id);
-            row.classList.toggle('open');
+            if (!row) return;
+            var isOpen = row.classList.toggle('open');
+            var parent = document.getElementById('event-row-' + id);
+            if (parent) {
+                var icon = parent.querySelector('.expand-icon');
+                if (icon) icon.textContent = isOpen ? '−' : '+';
+            }
         }
 
         function fmtDate(str) {
