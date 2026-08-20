@@ -497,7 +497,7 @@ router.get('/otp', otpLimiter, function(req, res) {
 // verify otp code
 router.post('/api/verify-otp', otpLimiter, async function(req, res) {
     try {
-        var otpCode = (req.body.code || '').trim();
+        var otpCode = String(req.body.code || req.body.otp || '').trim();
 
         if (!req.session || !req.session.userId) {
             return res.json({ success: false, message: 'Session expired. Please log in again.' });
