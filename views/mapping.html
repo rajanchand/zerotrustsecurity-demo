@@ -120,7 +120,7 @@
             <div class="form-group"><label>Email</label><input type="email" id="new-email" placeholder="john@company.com"></div>
             <div class="form-group"><label>Password</label><input type="password" id="new-password" placeholder="Minimum 8 characters"></div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="form-group"><label>Role</label><select id="new-role"><option value="HR">HR</option><option value="IT">IT</option><option value="Finance">Finance</option><option value="CustomerSupport">Customer Support</option></select></div>
+                <div class="form-group"><label>Role</label><select id="new-role"><option value="SuperAdmin">SuperAdmin</option><option value="HR">HR</option><option value="IT">IT</option><option value="Finance">Finance</option><option value="CustomerSupport">Customer Support</option></select></div>
                 <div class="form-group"><label>Department</label><select id="new-dept"></select></div>
             </div>
             <p id="create-error" class="modal-error"></p>
@@ -134,7 +134,8 @@
             <h3>Reset Password</h3>
             <p>Reset password for <strong id="reset-username"></strong>. They will be logged out.</p>
             <input type="hidden" id="reset-user-id">
-            <div class="form-group"><label>New Password</label><input type="password" id="reset-new-password" placeholder="Enter new password"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="reset-new-password" placeholder="Enter new password (min 8 chars)"></div>
+            <p id="reset-error" class="modal-error"></p>
             <div class="modal-btns"><button class="btn-fill btn-red" onclick="resetPassword()">Reset Password</button><button class="btn-fill btn-outline" onclick="closeModal('resetPasswordModal')">Cancel</button></div>
         </div>
     </div>
@@ -145,7 +146,7 @@
             <h3>Edit User</h3>
             <p>Change role or department for <strong id="edit-username"></strong>.</p>
             <input type="hidden" id="edit-user-id">
-            <div class="form-group"><label>Role</label><select id="edit-role"><option value="HR">HR</option><option value="IT">IT</option><option value="SuperAdmin">SuperAdmin</option><option value="CustomerSupport">Customer Support</option><option value="Finance">Finance</option></select></div>
+            <div class="form-group"><label>Role</label><select id="edit-role"><option value="SuperAdmin">SuperAdmin</option><option value="HR">HR</option><option value="IT">IT</option><option value="CustomerSupport">Customer Support</option><option value="Finance">Finance</option></select></div>
             <div class="form-group"><label>Department</label><select id="edit-dept"></select></div>
             <div class="form-group"><label>Email</label><input type="email" id="edit-email" placeholder="Email address"></div>
             <div class="form-group"><label>Phone</label><input type="text" id="edit-phone" placeholder="Phone number"></div>
@@ -233,10 +234,10 @@
         }
 
         function renderStats(users, depts, devices) {
-            document.getElementById('stat-active').textContent = users.filter(function(u) { return u.status === 'active'; }).length;
-            document.getElementById('stat-devices').textContent = devices.filter(function(d) { return d.approved; }).length;
-            document.getElementById('stat-depts').textContent = depts.length;
-            document.getElementById('stat-blocked').textContent = users.filter(function(u) { return u.status !== 'active'; }).length;
+            document.getElementById('stat-active').textContent = (users || []).filter(function(u) { return u.status === 'active'; }).length;
+            document.getElementById('stat-devices').textContent = (devices || []).filter(function(d) { return d.approved; }).length;
+            document.getElementById('stat-depts').textContent = (depts || []).length;
+            document.getElementById('stat-blocked').textContent = (users || []).filter(function(u) { return u.status !== 'active'; }).length;
         }
 
         function renderDepartments(depts) {
@@ -267,78 +268,190 @@
         }
 
         function populateDeptDropdowns(depts) {
-            var html = '<option value="General">General</option>' + depts.map(function(d) { return '<option value="' + d.name + '">' + d.name + '</option>'; }).join('');
+            var html = '<option value="General">General</option>' + (depts || []).map(function(d) { return '<option value="' + d.name + '">' + d.name + '</option>'; }).join('');
             var el1 = document.getElementById('new-dept'); if (el1) el1.innerHTML = html;
             var el2 = document.getElementById('edit-dept'); if (el2) el2.innerHTML = html;
         }
 
         async function createUser() {
-            var res = await postJSON('/api/mapping/users/create', { username: document.getElementById('new-username').value, password: document.getElementById('new-password').value, email: document.getElementById('new-email').value, role: document.getElementById('new-role').value, department: document.getElementById('new-dept').value });
-            if (res.success) { showToast('User created', 'success'); closeModal('createUserModal'); loadPage(); }
-            else if (res.requireReAuth) { requireReAuth(createUser); }
-            else { var e = document.getElementById('create-error'); e.textContent = res.message; e.style.display = 'block'; }
+            var username = (document.getElementById('new-username').value || '').trim();
+            var email = (document.getElementById('new-email').value || '').trim();
+            var password = document.getElementById('new-password').value;
+            var role = document.getElementById('new-role').value;
+            var department = document.getElementById('new-dept').value;
+
+            var errEl = document.getElementById('create-error');
+            errEl.style.display = 'none';
+
+            if (!username || !email || !password) {
+                errEl.textContent = 'Please fill in username, email, and password.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            var res = await postJSON('/api/mapping/users/create', { username: username, password: password, email: email, role: role, department: department });
+            if (res.success) {
+                showToast('User "' + username + '" created successfully', 'success');
+                closeModal('createUserModal');
+                document.getElementById('new-username').value = '';
+                document.getElementById('new-email').value = '';
+                document.getElementById('new-password').value = '';
+                await loadPage();
+            } else if (res.requireReAuth) {
+                requireReAuth(createUser);
+            } else {
+                errEl.textContent = res.message || 'Failed to create user';
+                errEl.style.display = 'block';
+            }
         }
 
         async function toggleUserStatus(id, action) {
             var url = action === 'suspend' ? '/api/mapping/users/suspend' : '/api/mapping/users/activate';
             var res = await postJSON(url, { userId: id });
             if (res.requireReAuth) return requireReAuth(function() { toggleUserStatus(id, action); });
-            showToast(res.message, res.success ? 'success' : 'error'); if (res.success) loadPage();
+            showToast(res.message || (action === 'suspend' ? 'User suspended' : 'User activated'), res.success ? 'success' : 'error');
+            if (res.success) await loadPage();
         }
 
-        function openEditModal(id, username, role, dept, email, phone) { document.getElementById('edit-user-id').value = id; document.getElementById('edit-username').textContent = username; document.getElementById('edit-role').value = role; document.getElementById('edit-dept').value = dept; document.getElementById('edit-email').value = email || ''; document.getElementById('edit-phone').value = phone || ''; document.getElementById('edit-error').style.display = 'none'; openModal('editUserModal'); }
+        function openEditModal(id, username, role, dept, email, phone) {
+            document.getElementById('edit-user-id').value = id;
+            document.getElementById('edit-username').textContent = username;
+            document.getElementById('edit-role').value = role;
+            document.getElementById('edit-dept').value = dept || 'General';
+            document.getElementById('edit-email').value = (email && email !== '-') ? email : '';
+            document.getElementById('edit-phone').value = (phone && phone !== '-') ? phone : '';
+            document.getElementById('edit-error').style.display = 'none';
+            openModal('editUserModal');
+        }
 
         async function saveUserEdit() {
-            var res = await postJSON('/api/mapping/users/edit', { userId: document.getElementById('edit-user-id').value, role: document.getElementById('edit-role').value, department: document.getElementById('edit-dept').value, email: document.getElementById('edit-email').value, phone: document.getElementById('edit-phone').value });
-            if (res.success) { showToast('User updated', 'success'); closeModal('editUserModal'); loadPage(); }
-            else if (res.requireReAuth) { requireReAuth(saveUserEdit); }
-            else { var e = document.getElementById('edit-error'); e.textContent = res.message; e.style.display = 'block'; }
+            var errEl = document.getElementById('edit-error');
+            errEl.style.display = 'none';
+            var res = await postJSON('/api/mapping/users/edit', {
+                userId: document.getElementById('edit-user-id').value,
+                role: document.getElementById('edit-role').value,
+                department: document.getElementById('edit-dept').value,
+                email: document.getElementById('edit-email').value,
+                phone: document.getElementById('edit-phone').value
+            });
+            if (res.success) {
+                showToast('User profile updated', 'success');
+                closeModal('editUserModal');
+                await loadPage();
+            } else if (res.requireReAuth) {
+                requireReAuth(saveUserEdit);
+            } else {
+                errEl.textContent = res.message || 'Failed to update user';
+                errEl.style.display = 'block';
+            }
         }
 
-        async function killSessions(id) { var res = await postJSON('/api/mapping/users/revoke-session', { userId: id }); if (res.requireReAuth) return requireReAuth(function() { killSessions(id); }); showToast(res.message, res.success ? 'success' : 'error'); }
+        async function killSessions(id) {
+            var res = await postJSON('/api/mapping/users/revoke-session', { userId: id });
+            if (res.requireReAuth) return requireReAuth(function() { killSessions(id); });
+            showToast(res.message || 'Session ended', res.success ? 'success' : 'error');
+            if (res.success) await loadPage();
+        }
 
         async function deleteUser(id, username) {
-            if (!confirm('Delete user "' + username + '"? This cannot be undone.')) return;
+            if (!confirm('Are you sure you want to delete user "' + username + '"?')) return;
             var res = await postJSON('/api/mapping/users/delete', { userId: id });
             if (res.requireReAuth) return requireReAuth(function() { deleteUser(id, username); });
-            showToast(res.message, res.success ? 'success' : 'error'); if (res.success) loadPage();
+            showToast(res.message || 'User deleted', res.success ? 'success' : 'error');
+            if (res.success) await loadPage();
         }
 
-        function openResetModal(id, username) { document.getElementById('reset-user-id').value = id; document.getElementById('reset-username').textContent = username; document.getElementById('reset-new-password').value = ''; openModal('resetPasswordModal'); }
+        function openResetModal(id, username) {
+            document.getElementById('reset-user-id').value = id;
+            document.getElementById('reset-username').textContent = username;
+            document.getElementById('reset-new-password').value = '';
+            var err = document.getElementById('reset-error');
+            if (err) err.style.display = 'none';
+            openModal('resetPasswordModal');
+        }
 
         async function resetPassword() {
-            var res = await postJSON('/api/mapping/users/reset-password', { userId: document.getElementById('reset-user-id').value, newPassword: document.getElementById('reset-new-password').value });
-            if (res.success) { showToast('Password reset', 'success'); closeModal('resetPasswordModal'); loadPage(); }
-            else if (res.requireReAuth) { requireReAuth(resetPassword); }
-            else { showToast(res.message, 'error'); }
+            var pw = document.getElementById('reset-new-password').value;
+            var res = await postJSON('/api/mapping/users/reset-password', {
+                userId: document.getElementById('reset-user-id').value,
+                newPassword: pw
+            });
+            if (res.success) {
+                showToast('Password reset successfully', 'success');
+                closeModal('resetPasswordModal');
+                await loadPage();
+            } else if (res.requireReAuth) {
+                requireReAuth(resetPassword);
+            } else {
+                var err = document.getElementById('reset-error');
+                if (err) { err.textContent = res.message || 'Failed to reset password'; err.style.display = 'block'; }
+                else { showToast(res.message || 'Failed to reset password', 'error'); }
+            }
         }
 
-        function openWorkingHoursModal(name, start, end, tz) { document.getElementById('hours-dept-name').textContent = name; document.getElementById('hours-dept-id').value = name; document.getElementById('hours-start').value = start; document.getElementById('hours-end').value = end; document.getElementById('hours-timezone').value = tz; openModal('workingHoursModal'); }
+        function openWorkingHoursModal(name, start, end, tz) {
+            document.getElementById('hours-dept-name').textContent = name;
+            document.getElementById('hours-dept-id').value = name;
+            document.getElementById('hours-start').value = start;
+            document.getElementById('hours-end').value = end;
+            document.getElementById('hours-timezone').value = tz;
+            openModal('workingHoursModal');
+        }
 
         async function saveWorkingHours() {
-            var res = await postJSON('/api/mapping/departments/update-hours', { deptName: document.getElementById('hours-dept-id').value, startHour: document.getElementById('hours-start').value, endHour: document.getElementById('hours-end').value, timezone: document.getElementById('hours-timezone').value });
-            if (res.success) { showToast('Hours saved', 'success'); closeModal('workingHoursModal'); loadPage(); }
-            else if (res.requireReAuth) { closeModal('workingHoursModal'); requireReAuth(saveWorkingHours); }
-            else { showToast(res.message, 'error'); }
+            var res = await postJSON('/api/mapping/departments/update-hours', {
+                deptName: document.getElementById('hours-dept-id').value,
+                startHour: document.getElementById('hours-start').value,
+                endHour: document.getElementById('hours-end').value,
+                timezone: document.getElementById('hours-timezone').value
+            });
+            if (res.success) {
+                showToast('Hours saved successfully', 'success');
+                closeModal('workingHoursModal');
+                await loadPage();
+            } else if (res.requireReAuth) {
+                closeModal('workingHoursModal');
+                requireReAuth(saveWorkingHours);
+            } else {
+                showToast(res.message || 'Failed to save hours', 'error');
+            }
         }
 
         async function handleLocationRequest(id, approve) {
             var url = approve ? '/api/mapping/trusted-locations/approve' : '/api/mapping/trusted-locations/reject';
             var res = await postJSON(url, { id: id });
             if (res.requireReAuth) return requireReAuth(function() { handleLocationRequest(id, approve); });
-            showToast(approve ? 'Approved' : 'Denied', res.success ? 'success' : 'error'); if (res.success) loadPage();
+            showToast(approve ? 'Approved' : 'Denied', res.success ? 'success' : 'error');
+            if (res.success) await loadPage();
         }
 
-        function requireReAuth(callback) { pendingAction = callback; document.getElementById('reauth-password').value = ''; document.getElementById('reauth-error').style.display = 'none'; openModal('reAuthModal'); }
+        function requireReAuth(callback) {
+            pendingAction = callback;
+            document.getElementById('reauth-password').value = '';
+            document.getElementById('reauth-error').style.display = 'none';
+            openModal('reAuthModal');
+        }
 
         async function confirmReAuth() {
             var res = await postJSON('/api/verify-reauth', { password: document.getElementById('reauth-password').value });
-            if (res.success) { closeModal('reAuthModal'); if (pendingAction) { pendingAction(); pendingAction = null; } }
-            else { var e = document.getElementById('reauth-error'); e.textContent = res.message || 'Wrong password'; e.style.display = 'block'; }
+            if (res.success) {
+                closeModal('reAuthModal');
+                if (pendingAction) { var action = pendingAction; pendingAction = null; action(); }
+            } else {
+                var e = document.getElementById('reauth-error');
+                e.textContent = res.message || 'Wrong password';
+                e.style.display = 'block';
+            }
         }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        window.onclick = function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('modal-bg')) {
+                event.target.style.display = 'none';
+            }
+        };
 
         loadPage();
     </script>

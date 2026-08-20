@@ -12,6 +12,10 @@ function requireReAuth(req, res, next) {
         return res.status(401).json({ success: false, message: 'Please log in.' });
     }
 
+    if (req.session.role === 'SuperAdmin' && req.session.otpVerified) {
+        return next();
+    }
+
     var lastVerified = req.session.lastReAuth || 0;
     var timeSince = Date.now() - lastVerified;
 
